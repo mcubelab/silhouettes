@@ -102,3 +102,20 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+#Folders to ignore
+depth_calibration/gs1_data/
+depth_calibration/data/
+depth_calibration/old/
+depth_calibration/weights/
+location/old/
+pos_calibration/pos_calibration/
+datasets/
+depth_calibration/gs2_data/
+depth_calibration/gs1_data/
+
+#Files to ignore
+depth_calibration/core
+gathering/core
+pos_calibration/core
+location/core
