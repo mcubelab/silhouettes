@@ -1,0 +1,3 @@
+/home/oleguer/shapes/processing/c++/CMakeFiles/edit_cache.dir
+/home/oleguer/shapes/processing/c++/CMakeFiles/rebuild_cache.dir
+/home/oleguer/shapes/processing/c++/CMakeFiles/pairwise_incremental_registration.dir
