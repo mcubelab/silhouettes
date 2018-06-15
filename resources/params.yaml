@@ -1,0 +1,11 @@
+### GS pixel Space to World Space params
+# GS1:
+# TODO
+
+# GS2:
+params_gs2: [0.08306509459312332, -0.0006996618309678892, 1.5431217937797345e-06, 0.08153356084518493, 0.005461568194849241, -1.5973694835128038e-06, 2.0757556565435884, 7.694306015560224, -13.986576864912136]
+input_shape_gs2: (480, 497, 5) # Not yet implemented
+output_shape_gs2: (70, 72, 2) # Not yet implemented
+
+
+### Maybe put here calibration objects dimensions
