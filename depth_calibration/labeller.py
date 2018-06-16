@@ -10,21 +10,17 @@ from matplotlib import cm
 import yaml
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-SHAPES_ROOT = os.getcwd().split("/shapes/")[0] + "/shapes/"
+SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 
-class Labeller2():
-    def __init__(self, mm2px=12.52, size=(640, 480), sphere_r_mm=28.5/2, semicone_1_r_mm=10./2, semicone_2_r_mm=10./2, semicone_2_R_mm=18.43/2):
-        # Basic parameters objects
-        self.sphere_R_mm = sphere_r_mm
-        self.semicone_1_r_mm = semicone_1_r_mm
-        self.semicone_2_r_mm = semicone_2_r_mm
-        self.semicone_2_R_mm = semicone_2_R_mm
-
-        self.mm2px_average = mm2px
+class Labeller():
+    def __init__(self):
         params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
         self.mm2px_param_list = params_dict['params_gs2']
-        self.__compute_xy_px(size)
 
+        input_shape = params_dict['input_shape_gs2'][0:2]
+        print input_shape
+        print type(input_shape)
+        self.__compute_xy_px(input_shape)
 
     def __compute_xy_px(self, size):
         # We precompute x_pixel, y_pixel matrices (faster later)
@@ -38,9 +34,6 @@ class Labeller2():
         x1, y1 = point1
         x2, y2 = point2
         return np.linalg.norm((x1-x2, y1-y2))
-
-    def __mm_2_px(self, dist):
-        return self.mm2px_average*float(dist)
 
     def __pos_px_to_mm(self, point):
         (x, y) = point
@@ -70,7 +63,7 @@ class Labeller2():
         # print d1, d2, d3, d4
         return float(d1+d2+d3+d4)/4.
 
-    def __get_sphere_gradient(self, center_px, radius_px):
+    def __get_sphere_gradient(self, center_px, radius_px, R_mm):
         # # First we ajust the origin of the image to the top center point
         # center_mm = (self.__x_px_to_mm(center_px[0], center_px[1]), self.__y_px_to_mm(center_px[0], center_px[1]))
         # radius_mm =  radius_px/self.mm2px_average
@@ -89,7 +82,7 @@ class Labeller2():
         # dz_dx_mat = (dz_dx_mat * mask).astype(np.float32)
         # dz_dy_mat = (dz_dy_mat * mask).astype(np.float32)
         r_mm = self.__radius_px_to_mm(center_px, radius_px)
-        R_mm = float(self.sphere_R_mm)
+        R_mm = float(R_mm)
         if R_mm < r_mm:
             return None, None
         r_px = radius_px
@@ -116,11 +109,12 @@ class Labeller2():
             return None, None
         return dz_dx_mat*h_px2mm, dz_dy_mat*h_px2mm
 
-    def __get_semicone_1_gradient(self, center_px, radius_px, cone_slope=np.tan(np.radians(20))):
-        # Detected radius
-        R_mm = self.__radius_px_to_mm(center_px, radius_px) #Note: center_px and radius_px need to come from warped image
-        # Smaller radius object
-        r_mm = self.semicone_1_r_mm
+    def __get_semicone_1_gradient(self, center_px, radius_px):
+        # Shape params
+        r_mm = 10./2 # Smaller radius object
+        cone_slope=np.tan(np.radians(20))
+        R_mm = self.__radius_px_to_mm(center_px, radius_px) # Detected radius # NOTE: center_px and radius_px need to come from warped image
+
         if R_mm <= r_mm:
             return None, None
 
@@ -167,7 +161,7 @@ class Labeller2():
 
         h_px = np.amax(poisson_reconstruct(dz_dy_mat, dz_dx_mat)) #TODO: keep in mind y, x   vs. x, y
         h_px2mm = h_mm/h_px
-        
+
         if h_px == 0 or h_mm < 0.1:
             return None, None
 
@@ -175,8 +169,8 @@ class Labeller2():
 
     def get_semicone_2_gradient(self, center_px, radius_px, cone_slope=np.tan(np.radians(10))):
         RR_mm = self.__radius_px_to_mm(center_px, radius_px)
-        R_mm = self.semicone_2_R_mm
-        r_mm = self.semicone_2_r_mm
+        R_mm = 18.43/2
+        r_mm = 10./2
         print RR_mm
         print R_mm
         print r_mm
@@ -227,10 +221,10 @@ class Labeller2():
             return None, None
         return dz_dx_mat*h_px2mm, dz_dy_mat*h_px2mm
 
-    def get_gradient_matrices(self, center_px, radius_px, shape='sphere'):
+    def get_gradient_matrices(self, center_px, radius_px, shape='sphere', sphere_R_mm=28.5/2):
         # Everyhting given in pixel space
         if shape == 'sphere':
-            gx, gy = self.__get_sphere_gradient(center_px, radius_px)
+            gx, gy = self.__get_sphere_gradient(center_px, radius_px, R_mm=sphere_R_mm)
             return gx, gy
         if shape == 'semicone_1':
             gx, gy = self.__get_semicone_1_gradient(center_px, radius_px)

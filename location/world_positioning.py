@@ -2,9 +2,13 @@ from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.linalg import inv
-import math
-import cv2
+import math, os, sys, cv2, yaml
 import tf.transformations as tfm
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
+params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
+half_y = params_dict['input_shape_gs2'][1]/2.
 
 def __quaternion_matrix(quaternion):
     q = np.array(quaternion, dtype=np.float64, copy=True)
@@ -79,7 +83,7 @@ def pxb2grb(point, gs_id, gripper_state, fitting_params):
     Dz = gripper_state['Dz']
 
     k1, k2, k3,  l1, l2, l3,  dx, dy, dz = fitting_params
-    p1 = (x, y - 640.0/2)
+    p1 = (x, y - half_y)
     p2 = (p1[0]*k1 + p1[1]*k2 + k3*p1[0]*p1[1],   p1[1]*l1 + p1[0]*l2 + l3*p1[1]*p1[0])
     p3 = (normal*(Dx + dx), p2[1] + dy, Dz + dz + p2[0])
 
@@ -100,7 +104,7 @@ def pxb_2_wb_3d(point_3d, gs_id, gripper_state, fitting_params):
 
     k1, k2, k3,  l1, l2, l3,  dx, dy, dz = fitting_params
 
-    p1 = (x, y - 640.0/2, z)
+    p1 = (x, y - half_y, z)
     p2 = (p1[0]*k1 + p1[1]*k2, p1[1]*l1 + p1[0]*l2, p1[2])
     p3 = (normal*(Dx + dx + p2[2]), p2[1] + dy, Dz + dz + p2[0])
     p4 = grb2wb(point=p3, gripper_pos=pos, quaternion=quaternion)

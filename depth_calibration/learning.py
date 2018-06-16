@@ -9,13 +9,16 @@ from sklearn.model_selection import train_test_split
 from Datagenerator import DataGenerator
 from random import shuffle
 import numpy as np
-import os, sys
+import os, sys, yaml
 import cv2
 import scipy
 import math
 import keras.losses
 from depth_helper import custom_loss
 keras.losses.custom_loss = custom_loss
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 
 def createModel(input_shape):
     print input_shape
@@ -84,28 +87,32 @@ def get_data_paths(paths, gradient, val_fraction=0.2, max_data_points=99999):
     m = int(len(inputs)*val_fraction)
     return inputs[m:], labels[m:], inputs[:m+1], labels[:m+1]
 
-
 def train(pretrain = False):
     # Params:
-    weights_filepath = "weights/weights.color_semicone1_and_sphere_v2.xy.hdf5"
+    weights_filepath = "weights/weights.color_semicone1_and_sphere_v3.xy.hdf5"
 
     paths = ["data/test_semicone1/image/", "data/test_sphere/image/" ]
     # paths = ["data/color3_processed_h_mm/", "data/processed_color_D28.5_h_mm/image/", "data/semicone_1_processed_h_mm/"]
     # paths = ["data/processed_color_D28.5/image/"]
     # paths = ["data/semicone_1_processed_h_mm/image/"]
-    input_shape = (480, 497, 5)
 
     # Datasets
     inputs_train, labels_train, inputs_val, labels_val = get_data_paths(paths=paths, gradient='x', val_fraction=0.2, max_data_points=9999999)
     print "Train size: " + str(len(inputs_train))
     print "Validation size: " + str(len(inputs_val))
 
+    # Input/output shape (change it in resources/params.yaml)
+    params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
+    input_shape = params_dict['input_shape_gs2']
+    input_image_shape = params_dict['input_shape_gs2'][0:2]
+    output_shape = params_dict['output_shape_gs2'][0:2]
+
     # Generators
     train_batch_size = 8
     val_batch_size = 8
 
-    training_generator = DataGenerator(inputs_train, labels_train, batch_size = train_batch_size)
-    validation_generator = DataGenerator(inputs_val, labels_val, batch_size = val_batch_size)
+    training_generator = DataGenerator(inputs_train, labels_train, batch_size=train_batch_size, dim_in=input_image_shape, dim_out=output_shape)
+    validation_generator = DataGenerator(inputs_val, labels_val, batch_size=val_batch_size, dim_in=input_shape, dim_out=output_shape)
 
     # Load weights
     history_save_filename=weights_filepath.replace(".hdf5", "_hist")
@@ -122,10 +129,10 @@ def train(pretrain = False):
     print 'Steps training: ', train_steps
     validation_steps = int(np.floor(len(inputs_val)/val_batch_size))
     print 'Steps validation: ', validation_steps
-    
+
     # Run learning
     history = model.fit_generator(generator=training_generator, steps_per_epoch=train_steps, epochs=100, validation_data=validation_generator, validation_steps= validation_steps,callbacks=callbacks_list, workers=8, use_multiprocessing=True)
-    
+
     # Save histoy file
     def save_file(filename, var):
         import cPickle as pickle
@@ -133,7 +140,7 @@ def train(pretrain = False):
         import deepdish as dd
         dd.io.save(filename+'.h5', var)
     save_file(history_save_filename, history.history)
-    
+
     # Save model
     model.to_json()
 

@@ -6,7 +6,7 @@ from numpy.linalg import inv
 import math, cv2, os, pickle
 import yaml
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-SHAPES_ROOT = os.getcwd().split("/shapes/")[0] + "/shapes/"
+SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 from world_positioning import pxb_2_wb_3d
 from depth_calibration.depth_helper import *
 
@@ -14,8 +14,8 @@ from depth_calibration.depth_helper import *
 class Location():
     def __init__(self):
         self.compress_factor = .2
-        params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
-        self.params_gs2 = params_dict['params_gs2']
+        self.params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
+        self.params_gs2 = self.params_dict['params_gs2']
 
     def visualize_pointcloud(self, np_pointcloud):
         pointcloud = {'x': [], 'y': [], 'z': []}
@@ -107,6 +107,8 @@ class Location():
             pass # TODO: GET height_map
         elif gs_id == 2:
             params_gs = self.params_gs2
+            size = self.params_dict['input_shape_gs2'][0:2]
+
 
             test_image = gs2_list[0]
             test_image2 = cv2.imread("GS2_" + str(1) + '.png')
@@ -129,7 +131,7 @@ class Location():
             a = mean - dev
             height_map = (height_map > 0.1)*height_map*10
             height_map = (height_map > a)*height_map
-            height_map = cv2.resize(height_map, dsize=(497, 480), interpolation=cv2.INTER_LINEAR)
+            height_map = cv2.resize(height_map, dsize=(size[1], size[0]), interpolation=cv2.INTER_LINEAR)
             # cv2.imshow('a', height_map)
             # cv2.waitKey()
 

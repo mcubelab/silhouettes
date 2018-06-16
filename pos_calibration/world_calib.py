@@ -5,7 +5,7 @@ import numpy as np
 from scipy.optimize import fsolve
 from scipy.optimize import minimize
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-SHAPES_ROOT = os.getcwd().split("/shapes/")[0] + "/shapes/"
+SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 from location.world_positioning import pxb2grb, wb2grb, grb2wb
 
 
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     pc = PosCalib()
     cts = pc.get_px2mm_params(path_list=file_list, warp_matrix_path=SHAPES_ROOT + '/resources/GS2_M_color.npy')
     print cts.x.tolist()
-    pc.test_all(params=cts.x, warp_matrix_path=SHAPES_ROOT + '/resources/GS2_M_color.npy')
+    # pc.test_all(params=cts.x, warp_matrix_path=SHAPES_ROOT + '/resources/GS2_M_color.npy')
     print "Average distance: " + str(cts.x.fun)
     for elem in cts.x:
         print("%.4f" % float(elem))

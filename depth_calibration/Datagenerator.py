@@ -10,13 +10,13 @@ import scipy
 import time
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-SHAPES_ROOT = os.getcwd().split("/shapes/")[0] + "/shapes/"
+SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, list_IDs, labels, batch_size, dim=[480, 497],dim_out=[230,238], n_channels=5, shuffle=True):
+    def __init__(self, list_IDs, labels, batch_size, dim_in, dim_out, n_channels=5, shuffle=True):
         'Initialization'
-        self.dim = dim
+        self.dim = dim_in
         self.batch_size = batch_size
         self.labels = labels
         self.list_IDs = list_IDs

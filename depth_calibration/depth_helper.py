@@ -1,4 +1,4 @@
-from image_process_v2 import *
+from image_processing import *
 
 from keras.models import Sequential
 from keras.layers import *
@@ -26,9 +26,11 @@ import time
 import matplotlib.image as mpimg
 import math
 import scipy, scipy.fftpack
+import yaml
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-SHAPES_ROOT = os.getcwd().split("/shapes/")[0] + "/shapes/"
+SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 label_mult_factor = 1.0
+
 def preprocess_image(img):
     img = img.astype('float32')
     img[:, :, 0] = img[:, :, 0] - 82.53
@@ -112,7 +114,7 @@ def poisson_reconstruct(grady, gradx):
 def custom_loss(y_true, y_pred):
     return K.sum(K.square(y_true-y_pred))
 
-def raw_gs_to_depth_map(test_image, ref = None, model_path = None, plot=False, save=False, path=''):
+def raw_gs_to_depth_map(gs_id=2, test_image=None, ref = None, model_path = None, plot=False, save=False, path=''):
     start = time.time()
 
     if ref == None:
@@ -129,8 +131,14 @@ def raw_gs_to_depth_map(test_image, ref = None, model_path = None, plot=False, s
     keras.losses.custom_loss = custom_loss
     model = load_model(model_path)
 
-    dim = (480, 497)
-    test_image = cv2.resize(test_image, dsize=(497,480), interpolation=cv2.INTER_LINEAR)
+    params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
+    if gs_id == 1:
+        # dim= params_dict['input_image_hw_gs1'][0:2]
+        pass
+    else:
+        dim = params_dict['input_shape_gs2'][0:2]
+
+    test_image = cv2.resize(test_image, dsize=(dim[1], dim[0]), interpolation=cv2.INTER_LINEAR)
     xvalues = np.array(range(dim[0])).astype('float32')/float(dim[0]) - 0.5 # Normalized
     yvalues = np.array(range(dim[1])).astype('float32')/float(dim[1]) - 0.5 # Normalized
     pos = np.stack((np.meshgrid(yvalues, xvalues)), axis = 2)

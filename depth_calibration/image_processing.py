@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import os
 import matplotlib.pyplot as plt
-from labelling2 import Labeller2
+from labeller import Labeller
 from depth_helper import *
 
 import pylab
@@ -13,7 +13,6 @@ import cv2
 import scipy
 from keras import backend as K
 import scipy.io
-from image_process_v2 import *
 import cPickle as pickle
 import h5py
 import deepdish as dd
@@ -22,7 +21,7 @@ from matplotlib import cm
 import time
 from PIL import Image
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-SHAPES_ROOT = os.getcwd().split("/shapes/")[0] + "/shapes/"
+SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 
 def rgb2gray(rgb):
     return np.dot(rgb[...,:3], [0.299, 0.587, 0.114])
@@ -32,16 +31,19 @@ def make_kernal(n):
     return kernal
 
 
-def calibration(img,background):
-    M = np.load(SHAPES_ROOT + 'resources/GS2_M_color.npy')
-    rows,cols,cha = img.shape
-    imgw = cv2.warpPerspective(img, M, (cols, rows))
-    imgwc = imgw[:,63:-80,:]
-    bg_imgw = cv2.warpPerspective(background, M, (cols, rows))
-    bg_imgwc = bg_imgw[:,63:-80,:]
-    img_blur = cv2.GaussianBlur(bg_imgwc.astype(np.float32),(25,25),30)
-    img_bs = imgwc.astype(np.int32) - img_blur.astype(np.int32) + np.mean(img_blur)
-    return img_bs.astype(np.uint8),imgwc
+def calibration(img,background, gs_id=2):
+    if gs_id == 1:
+        return None, None
+    elif gs_id == 2:
+        M = np.load(SHAPES_ROOT + 'resources/GS2_M_color.npy')
+        rows,cols,cha = img.shape
+        imgw = cv2.warpPerspective(img, M, (cols, rows))
+        imgwc = imgw[:,63:-80,:]
+        bg_imgw = cv2.warpPerspective(background, M, (cols, rows))
+        bg_imgwc = bg_imgw[:,63:-80,:]
+        img_blur = cv2.GaussianBlur(bg_imgwc.astype(np.float32),(25,25),30)
+        img_bs = imgwc.astype(np.int32) - img_blur.astype(np.int32) + np.mean(img_blur)
+    return img_bs.astype(np.uint8), imgwc
 
 def contact_detection(im,im_ref,low_bar,high_bar):
     im_sub = im/im_ref*70
@@ -104,8 +106,8 @@ if __name__ == "__main__":
 
     ## Paths to obtain Gelsight raw images
     load_path = "/media/mcube/data/shapes_data/semicone_1/"
-    #load_path = "/media/mcube/data/shapes_data/ball_D28.5/"
-        # load_path = "/media/mcube/data/shapes_data/color3/"
+    # load_path = "/media/mcube/data/shapes_data/ball_D28.5/"
+    # load_path = "/media/mcube/data/shapes_data/color3/"
     root, dirs, files = os.walk(load_path).next()
 
     ## Path to save new images and gradients
@@ -115,16 +117,16 @@ if __name__ == "__main__":
     #save_path = "data/test_sphere/"
 
     ## Select shape!
-    #geometric_shape = 'sphere'
-    geometric_shape = 'semicone_1' #
+    # geometric_shape = 'sphere'
+    geometric_shape = 'semicone_1'
+    sphere_R_mm = 28.5/2  # Only used if geometric_shape == 'sphere'
 
     ## Basic parameters
-    save_data = True
-    show_data = False
-    raw_img_size = (497, 480)#(640, 480)
+    save_data = False
+    show_data = True
 
     ## Create labeler so that we can find circles on the images
-    labeller = Labeller2(mm2px=12.52, size=raw_img_size)  #TODO: give meaning to all this parameters
+    labeller = Labeller()
 
     ## Assumption: first image has no contact and can be used as background
     ref = cv2.imread(root+'/'+'GS2_1.png')
@@ -203,7 +205,7 @@ if __name__ == "__main__":
                     cv2.circle(im_wp,center,radius,(0,0,255),1)
                     print 'get gradient params: ', center, radius
                     ## Compute gradients given center and radius
-                    grad_x, grad_y = labeller.get_gradient_matrices(center,radius, shape=geometric_shape)
+                    grad_x, grad_y = labeller.get_gradient_matrices(center,radius, shape=geometric_shape, sphere_R_mm=sphere_R_mm)
                     if (grad_x is not None) and (grad_y is not None):
 
                         ## Uncomment this to check gradients and heightmap
