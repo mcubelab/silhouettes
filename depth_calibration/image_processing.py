@@ -30,7 +30,6 @@ def make_kernal(n):
     kernal = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(n,n))
     return kernal
 
-
 def calibration(img,background, gs_id=2):
     if gs_id == 1:
         return None, None
@@ -111,9 +110,9 @@ if __name__ == "__main__":
     root, dirs, files = os.walk(load_path).next()
 
     ## Path to save new images and gradients
-        # save_path = "data/semicone_1_processed_h_mm/"
-        # save_path = "data/processed_color_D28.5_h_mm/"
-    save_path = "data/test_semicone1/"
+    # save_path = "data/semicone_1_processed_h_mm/"
+    # save_path = "data/processed_color_D28.5_h_mm/"
+    save_path = "data/test_semicone1_augmented/"
     #save_path = "data/test_sphere/"
 
     ## Select shape!
@@ -122,8 +121,15 @@ if __name__ == "__main__":
     sphere_R_mm = 28.5/2  # Only used if geometric_shape == 'sphere'
 
     ## Basic parameters
-    save_data = False
-    show_data = True
+    save_data = True
+    show_data = False
+
+    ## Augmented data params
+    augmented_data_copies = 4  # Number of copies of augmented data that will be created and saved, 0 if you don't want it
+    weight_mean = 1.
+    weight_dev = 0.05
+    biass_mean = 0.
+    biass_dev = 9.
 
     ## Create labeler so that we can find circles on the images
     labeller = Labeller()
@@ -203,7 +209,7 @@ if __name__ == "__main__":
                     contact = contact_detection(rgb2gray(im_wp).astype(np.float32),rgb2gray(ref_warp).astype(np.float32),20,40)
                     contact_mask = contact[:,:,2]*mask_circle
                     cv2.circle(im_wp,center,radius,(0,0,255),1)
-                    print 'get gradient params: ', center, radius
+                    # print 'get gradient params: ', center, radius
                     ## Compute gradients given center and radius
                     grad_x, grad_y = labeller.get_gradient_matrices(center,radius, shape=geometric_shape, sphere_R_mm=sphere_R_mm)
                     if (grad_x is not None) and (grad_y is not None):
@@ -235,36 +241,44 @@ if __name__ == "__main__":
                         #plot(depth_map)
                         # '''
 
-                        if show_data:
-                            cv2.imshow('contact_mask', contact_mask.astype(np.uint8))
-                            cv2.imshow('image',cv2.cvtColor(im_wp, cv2.COLOR_BGR2RGB))
-                            cv2.imshow('grad_x',grad_x)
-                            cv2.imshow('grad_y',grad_y)
-                            cv2.waitKey(100)
-                        if save_data:
-                            index = index + 1
-                            if not os.path.exists(save_path + 'image/'):
-                                os.makedirs(save_path + 'image/')
-                            if not os.path.exists(save_path + 'image_circled/'):
-                                os.makedirs(save_path + 'image_circled/')
-                            if not os.path.exists(save_path + 'gradient/'):
-                                os.makedirs(save_path + 'gradient/')
-                            if not os.path.exists(save_path + 'heightmap/'):
-                                os.makedirs(save_path + 'heightmap/')
+                        # We show/save the augmented data copies
+                        for i in range(augmented_data_copies+1):
+                            if i == 0:
+                                noise_coefs = [(1, 0), (1, 0), (1, 0)]
+                            else:
+                                noise_coefs = get_rgb_noise(weight_mean, weight_dev, biass_mean, biass_dev)
 
-                            ## Save the depth map with the maximum height in the name
-                            depth_map = poisson_reconstruct(grad_y, grad_x)
-                            name = str(np.amax(depth_map))
-                            cv2.imwrite(save_path + 'heightmap/'+str(index) + '_' + name + '.png', depth_map*1000)
 
-                            ## Save raw image, raw_image with circle and the gradients
-                            cv2.imwrite(save_path + 'image/img_'+str(index)+ '.png',cv2.cvtColor(im_wp_save, cv2.COLOR_BGR2RGB))
-                            cv2.imwrite(save_path + 'image_circled/img_'+str(index)+ '.png',cv2.cvtColor(im_wp, cv2.COLOR_BGR2RGB))
-                            np.save(save_path + 'gradient/gx_'+ str(index) + '.npy', grad_x)
-                            np.save(save_path + 'gradient/gy_'+ str(index) + '.npy', grad_y)
+                            if show_data:
+                                cv2.imshow('contact_mask', contact_mask.astype(np.uint8))
+                                cv2.imshow('image', cv2.cvtColor(introduce_noise(im_wp, noise_coefs)*mask_bd, cv2.COLOR_BGR2RGB))
+                                cv2.imshow('grad_x',grad_x)
+                                cv2.imshow('grad_y',grad_y)
+                                cv2.waitKey(100)
+                            if save_data:
+                                index = index + 1
+                                if not os.path.exists(save_path + 'image/'):
+                                    os.makedirs(save_path + 'image/')
+                                if not os.path.exists(save_path + 'image_circled/'):
+                                    os.makedirs(save_path + 'image_circled/')
+                                if not os.path.exists(save_path + 'gradient/'):
+                                    os.makedirs(save_path + 'gradient/')
+                                if not os.path.exists(save_path + 'heightmap/'):
+                                    os.makedirs(save_path + 'heightmap/')
 
-                            ## Save the raw image blended with the depth map
-                            io = Image.open(save_path + 'image_circled/img_'+str(index)+ '.png').convert("RGB") # image_for_input
-                            ii = Image.open(save_path + 'heightmap/'+str(index) + '_' + name + '.png').resize(io.size).convert("RGB") #depth map
-                            result = Image.blend(io, ii, alpha=0.5)
-                            result.save(save_path + 'heightmap/'+str(index) + '_blend.png')
+                                ## Save the depth map with the maximum height in the name
+                                depth_map = poisson_reconstruct(grad_y, grad_x)
+                                name = str(np.amax(depth_map))
+                                cv2.imwrite(save_path + 'heightmap/'+str(index) + '_' + name + '.png', depth_map*1000)
+
+                                ## Save raw image, raw_image with circle and the gradients
+                                cv2.imwrite(save_path + 'image/img_'+str(index)+ '.png',cv2.cvtColor(introduce_noise(im_wp_save, noise_coefs)*mask_bd, cv2.COLOR_BGR2RGB))
+                                cv2.imwrite(save_path + 'image_circled/img_'+str(index)+ '.png',cv2.cvtColor(introduce_noise(im_wp, noise_coefs)*mask_bd, cv2.COLOR_BGR2RGB))
+                                np.save(save_path + 'gradient/gx_'+ str(index) + '.npy', grad_x)
+                                np.save(save_path + 'gradient/gy_'+ str(index) + '.npy', grad_y)
+
+                                ## Save the raw image blended with the depth map
+                                io = Image.open(save_path + 'image_circled/img_'+str(index)+ '.png').convert("RGB") # image_for_input
+                                ii = Image.open(save_path + 'heightmap/'+str(index) + '_' + name + '.png').resize(io.size).convert("RGB") #depth map
+                                result = Image.blend(io, ii, alpha=0.5)
+                                result.save(save_path + 'heightmap/'+str(index) + '_blend.png')

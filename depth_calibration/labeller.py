@@ -103,10 +103,10 @@ class Labeller():
         dz_dy_mat = (dz_dy_mat * mask).astype(np.float32)
 
         h_px = np.amax(poisson_reconstruct(dz_dy_mat, dz_dx_mat))
+        if h_px < 1e-5 or h_mm < 0.1:
+            return None, None
         h_px2mm = h_mm/h_px
 
-        if h_px == 0 or h_mm < 0.1:
-            return None, None
         return dz_dx_mat*h_px2mm, dz_dy_mat*h_px2mm
 
     def __get_semicone_1_gradient(self, center_px, radius_px):
@@ -160,10 +160,9 @@ class Labeller():
 
 
         h_px = np.amax(poisson_reconstruct(dz_dy_mat, dz_dx_mat)) #TODO: keep in mind y, x   vs. x, y
-        h_px2mm = h_mm/h_px
-
-        if h_px == 0 or h_mm < 0.1:
+        if h_px < 1e-5 or h_mm < 0.1:
             return None, None
+        h_px2mm = h_mm/h_px
 
         return dz_dx_mat*h_px2mm, dz_dy_mat*h_px2mm
 
@@ -216,9 +215,9 @@ class Labeller():
         dz_dy_mat = mask_pp * dz_dy_mat
 
         h_px = np.amax(poisson_reconstruct(dz_dy_mat, dz_dx_mat))
-        h_px2mm = h_mm/h_px
-        if h_px == 0 or h_mm < 0.1:
+        if h_px < 1e-5 or h_mm < 0.1:
             return None, None
+        h_px2mm = h_mm/h_px
         return dz_dx_mat*h_px2mm, dz_dy_mat*h_px2mm
 
     def get_gradient_matrices(self, center_px, radius_px, shape='sphere', sphere_R_mm=28.5/2):

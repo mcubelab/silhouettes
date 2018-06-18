@@ -3,11 +3,11 @@ from grad_to_depth import *
 from depth_helper import *
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-SHAPES_ROOT = os.getcwd().split("/shapes/")[0] + "/shapes/"
+SHAPES_ROOT = os.getcwd().split("/shapes/")[0] + "/weights/"
 
 
-path = "data/objects3/"; pictures_range = range(11, 13)
-#path = "/media/mcube/data/shapes_data/ball_D28.5/"; pictures_range = range(1505,2011)
+path = "data/objects3/"; pictures_range = range(0, 13)
+path = "/media/mcube/data/shapes_data/ball_D28.5/"; pictures_range = range(40,3011)
 #path = "/media/mcube/data/shapes_data/semicone_1/"; pictures_range = range(1015,2011)
 
 for img_number in pictures_range:
@@ -15,7 +15,7 @@ for img_number in pictures_range:
 
     test_image = cv2.imread(path + "GS2_" + str(img_number) + '.png')
     weights_file = 'depth_calibration/weights/weights.color_semicone_obj.xy.hdf5'
-    weights_file = 'depth_calibration/weights/weights.color_semicone1_and_sphere.xy.hdf5'
+    weights_file = 'weights.color_semicone1_and_sphere.xy.hdf5'
     '''
       #Investigate if we can change distribution
     test_image2 = cv2.imread(path + "GS2_" + str(1) + '.png')
@@ -31,8 +31,10 @@ for img_number in pictures_range:
     #cv2.destroyAllWindows()
     '''
     depth_map = raw_gs_to_depth_map(
-        test_image,
+	   gs_id = 2,
+        test_image=test_image,
         model_path=SHAPES_ROOT + weights_file,
-        plot=True,
-        save=False,
-        path='')
+        plot=False,
+        save=True,
+        path=path+'converted/',
+        img_number = img_number)

@@ -47,24 +47,43 @@ def preprocess_label(arr):
     f = np.vectorize(f, otypes=[np.float])
     return f(arr)
 
+
+def get_rgb_noise(weight_mean, weight_dev, biass_mean, biass_dev):
+    noise_coefs = []
+    for i in range(3):
+        weight = np.random.normal(weight_mean, weight_dev, 1)
+        biass = np.random.normal(biass_mean, biass_dev, 1)
+        noise_coefs.append((weight, biass))
+    return noise_coefs
+
+def introduce_noise(img, noise_coefs):
+    # Applies: channel = weight*channel + biass
+    # to each channel, where weight, biass are random normal values with the given mean, dev
+    for i in range(3):
+        weight, biass = noise_coefs[i]
+        img[...,i] = weight*img[...,i] + biass
+    return img
+
 def posprocess_label(arr):
     def f(x):
         return float(x)/label_mult_factor
     f = np.vectorize(f, otypes=[np.float])
     return f(arr)
 
-def plot_depth_map(depth_map, show=True, save=False, path=''):
+def plot_depth_map(depth_map, show=True, save=False, path='', img_number = ''):
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     X = np.arange(depth_map.shape[0], step=1)
     Y = np.arange(depth_map.shape[1], step=1)
     X, Y = np.meshgrid(X, Y)
     surf = ax.plot_surface(X, Y, np.transpose(depth_map), rstride=1, cstride=1, cmap=cm.BuPu, linewidth=0, antialiased=False)
-    #ax.set_zlim(0, 5)
+    ax.set_zlim(0, 2)
     ax.view_init(elev=90., azim=0)
+    ax.view_init(elev=45., azim=5)
     # ax.axes().set_aspect('equal')
+    
     if save:
-        plt.savefig(path + "img_" + str(img_number) + "color_3_objs_1000_points_each_same_h.png")
+        plt.savefig(path + "img_" + str(img_number) + ".png")
     if show:
         plt.show()
 
@@ -114,7 +133,7 @@ def poisson_reconstruct(grady, gradx):
 def custom_loss(y_true, y_pred):
     return K.sum(K.square(y_true-y_pred))
 
-def raw_gs_to_depth_map(gs_id=2, test_image=None, ref = None, model_path = None, plot=False, save=False, path=''):
+def raw_gs_to_depth_map(gs_id=2, test_image=None, ref = None, model_path = None, plot=False, save=False, path='', img_number = ''):
     start = time.time()
 
     if ref == None:
@@ -125,8 +144,8 @@ def raw_gs_to_depth_map(gs_id=2, test_image=None, ref = None, model_path = None,
     test_image = im_wp*mask_color
     test_image = test_image[...,[2,1,0]]
 
-    plt.imshow(test_image)
-    plt.show()
+    #plt.imshow(test_image)
+    #plt.show()
 
     keras.losses.custom_loss = custom_loss
     model = load_model(model_path)
@@ -161,7 +180,7 @@ def raw_gs_to_depth_map(gs_id=2, test_image=None, ref = None, model_path = None,
     print time.time() - start
 
     if plot or save:
-        plot_depth_map(depth_map, show=plot, save=save, path=path)
+        plot_depth_map(depth_map, show=plot, save=save, path=path, img_number=img_number)
 
     return depth_map
 
