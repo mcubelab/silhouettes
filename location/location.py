@@ -129,7 +129,7 @@ class Location():
             mean = np.mean(height_map)
             dev = np.std(height_map)
             a = mean - dev
-            height_map = (height_map > 0.1)*height_map*10
+            height_map = (height_map > 0.1)*height_map*10  # NOTE: We are multiplying the height by 10 for visualization porpuses!!!!!
             height_map = (height_map > a)*height_map
             height_map = cv2.resize(height_map, dsize=(size[1], size[0]), interpolation=cv2.INTER_LINEAR)
             # cv2.imshow('a', height_map)
@@ -196,6 +196,13 @@ class Location():
         print 'Stitched'
         return pc.pc_data
 
+    def translate_poincloud(self, pointcloud, v):
+        new_pc = []
+        for elem in pointcloud:
+            new_elem = (elem[0]+v[0], elem[1]+v[1], elem[2]+v[2])
+            new_pc.append(new_elem)
+        return new_pc
+
     def get_global_pointcloud(self, gs_id, directory, touches, global_pointcloud):
         for i in touches:
             print "Processing img " + str(i) + "..."
@@ -208,6 +215,7 @@ class Location():
             if global_pointcloud is None:
                 global_pointcloud = local_pointcloud
             else:
+                # local_pointcloud = self.translate_poincloud(local_pointcloud, v=(0, 5*i, 0))
                 global_pointcloud = self.simple_pointcloud_merge(global_pointcloud, local_pointcloud)
         return global_pointcloud
 
@@ -215,7 +223,7 @@ if __name__ == "__main__":
     loc = Location()
 
     touch_list = [0, 5, 23, 25]
-    touch_list = [0, 5, 23]
+    # touch_list = [0, 5, 23]
     global_pointcloud = loc.get_global_pointcloud(
         gs_id=2,
         directory='sample/',

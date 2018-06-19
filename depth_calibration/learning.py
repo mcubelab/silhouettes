@@ -68,7 +68,7 @@ def get_data_paths(paths, gradient, val_fraction=0.2, max_data_points=99999):
         for inp in np.sort(inputs_raw):
             if '.png' in inp and 'img_' in inp:
                 a = [int(s) for s in inp.replace('_', ' ').replace('.', ' ').split() if s.isdigit()]
-                if a[0] > 2000:
+                if a[0] > 3000:
                     continue
                     # pass
                 inputs.append(path + inp)
@@ -89,12 +89,10 @@ def get_data_paths(paths, gradient, val_fraction=0.2, max_data_points=99999):
 
 def train(pretrain = False):
     # Params:
-    weights_filepath = "weights/weights.color_semicone1_and_sphere_v3.xy.hdf5"
+    weights_filepath = "weights/weights.augmented_v1.xy.hdf5"
 
-    paths = ["data/test_semicone1/image/", "data/test_sphere/image/" ]
+    paths = ["/media/mcube/data/shapes_data/PROCESSED/semicone1_augmented/image/", "/media/mcube/data/shapes_data/PROCESSED/processed_color_D28.5_augmented/image/" ]
     # paths = ["data/color3_processed_h_mm/", "data/processed_color_D28.5_h_mm/image/", "data/semicone_1_processed_h_mm/"]
-    # paths = ["data/processed_color_D28.5/image/"]
-    # paths = ["data/semicone_1_processed_h_mm/image/"]
 
     # Datasets
     inputs_train, labels_train, inputs_val, labels_val = get_data_paths(paths=paths, gradient='x', val_fraction=0.2, max_data_points=9999999)

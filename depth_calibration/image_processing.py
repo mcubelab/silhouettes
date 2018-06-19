@@ -105,15 +105,12 @@ if __name__ == "__main__":
 
     ## Paths to obtain Gelsight raw images
     load_path = "/media/mcube/data/shapes_data/semicone_1/"
-    # load_path = "/media/mcube/data/shapes_data/ball_D28.5/"
+    #load_path = "/media/mcube/data/shapes_data/ball_D28.5/"
     # load_path = "/media/mcube/data/shapes_data/color3/"
     root, dirs, files = os.walk(load_path).next()
 
     ## Path to save new images and gradients
-    # save_path = "data/semicone_1_processed_h_mm/"
-    # save_path = "data/processed_color_D28.5_h_mm/"
-    save_path = "data/test_semicone1_augmented/"
-    #save_path = "data/test_sphere/"
+    save_path = "/media/mcube/data/shapes_data/PROCESSED/semicone_1_augmented/"
 
     ## Select shape!
     # geometric_shape = 'sphere'
@@ -125,7 +122,7 @@ if __name__ == "__main__":
     show_data = False
 
     ## Augmented data params
-    augmented_data_copies = 4  # Number of copies of augmented data that will be created and saved, 0 if you don't want it
+    augmented_data_copies = 3  # Number of copies of augmented data that will be created and saved, 0 if you don't want it
     weight_mean = 1.
     weight_dev = 0.05
     biass_mean = 0.
@@ -242,11 +239,14 @@ if __name__ == "__main__":
                         # '''
 
                         # We show/save the augmented data copies
-                        for i in range(augmented_data_copies+1):
-                            if i == 0:
+                        for iii in range(augmented_data_copies+1):
+                            if iii == 0:
                                 noise_coefs = [(1, 0), (1, 0), (1, 0)]
                             else:
                                 noise_coefs = get_rgb_noise(weight_mean, weight_dev, biass_mean, biass_dev)
+                                # print '#####Noise coefs:'
+                                # print noise_coefs
+                                # print '#####'
 
 
                             if show_data:
