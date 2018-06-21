@@ -16,6 +16,7 @@ class Labeller():
     def __init__(self):
         params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
         self.mm2px_param_list = params_dict['params_gs2']
+        self.px_to_mm_average = 1/12.5
 
         input_shape = params_dict['input_shape_gs2'][0:2]
         print input_shape
@@ -180,7 +181,7 @@ class Labeller():
         R_px = R_mm*RR_px/RR_mm  # TODO: Think a way of improving this
         r_px = r_mm*RR_px/RR_mm  # TODO: Think a way of improving this
 
-        EPS = 1e-5
+        _EPS = 1e-5
         h_mm = (RR_mm - R_mm)*cone_slope
 
         x_dif = (self.x_pixel - center_px[0]).astype(np.float32)
@@ -220,7 +221,64 @@ class Labeller():
         h_px2mm = h_mm/h_px
         return dz_dx_mat*h_px2mm, dz_dy_mat*h_px2mm
 
-    def get_gradient_matrices(self, center_px, radius_px, shape='sphere', sphere_R_mm=28.5/2):
+    def get_semipyramid_gradient(self, center_px, angle, sides_px, slope=np.tan(np.radians(15))):
+        s1, s2 = sides_px
+        if abs(float(s1)/float(s2) - 1) > 0.2:
+            return None, None
+
+        C_px = (s1 + s2)/2
+        C_mm = C_px*self.px_to_mm_average
+        c_mm = 15
+
+
+        print C_px, C_mm, c_mm
+        print s1, s2
+        print angle
+        print center_px
+        angle = np.radians(-45+angle)
+
+        if c_mm > C_mm:
+            return None, None
+
+        H_mm = C_mm*np.tan(slope)/2
+        h_mm = c_mm*np.tan(slope)/2
+
+        xx = (np.transpose(self.x_pixel) - center_px[1]).astype(np.float32)
+        yy = (np.transpose(self.y_pixel) - center_px[0]).astype(np.float32)
+
+        print self.x_pixel.shape
+        x = xx*np.cos(angle) - yy*np.sin(angle)
+        y = yy*np.cos(angle) + xx*np.sin(angle)
+
+        d = C_px/np.sqrt(2)
+        z = slope*np.maximum(0, np.minimum(np.minimum(d-x-y, d-x+y), np.minimum(d+x-y, d+x+y)))
+
+        z = (z/np.amax(z))*H_mm
+        z = z*(z < (H_mm - h_mm))+(H_mm - h_mm)*(z >= (H_mm - h_mm))
+
+        # def plot(depth_map):
+        #     fig = plt.figure()
+        #     ax = fig.gca(projection='3d')
+        #     X = np.arange(depth_map.shape[0], step=1)
+        #     Y = np.arange(depth_map.shape[1], step=1)
+        #     X, Y = np.meshgrid(X, Y)
+        #     surf = ax.plot_surface(X, Y, np.transpose(depth_map), rstride=1, cstride=1, cmap=cm.BuPu, linewidth=0, antialiased=False)
+        #     ax.set_zlim(0, 2)
+        #     ax.view_init(elev=90., azim=0)
+        #     # ax.axes().set_aspect('equal')
+        #     # plt.savefig(path + "img_" + str(img_number) + "_semicone_obj_weights.png")
+        #     plt.show()
+        # plot(z)
+        # cv2.imshow('z', z)
+        # cv2.waitKey(0)
+
+        gy, gx = np.gradient(z)
+        print z.shape
+        print gx.shape
+
+        return gx, gy
+
+    def get_gradient_matrices(self, center_px, radius_px=0, angle=None, sides_px=None, shape='sphere', sphere_R_mm=28.5/2):
         # Everyhting given in pixel space
         if shape == 'sphere':
             gx, gy = self.__get_sphere_gradient(center_px, radius_px, R_mm=sphere_R_mm)
@@ -228,8 +286,11 @@ class Labeller():
         if shape == 'semicone_1':
             gx, gy = self.__get_semicone_1_gradient(center_px, radius_px)
             return gx, gy
-        if shape == 'semicone_2':
+        if shape == 'hollowcone':
             gx, gy = self.get_semicone_2_gradient(center_px, radius_px)
+            return gx, gy
+        if shape == 'semipyramid':
+            gx, gy = self.get_semipyramid_gradient(center_px, angle, sides_px)
             return gx, gy
         return None
 

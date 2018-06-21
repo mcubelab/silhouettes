@@ -62,6 +62,13 @@ def contact_detection(im,im_ref,low_bar,high_bar):
     img_dd = cv2.dilate(img_ee, kernal3, iterations=1)
     img_eee = cv2.erode(img_dd, kernal4, iterations=1)
     img_label = np.stack((np.zeros(img_dd.shape),np.zeros(img_dd.shape),img_eee),axis = 2).astype(np.uint8)
+    # cv2.imshow('img_d', img_d)
+    # cv2.imshow('img_e', img_e)
+    # cv2.imshow('img_ee', img_ee)
+    # cv2.imshow('img_ee', img_dd)
+    # cv2.imshow('img_ee', img_eee)
+    # cv2.imshow('img_label', img_label)
+    # cv2.waitKey(0)
     return img_label
 
 def creat_mask(im_gray):
@@ -104,17 +111,20 @@ def check_center(center,radius,col,row):
 if __name__ == "__main__":
 
     ## Paths to obtain Gelsight raw images
-    load_path = "/media/mcube/data/shapes_data/semicone_1/"
+    # load_path = "/media/mcube/data/shapes_data/test_hollowcone/"
+    load_path = "/media/mcube/data/shapes_data/test_semipyramid/"
     #load_path = "/media/mcube/data/shapes_data/ball_D28.5/"
     # load_path = "/media/mcube/data/shapes_data/color3/"
     root, dirs, files = os.walk(load_path).next()
 
     ## Path to save new images and gradients
-    save_path = "/media/mcube/data/shapes_data/PROCESSED/semicone_1_augmented/"
+    save_path = "/media/mcube/data/shapes_data/PROCESSED/test_semipyramid/"
 
     ## Select shape!
     # geometric_shape = 'sphere'
-    geometric_shape = 'semicone_1'
+    # geometric_shape = 'semicone_1'
+    # geometric_shape = 'hollowcone'
+    geometric_shape = 'semipyramid'
     sphere_R_mm = 28.5/2  # Only used if geometric_shape == 'sphere'
 
     ## Basic parameters
@@ -132,13 +142,23 @@ if __name__ == "__main__":
     labeller = Labeller()
 
     ## Assumption: first image has no contact and can be used as background
-    ref = cv2.imread(root+'/'+'GS2_1.png')
+    if geometric_shape == 'hollowcone':
+        ref = cv2.imread(load_path+'GS2_0.png')
+    else:
+        ref = cv2.imread(root+'/'+'GS2_1.png')
+
     ref_bs,ref_warp = calibration(ref,ref)
     mask_bd = np.load(SHAPES_ROOT + 'resources/GS2_mask_color.npy')
     kernal1 = make_kernal(30)
     kernal2 = make_kernal(10)
     col,row = ref_warp[:,:,1].shape
     x_mesh, y_mesh = np.meshgrid(range(row),range(col))
+
+    ## Max_rad param:
+    if geometric_shape == 'hollowcone':
+        max_rad = 200
+    else:
+        max_rad = 80
 
 
     ## Go through each raw gelsight image
@@ -158,14 +178,20 @@ if __name__ == "__main__":
             im_diff = im_wp.astype(np.int32) - ref_warp.astype(np.int32)
             im_diff_show = ((im_diff - np.min(im_diff))).astype(np.uint8)
             im_diff = im_diff - np.min(im_diff)
+            # cv2.imshow('im_diff_show', im_diff_show)
 
             ## Take into account different channels and create masks for the contact patch
             mask1 = (im_diff[:,:,0]-im_diff[:,:,1])>15
             mask2 = (im_diff[:,:,1]-im_diff[:,:,0])>12
+            # cv2.imshow('mask1', ((mask1)*255).astype(np.uint8))
+            # cv2.imshow('mask2', ((mask2)*255).astype(np.uint8))
                 # cv2.imshow('mask1', mask1.astype(np.uint8)*255)
                 # cv2.imshow('mask2', mask2.astype(np.uint8)*255)
             mask = ((mask1 + mask2)*255).astype(np.uint8)
+
+            mask = rgb2gray(contact_detection(rgb2gray(im_wp).astype(np.float32),rgb2gray(ref_warp).astype(np.float32),20,50))
             mask = mask*mask_bd[:,:,0]
+
                 # cv2.imshow('maskA', mask)
                 # cv2.waitKey(0)
 
@@ -173,42 +199,159 @@ if __name__ == "__main__":
             mask = cv2.erode(mask, kernal2, iterations=1)
             mask = cv2.dilate(mask, kernal2, iterations=1)
             mask = cv2.dilate(mask, make_kernal(35), iterations=1)
-            mask_color = cv2.erode(mask, kernal1, iterations=1)
+            mask_color = cv2.erode(mask, kernal1, iterations=1).astype(np.uint8)
+            # cv2.imshow('mask', mask)
 
 
+            # print mask_color.shape
             ## Detect circles if any exists
             if np.sum(mask_color)/255 > 225:  #Checks if the contact patch is big enough
                 im2,contours,hierarchy = cv2.findContours(mask_color, 1, 2)
-                (x,y),radius = cv2.minEnclosingCircle(contours[0])
-                center = (int(x),int(y))
-                if geometric_shape == 'sphere':
-                    center = (int(x)-2,int(y))  #TODO: why are we doing this?
-                    radius = int(radius*0.77)#TODO: this numbers seems a bit of a hack
-                elif geometric_shape == 'semicone_1':
-                    radius = int(radius*0.85)
-                else:
-                    radius = int(radius)   #TODO: this numbers seems a bit of a hack
+                # cv2.imshow('mask_color', im2)
+                # cv2.waitKey(0)
 
-                ## Checks if the circle found matches well with contact patch
-                mask_circle = ((x_mesh-center[0])**2 + (y_mesh-center[1])**2) < (radius)**2
-                contact = contact_detection(rgb2gray(im_wp).astype(np.float32),rgb2gray(ref_warp).astype(np.float32),20,50)
-                contact_mask = contact[:,:,2]*mask_circle
-                if np.sum(contact_mask)/255 < 50 and len(contours)> 1:
-                    (x,y),radius = cv2.minEnclosingCircle(contours[1])
-                    center = (int(x)-2,int(y))
-                    radius = int(radius*0.71)
+                (x,y), radius = (0, 0), 0
+                biggest_area = 0
+                biggest_rect = None
+                for c in contours:
+                    if geometric_shape == 'semipyramid':
+                        rect = cv2.minAreaRect(c)
+                        area = float(rect[1][0])*float(rect[1][1])
+                        if biggest_area < area:
+                            biggest_rect = rect
+                            biggest_area = area
+                    else:
+                        (x_, y_), radius_ = cv2.minEnclosingCircle(c)
+                        if radius_ > radius:
+                            (x,y), radius = (x_, y_), radius_
+                if geometric_shape != 'semipyramid':
+                    center = (int(x),int(y))
+                    if geometric_shape == 'sphere':
+                        center = (int(x)-2,int(y))  # TODO: why are we doing this?
+                        radius = int(radius*0.77)  # TODO: this numbers seems a bit of a hack
+                    elif geometric_shape == 'semicone_1':
+                        radius = int(radius*0.85)
+                    else:
+                        radius = int(radius)  # TODO: this numbers seems a bit of a hack
+
+                    raw_input("Press Enter to continue...")
+
+                    ## Checks if the circle found matches well with contact patch
                     mask_circle = ((x_mesh-center[0])**2 + (y_mesh-center[1])**2) < (radius)**2
+
                     contact = contact_detection(rgb2gray(im_wp).astype(np.float32),rgb2gray(ref_warp).astype(np.float32),20,50)
                     contact_mask = contact[:,:,2]*mask_circle
+                    # cv2.imshow('contact_mask', contact_mask)
+                    # cv2.waitKey(0)
+                    if np.sum(contact_mask)/255 < 50 and len(contours)> 1:
+                        (x,y),radius = cv2.minEnclosingCircle(contours[1])
+                        center = (int(x)-2,int(y))
+                        radius = int(radius*0.71)
+                        mask_circle = ((x_mesh-center[0])**2 + (y_mesh-center[1])**2) < (radius)**2
+                        contact = contact_detection(rgb2gray(im_wp).astype(np.float32),rgb2gray(ref_warp).astype(np.float32),20,50)
+                        contact_mask = contact[:,:,2]*mask_circle
 
-                center_ok = center[0] > 100 or center[1] > 100
-                if center_ok and radius > 30 and radius < 80 and check_center(center,radius,col,row) and np.sum(contact_mask)/255 > 50:
-                    contact = contact_detection(rgb2gray(im_wp).astype(np.float32),rgb2gray(ref_warp).astype(np.float32),20,40)
-                    contact_mask = contact[:,:,2]*mask_circle
-                    cv2.circle(im_wp,center,radius,(0,0,255),1)
-                    # print 'get gradient params: ', center, radius
-                    ## Compute gradients given center and radius
-                    grad_x, grad_y = labeller.get_gradient_matrices(center,radius, shape=geometric_shape, sphere_R_mm=sphere_R_mm)
+                    center_ok = center[0] > 100 or center[1] > 100
+                    if center_ok and radius > 30 and radius < max_rad and check_center(center,radius,col,row) and np.sum(contact_mask)/255 > 50:
+                        contact = contact_detection(rgb2gray(im_wp).astype(np.float32),rgb2gray(ref_warp).astype(np.float32),20,40)
+                        contact_mask = contact[:,:,2]*mask_circle
+                        cv2.circle(im_wp,center,radius,(0,0,255),1)
+                        # print 'get gradient params: ', center, radius
+                        ## Compute gradients given center and radius
+                        # cv2.imshow('im', im_wp)
+                        # cv2.waitKey(0)
+                        grad_x, grad_y = labeller.get_gradient_matrices(center,radius, shape=geometric_shape, sphere_R_mm=sphere_R_mm)
+                        if (grad_x is not None) and (grad_y is not None):
+
+                            ## Uncomment this to check gradients and heightmap
+
+                            #print "Max: " + str(np.amax(grad_x))
+                            #print "Min: " + str(np.amin(grad_x))
+
+                            # cv2.imshow('gx', grad_x)
+                            # cv2.imshow('gy', grad_y)
+                            # cv2.waitKey(0)
+                            depth_map = poisson_reconstruct(grad_y, grad_x)
+
+                            print "Max: " + str(np.amax(depth_map))
+
+                            def plot(depth_map):
+                                fig = plt.figure()
+                                ax = fig.gca(projection='3d')
+                                X = np.arange(depth_map.shape[0], step=1)
+                                Y = np.arange(depth_map.shape[1], step=1)
+                                X, Y = np.meshgrid(X, Y)
+                                surf = ax.plot_surface(X, Y, np.transpose(depth_map), rstride=1, cstride=1, cmap=cm.BuPu, linewidth=0, antialiased=False)
+                                ax.set_zlim(0, 2)
+                                ax.view_init(elev=90., azim=0)
+                                # ax.axes().set_aspect('equal')
+                                # plt.savefig(path + "img_" + str(img_number) + "_semicone_obj_weights.png")
+                                plt.show()
+                            depth_map = cv2.resize(depth_map, dsize=(100, 166), interpolation=cv2.INTER_LINEAR)
+                            # plot(depth_map)
+                            # '''
+
+                            # We show/save the augmented data copies
+                            for iii in range(augmented_data_copies+1):
+                                if iii == 0:
+                                    noise_coefs = [(1, 0), (1, 0), (1, 0)]
+                                else:
+                                    noise_coefs = get_rgb_noise(weight_mean, weight_dev, biass_mean, biass_dev)
+                                    # print '#####Noise coefs:'
+                                    # print noise_coefs
+                                    # print '#####'
+
+
+                                if show_data:
+                                    cv2.imshow('contact_mask', contact_mask.astype(np.uint8))
+                                    cv2.imshow('image', cv2.cvtColor(introduce_noise(im_wp, noise_coefs)*mask_bd, cv2.COLOR_BGR2RGB))
+                                    cv2.imshow('grad_x',grad_x)
+                                    cv2.imshow('grad_y',grad_y)
+                                    cv2.waitKey(100)
+                                if save_data:
+                                    index = index + 1
+                                    if not os.path.exists(save_path + 'image/'):
+                                        os.makedirs(save_path + 'image/')
+                                    if not os.path.exists(save_path + 'image_circled/'):
+                                        os.makedirs(save_path + 'image_circled/')
+                                    if not os.path.exists(save_path + 'gradient/'):
+                                        os.makedirs(save_path + 'gradient/')
+                                    if not os.path.exists(save_path + 'heightmap/'):
+                                        os.makedirs(save_path + 'heightmap/')
+
+                                    ## Save the depth map with the maximum height in the name
+                                    depth_map = poisson_reconstruct(grad_y, grad_x)
+                                    name = str(np.amax(depth_map))
+                                    cv2.imwrite(save_path + 'heightmap/'+str(index) + '_' + name + '.png', depth_map*1000)
+
+                                    ## Save raw image, raw_image with circle and the gradients
+                                    cv2.imwrite(save_path + 'image/img_'+str(index)+ '.png',cv2.cvtColor(introduce_noise(im_wp_save, noise_coefs)*mask_bd, cv2.COLOR_BGR2RGB))
+                                    cv2.imwrite(save_path + 'image_circled/img_'+str(index)+ '.png',cv2.cvtColor(introduce_noise(im_wp, noise_coefs)*mask_bd, cv2.COLOR_BGR2RGB))
+                                    np.save(save_path + 'gradient/gx_'+ str(index) + '.npy', grad_x)
+                                    np.save(save_path + 'gradient/gy_'+ str(index) + '.npy', grad_y)
+
+                                    ## Save the raw image blended with the depth map
+                                    io = Image.open(save_path + 'image_circled/img_'+str(index)+ '.png').convert("RGB") # image_for_input
+                                    ii = Image.open(save_path + 'heightmap/'+str(index) + '_' + name + '.png').resize(io.size).convert("RGB") #depth map
+                                    result = Image.blend(io, ii, alpha=0.5)
+                                    result.save(save_path + 'heightmap/'+str(index) + '_blend.png')
+
+                elif geometric_shape == "semipyramid":
+                    box = cv2.boxPoints(biggest_rect)
+                    box = np.int0(box)
+                    mask_color = mask_color*255
+
+                    center_px = biggest_rect[0]
+                    sides_px = biggest_rect[1]
+                    anlge = biggest_rect[2]
+                    # im_wp = copy.deepcopy(im_wp_save)
+                    cv2.drawContours(im_wp, [box], 0, (100, 100, 100), 2)
+
+                    # cv2.drawContours(mask_color, [box], 0, (100, 100, 100), 2)
+                    # cv2.imshow('mask_color', mask_color)
+                    # cv2.waitKey(0)
+
+                    grad_x, grad_y = labeller.get_gradient_matrices(center_px=center_px, angle=anlge, sides_px=sides_px, shape=geometric_shape, sphere_R_mm=sphere_R_mm)
                     if (grad_x is not None) and (grad_y is not None):
 
                         ## Uncomment this to check gradients and heightmap
@@ -219,23 +362,26 @@ if __name__ == "__main__":
                         # cv2.imshow('gx', grad_x)
                         # cv2.imshow('gy', grad_y)
                         # cv2.waitKey(0)
-                        depth_map = poisson_reconstruct(grad_y, grad_x)
-                        print "Max: " + str(np.amax(depth_map))
+                        # depth_map = poisson_reconstruct(grad_y, grad_x)
+                        # print "Max: " + str(np.amax(depth_map))
 
-                        def plot(depth_map):
-                            fig = plt.figure()
-                            ax = fig.gca(projection='3d')
-                            X = np.arange(depth_map.shape[0], step=1)
-                            Y = np.arange(depth_map.shape[1], step=1)
-                            X, Y = np.meshgrid(X, Y)
-                            surf = ax.plot_surface(X, Y, np.transpose(depth_map), rstride=1, cstride=1, cmap=cm.BuPu, linewidth=0, antialiased=False)
-                            ax.set_zlim(0, 2)
-                            ax.view_init(elev=90., azim=0)
-                            #ax.axes().set_aspect('equal')
-                            # plt.savefig(path + "img_" + str(img_number) + "_semicone_obj_weights.png")
-                            plt.show()
-                        depth_map = cv2.resize(depth_map, dsize=(100, 166), interpolation=cv2.INTER_LINEAR)
-                        #plot(depth_map)
+                        # cv2.imshow('depth_map', depth_map)
+                        # cv2.waitKey(0)
+
+                        # def plot(depth_map):
+                        #     fig = plt.figure()
+                        #     ax = fig.gca(projection='3d')
+                        #     X = np.arange(depth_map.shape[0], step=1)
+                        #     Y = np.arange(depth_map.shape[1], step=1)
+                        #     X, Y = np.meshgrid(X, Y)
+                        #     surf = ax.plot_surface(X, Y, np.transpose(depth_map), rstride=1, cstride=1, cmap=cm.BuPu, linewidth=0, antialiased=False)
+                        #     ax.set_zlim(0, 2)
+                        #     ax.view_init(elev=90., azim=0)
+                        #     # ax.axes().set_aspect('equal')
+                        #     # plt.savefig(path + "img_" + str(img_number) + "_semicone_obj_weights.png")
+                        #     plt.show()
+                        # depth_map = cv2.resize(depth_map, dsize=(100, 166), interpolation=cv2.INTER_LINEAR)
+                        # plot(depth_map)
                         # '''
 
                         # We show/save the augmented data copies
@@ -250,7 +396,7 @@ if __name__ == "__main__":
 
 
                             if show_data:
-                                cv2.imshow('contact_mask', contact_mask.astype(np.uint8))
+                                # cv2.imshow('contact_mask', contact_mask.astype(np.uint8))
                                 cv2.imshow('image', cv2.cvtColor(introduce_noise(im_wp, noise_coefs)*mask_bd, cv2.COLOR_BGR2RGB))
                                 cv2.imshow('grad_x',grad_x)
                                 cv2.imshow('grad_y',grad_y)
@@ -268,6 +414,9 @@ if __name__ == "__main__":
 
                                 ## Save the depth map with the maximum height in the name
                                 depth_map = poisson_reconstruct(grad_y, grad_x)
+                                print depth_map.shape
+                                print im_wp.shape
+                                # a = raw_input('aa')
                                 name = str(np.amax(depth_map))
                                 cv2.imwrite(save_path + 'heightmap/'+str(index) + '_' + name + '.png', depth_map*1000)
 

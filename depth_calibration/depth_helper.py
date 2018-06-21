@@ -77,11 +77,11 @@ def plot_depth_map(depth_map, show=True, save=False, path='', img_number = ''):
     Y = np.arange(depth_map.shape[1], step=1)
     X, Y = np.meshgrid(X, Y)
     surf = ax.plot_surface(X, Y, np.transpose(depth_map), rstride=1, cstride=1, cmap=cm.BuPu, linewidth=0, antialiased=False)
-    ax.set_zlim(0, 2)
+    ax.set_zlim(0, 10)
     ax.view_init(elev=90., azim=0)
     ax.view_init(elev=45., azim=5)
     # ax.axes().set_aspect('equal')
-    
+
     if save:
         plt.savefig(path + "img_" + str(img_number) + ".png")
     if show:
@@ -128,6 +128,8 @@ def poisson_reconstruct(grady, gradx):
     # New center + old boundary
     result = boundary
     result[1:-1,1:-1] = img_tt
+    positive_mask = (result > 0).astype(np.float32)
+    result = result*positive_mask
     return result
 
 def custom_loss(y_true, y_pred):

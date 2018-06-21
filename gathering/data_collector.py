@@ -126,7 +126,7 @@ class DataCollector():
 
 
 if __name__ == "__main__":
-    dc = DataCollector(only_one_shot=True, save_path='/media/mcube/data/shapes_data/test_1/')
+    dc = DataCollector(only_one_shot=True, save_path='/media/mcube/data/shapes_data/test_square/')
     # dc.get_data(get_cart=False, get_gs1=False, get_gs2=False, get_wsg=True, save=False, directory='', iteration=0)
     #
     # cart = dc.getCart()
@@ -135,9 +135,11 @@ if __name__ == "__main__":
 
     #rospy.init_node('listener', anonymous=True) # Maybe we should only initialize one general node
     # dc.get_data(get_cart=False, get_gs1=False, get_gs2=False, get_wsg=True, save=False, directory='', iteration=0)
-    dc.it = 2
-    dc.get_data(get_cart=False, get_gs1=False, get_gs2=True, get_wsg=False, save=False, directory='', iteration=0)
+    for ite in range(20):
+        dc.it = ite
+    # dc.it = -1
+        dc.get_data(get_cart=False, get_gs1=False, get_gs2=True, get_wsg=False, save=False, directory='', iteration=0)
 
-    time.sleep(36000)
+        time.sleep(1)
 
     # print dc.data_recorded
