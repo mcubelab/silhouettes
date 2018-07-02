@@ -9,6 +9,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 import yaml
 
+
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 
@@ -171,9 +172,9 @@ class Labeller():
         RR_mm = self.__radius_px_to_mm(center_px, radius_px)
         R_mm = 18.43/2
         r_mm = 10./2
-        print RR_mm
-        print R_mm
-        print r_mm
+        # print RR_mm
+        # print R_mm
+        # print r_mm
         if r_mm > R_mm or R_mm > RR_mm:
             return None, None
 
@@ -277,6 +278,67 @@ class Labeller():
         print gx.shape
 
         return gx, gy
+
+    def get_testtool1_gradient(self, center_px, radius_px):
+        from depth_helper import plot_depth_map
+        r_mm = self.__radius_px_to_mm(center_px, radius_px)
+        R_mm = 10.
+
+        def mm2px(d):
+            return int(d*r_px/r_mm)  # TODO: Think if we can do this better
+
+        if R_mm < r_mm:
+            return None, None
+        r_px = radius_px
+        R_px = mm2px(R_mm)
+
+        print 'mm: ', R_mm, r_mm
+        print 'px: ', R_px, r_px
+
+        x_dif = (self.x_pixel - center_px[0]).astype(np.float32)
+        y_dif = (self.y_pixel - center_px[1]).astype(np.float32)
+
+        _EPS = 1e-8
+        def set_grad(min_r_mm, max_r_mm, slope):
+            min_r_px = mm2px(min_r_mm)
+            max_r_px = mm2px(max_r_mm)
+            xgrad = slope*x_dif/(_EPS + np.sqrt(np.abs(x_dif**2 + y_dif**2)))
+            ygrad = slope*y_dif/(_EPS + np.sqrt(np.abs(x_dif**2 + y_dif**2)))
+            mask1 = ((x_dif**2 + y_dif**2) > min_r_px**2).astype(np.float32)
+            mask2 = ((x_dif**2 + y_dif**2) < max_r_px**2).astype(np.float32)
+            mask = (mask1 * mask2)
+            return xgrad*mask, ygrad*mask
+
+        gx = np.zeros(x_dif.shape)
+        gy = np.zeros(x_dif.shape)
+
+        g = set_grad(0.99, 1.07, 2)
+        gx = gx + g[0]
+        gy = gy + g[1]
+
+        g = set_grad(2.05, 3.05, -0.2)
+        gx = gx + g[0]
+        gy = gy + g[1]
+
+        g = set_grad(4.05, 4.54, 0.4)
+        gx = gx + g[0]
+        gy = gy + g[1]
+
+        g = set_grad(6.55, 7.55, -1.5)
+        gx = gx + g[0]
+        gy = gy + g[1]
+
+        '''
+        hm = poisson_reconstruct(gy, gx)
+        hm = cv2.resize(hm, dsize=(99, 96), interpolation=cv2.INTER_LINEAR)
+        plot_depth_map(hm)
+        '''
+
+        h_px = np.amax(poisson_reconstruct(gy, gx)) #TODO: keep in mind y, x   vs. x, y
+        h_mm = 0.5
+        h_px2mm = h_mm/h_px
+        return gx*h_px2mm, gy*h_px2mm
+
 
     def get_gradient_matrices(self, center_px, radius_px=0, angle=None, sides_px=None, shape='sphere', sphere_R_mm=28.5/2):
         # Everyhting given in pixel space

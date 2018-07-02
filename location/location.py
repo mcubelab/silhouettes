@@ -102,7 +102,7 @@ class Location():
 
     def get_local_pointcloud(self, gs_id, directory='', num=-1):
         # 1. We convert the raw image to height_map data
-        cart, gs1_list, gs2_list, wsg_list, force_list, gs1_back, gs2_back = self.get_contact_info(directory, num)
+        cart, gs1_list, gs2_list, wsg_list, force_list, gs1_back, gs2_back = self.get_contact_info(directory, num) #TODOM: why so many info?
         if gs_id == 1:
             pass # TODO: GET height_map
         elif gs_id == 2:
@@ -131,7 +131,7 @@ class Location():
             a = mean - dev
             height_map = (height_map > 0.1)*height_map*10  # NOTE: We are multiplying the height by 10 for visualization porpuses!!!!!
             height_map = (height_map > a)*height_map
-            height_map = cv2.resize(height_map, dsize=(size[1], size[0]), interpolation=cv2.INTER_LINEAR)
+            height_map = cv2.resize(height_map, dsize=(size[1], size[0]), interpolation=cv2.INTER_LINEAR) #TODOM: why?
             # cv2.imshow('a', height_map)
             # cv2.waitKey()
 
@@ -196,7 +196,12 @@ class Location():
         print 'Stitched'
         return pc.pc_data
 
-    def translate_poincloud(self, pointcloud, v):
+'''
+TODOM: purpose of translate_pointcloud function? visualization? 
+IDEA: it might be useful some tool that justs helps visualize all the localpointclouds without merging
+'''
+
+    def translate_pointcloud(self, pointcloud, v): 
         new_pc = []
         for elem in pointcloud:
             new_elem = (elem[0]+v[0], elem[1]+v[1], elem[2]+v[2])
@@ -205,8 +210,8 @@ class Location():
 
     def get_global_pointcloud(self, gs_id, directory, touches, global_pointcloud):
         for i in touches:
-            print "Processing img " + str(i) + "..."
             exp = str(i)
+            print "Processing img " + exp + "..."
             local_pointcloud = loc.get_local_pointcloud(
                 gs_id=gs_id,
                 directory=directory,
@@ -215,7 +220,7 @@ class Location():
             if global_pointcloud is None:
                 global_pointcloud = local_pointcloud
             else:
-                # local_pointcloud = self.translate_poincloud(local_pointcloud, v=(0, 5*i, 0))
+                # local_pointcloud = self.translate_pointcloud(local_pointcloud, v=(0, 5*i, 0))
                 global_pointcloud = self.simple_pointcloud_merge(global_pointcloud, local_pointcloud)
         return global_pointcloud
 

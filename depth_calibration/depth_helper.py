@@ -77,7 +77,7 @@ def plot_depth_map(depth_map, show=True, save=False, path='', img_number = ''):
     Y = np.arange(depth_map.shape[1], step=1)
     X, Y = np.meshgrid(X, Y)
     surf = ax.plot_surface(X, Y, np.transpose(depth_map), rstride=1, cstride=1, cmap=cm.BuPu, linewidth=0, antialiased=False)
-    ax.set_zlim(0, 10)
+    ax.set_zlim(0, 5)
     ax.view_init(elev=90., azim=0)
     ax.view_init(elev=45., azim=5)
     # ax.axes().set_aspect('equal')
