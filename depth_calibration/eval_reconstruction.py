@@ -1,5 +1,4 @@
 import os, sys
-from grad_to_depth import *
 from depth_helper import *
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -34,7 +33,7 @@ for img_number in pictures_range:
         gs_id = 2,
         test_image=test_image,
         model_path=SHAPES_ROOT + weights_file,
-        plot=False,
-        save=True,
+        plot=True,
+        save=False,
         path=path+'converted/',
         img_number = img_number)

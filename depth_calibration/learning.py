@@ -20,21 +20,14 @@ keras.losses.custom_loss = custom_loss
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 
-def createModel(input_shape):
+def createModel(input_shape, simulator=False):
     print input_shape
     model = Sequential()
-    #model.add(MaxPooling2D(pool_size=(3, 3), strides=3, input_shape=input_shape))
     model.add(Conv2D(64, (3, 3), padding='same',activation='relu', input_shape=input_shape)) #,kernel_initializer='he_normal'))
     model.add(Conv2D(64, (3, 3), padding='same',activation='relu')) #,kernel_initializer='he_normal'))
     model.add(Conv2D(64, (3, 3), padding='same',activation='relu')) #,kernel_initializer='he_normal'))
     model.add(Conv2D(64, (3, 3), padding='same',activation='relu')) #,kernel_initializer='he_normal'))
     model.add(Conv2D(64, (3, 3), padding='same',activation='relu')) #,kernel_initializer='he_normal'))
-
-    # model.add(Conv2D(64, (3, 3), padding='same',activation='relu',kernel_initializer='he_normal'))
-    # model.add(Conv2D(64, (3, 3), padding='same',activation='relu',kernel_initializer='he_normal'))
-    # model.add(Conv2D(64, (3, 3), padding='same',activation='relu',kernel_initializer='he_normal'))
-    # model.add(Conv2D(64, (3, 3), padding='same',activation='relu',kernel_initializer='he_normal'))
-    # model.add(Conv2D(64, (3, 3), padding='same',activation='relu',kernel_initializer='he_normal'))
 
     model.add(MaxPooling2D(pool_size=(2, 2), strides=2))
 
@@ -45,11 +38,12 @@ def createModel(input_shape):
     model.add(Conv2D(64, (3, 3), activation='relu')) #,kernel_initializer='he_normal'))
 
     model.add(Conv2D(64, (1, 1), activation='relu')) #,kernel_initializer='he_normal'))
-    # model.add(Conv2D(64, (1, 1), activation='relu',kernel_initializer='he_normal'))
-    # model.add(Conv2D(64, (1, 1), activation='relu',kernel_initializer='he_normal'))
 
     model.add(Dropout(0.5))
-    model.add(Conv2D(2, (1, 1), activation='tanh')) #,kernel_initializer='he_normal'))
+    if simulator:
+        model.add(Conv2D(3, (1, 1), activation='tanh')) #,kernel_initializer='he_normal'))
+    else:
+        model.add(Conv2D(2, (1, 1), activation='tanh')) #,kernel_initializer='he_normal'))
 
     # Compile model
     ad = optimizers.Adam(lr=0.0001)
@@ -89,19 +83,23 @@ def get_data_paths(paths, gradient, val_fraction=0.2, max_data_points=99999):
 
 def train(pretrain = False):
     # Params:
-    weights_filepath = "weights/weights.augmented_v1.xy.hdf5"
+    simulator = True
+    weights_filepath = "weights/weights.test_sim_v2.hdf5"
 
-    paths = ["/media/mcube/data/shapes_data/PROCESSED/semicone1_augmented/image/", "/media/mcube/data/shapes_data/PROCESSED/processed_color_D28.5_augmented/image/" ]
-    # paths = ["data/color3_processed_h_mm/", "data/processed_color_D28.5_h_mm/image/", "data/semicone_1_processed_h_mm/"]
+    #paths = ["/media/mcube/data/shapes_data/PROCESSED/semicone1_augmented/image/", "/media/mcube/data/shapes_data/PROCESSED/processed_color_D28.5_augmented/image/" ]
+    # paths = ["/media/mcube/data/shapes_data/PROCESSED/processed_color_D28.5_h_mm/image/", "/media/mcube/data/shapes_data/PROCESSED/semicone_1_processed_h_mm/image/"]
+    paths = ["/media/mcube/data/shapes_data/PROCESSED/semicone_1_processed_h_mm/image/"]
 
     # Datasets
-    inputs_train, labels_train, inputs_val, labels_val = get_data_paths(paths=paths, gradient='x', val_fraction=0.2, max_data_points=9999999)
+    inputs_train, labels_train, inputs_val, labels_val = get_data_paths(paths=paths, gradient='x', val_fraction=0.2, max_data_points=999999)
     print "Train size: " + str(len(inputs_train))
     print "Validation size: " + str(len(inputs_val))
 
     # Input/output shape (change it in resources/params.yaml)
     params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
     input_shape = params_dict['input_shape_gs2']
+    if simulator:
+        input_shape[2] = 4  # HACK
     input_image_shape = params_dict['input_shape_gs2'][0:2]
     output_shape = params_dict['output_shape_gs2'][0:2]
 
@@ -109,15 +107,15 @@ def train(pretrain = False):
     train_batch_size = 8
     val_batch_size = 8
 
-    training_generator = DataGenerator(inputs_train, labels_train, batch_size=train_batch_size, dim_in=input_image_shape, dim_out=output_shape)
-    validation_generator = DataGenerator(inputs_val, labels_val, batch_size=val_batch_size, dim_in=input_shape, dim_out=output_shape)
+    training_generator = DataGenerator(inputs_train, labels_train, batch_size=train_batch_size, dim_in=input_image_shape, dim_out=output_shape, simulator=simulator)
+    validation_generator = DataGenerator(inputs_val, labels_val, batch_size=val_batch_size, dim_in=input_shape, dim_out=output_shape, simulator=simulator)
 
     # Load weights
     history_save_filename=weights_filepath.replace(".hdf5", "_hist")
     if pretrain:
         model = load_model(weights_filepath)
     else:
-        model = createModel(input_shape=input_shape)
+        model = createModel(input_shape=input_shape, simulator=simulator)
 
     # Checkpoint
     checkpoint = ModelCheckpoint(weights_filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='min')
@@ -128,8 +126,9 @@ def train(pretrain = False):
     validation_steps = int(np.floor(len(inputs_val)/val_batch_size))
     print 'Steps validation: ', validation_steps
 
+    print validation_steps
     # Run learning
-    history = model.fit_generator(generator=training_generator, steps_per_epoch=train_steps, epochs=100, validation_data=validation_generator, validation_steps= validation_steps,callbacks=callbacks_list, workers=8, use_multiprocessing=True)
+    history = model.fit_generator(generator=training_generator, steps_per_epoch=train_steps, epochs=100, validation_data=validation_generator, validation_steps=validation_steps, callbacks=callbacks_list, workers=8, use_multiprocessing=True)
 
     # Save histoy file
     def save_file(filename, var):

@@ -309,35 +309,85 @@ class Labeller():
             mask = (mask1 * mask2)
             return xgrad*mask, ygrad*mask
 
-        gx = np.zeros(x_dif.shape)
-        gy = np.zeros(x_dif.shape)
+        # gx = np.zeros(x_dif.shape)
+        # gy = np.zeros(x_dif.shape)
+        #
+        # g = set_grad(0.99, 1.07, 2)
+        # gx = gx + g[0]
+        # gy = gy + g[1]
+        #
+        # g = set_grad(2.05, 3.05, -0.2)
+        # gx = gx + g[0]
+        # gy = gy + g[1]
+        #
+        # g = set_grad(4.05, 4.54, 0.4)
+        # gx = gx + g[0]
+        # gy = gy + g[1]
+        #
+        # g = set_grad(6.55, 7.55, -1.5)
+        # gx = gx + g[0]
+        # gy = gy + g[1]
+        #
+        # '''
+        # hm = poisson_reconstruct(gy, gx)
+        # hm = cv2.resize(hm, dsize=(99, 96), interpolation=cv2.INTER_LINEAR)
+        # plot_depth_map(hm)
+        # '''
+        #
+        # h_px = np.amax(poisson_reconstruct(gy, gx)) #TODO: keep in mind y, x   vs. x, y
+        # h_mm = 0.5
+        # h_px2mm = h_mm/h_px
+        # return gx*h_px2mm, gy*h_px2mm
 
-        g = set_grad(0.99, 1.07, 2)
-        gx = gx + g[0]
-        gy = gy + g[1]
 
-        g = set_grad(2.05, 3.05, -0.2)
-        gx = gx + g[0]
-        gy = gy + g[1]
+        def set_height(min_r_mm, max_r_mm, min_h, max_h):
+            min_r_px = mm2px(min_r_mm)
+            max_r_px = mm2px(max_r_mm)
+            print min_r_px
+            print max_r_px
+            hm = np.zeros(x_dif.shape)
+            if min_h == max_h or min_r_px==max_r_px:
+                hm = hm + min_h
+            elif min_h > max_h:
+                r = min_r_px
+                R = max_r_px
+                h = min_h
+                H = max_h
+                delta = (r*H-h*R)/(r-R)
+                # delta = (r*H+h*R)/(r+R)
+                ro = abs(R/(H-delta))
+                hm = -np.sqrt(np.abs(x_dif**2 + y_dif**2)/(ro**2)) + delta
+            else:
+                r = min_r_px
+                R = max_r_px
+                h = min_h
+                H = max_h
+                # delta = (r*H-h*R)/(r-R)
+                delta = (r*H+h*R)/(r+R)
+                ro = abs(R/(H-delta))
+                hm = np.sqrt(np.abs(x_dif**2 + y_dif**2)/(ro**2)) + delta
+            mask1 = ((x_dif**2 + y_dif**2) >= min_r_px**2).astype(np.float32)
+            mask2 = ((x_dif**2 + y_dif**2) < max_r_px**2).astype(np.float32)
+            mask = (mask1 * mask2)
+            return hm*mask
 
-        g = set_grad(4.05, 4.54, 0.4)
-        gx = gx + g[0]
-        gy = gy + g[1]
+        h = np.zeros(x_dif.shape)
+        h = h + set_height(0, 1, 0.4, 0.4)
+        # h = h + set_height(1, 1.05, 0.4, 0.5)
+        h = h + set_height(1.05, 2.05, 0.5, 0.5)
+        h = h + set_height(2.05, 3.05, 0.5, 0.3)
+        h = h + set_height(3.05, 4.05, 0.3, 0.3)
+        # print '>'
+        h = h + set_height(4.05, 4.55, 0.3, 0.5)
+        # a = set_height(1, 6, 0, 1)
+        # cv2.imshow('a', a)
+        # cv2.waitKey(0)
+        # print '>'
+        h = h + set_height(4.55, 6.55, 0.5, 0.5)
+        h = h + set_height(6.55, 6.883, 0.5, 0)
 
-        g = set_grad(6.55, 7.55, -1.5)
-        gx = gx + g[0]
-        gy = gy + g[1]
+        return h
 
-        '''
-        hm = poisson_reconstruct(gy, gx)
-        hm = cv2.resize(hm, dsize=(99, 96), interpolation=cv2.INTER_LINEAR)
-        plot_depth_map(hm)
-        '''
-
-        h_px = np.amax(poisson_reconstruct(gy, gx)) #TODO: keep in mind y, x   vs. x, y
-        h_mm = 0.5
-        h_px2mm = h_mm/h_px
-        return gx*h_px2mm, gy*h_px2mm
 
 
     def get_gradient_matrices(self, center_px, radius_px=0, angle=None, sides_px=None, shape='sphere', sphere_R_mm=28.5/2):

@@ -6,15 +6,9 @@ center_px = (200, 200)
 radius_px = 100
 
 l = Labeller()
-gx, gy = l.get_testtool1_gradient(center_px, radius_px)
+hm = l.get_testtool1_gradient(center_px, radius_px)
 
-# cv2.imshow('x', gx)
-# cv2.imshow('y', gy)
-# cv2.waitKey(0)
-
-hm = poisson_reconstruct(gy, gx)
-
-hm = cv2.resize(hm, dsize=(99, 96), interpolation=cv2.INTER_LINEAR)
+hm = cv2.resize(hm, dsize=(99*2, 96*2), interpolation=cv2.INTER_LINEAR)
 
 point_list = [
     (38, 40),
