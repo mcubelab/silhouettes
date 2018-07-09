@@ -4,11 +4,11 @@ Scope:
  - **Global Shape:** From multiple raw GelSlim images and robot poses to global shape reconstruction
  - **GelSlim simulation:** From virtual heightmap to simulated GelSlim picture
 
-# Things you can do:
+### Things you can do:
 
-## 1. Gather Data:
+# 1. Gather Data:
 
-### Capture 1 Picture [No robot movement]:
+## Capture 1 Picture [No robot movement]:
 Initialize pman and run: 0-roscore, 1-robotconfig-real, 5-rviz
 > cd gathering
 
@@ -25,7 +25,7 @@ Make sure in __name__ == "__main__":
 You can control+c the program once you see something written in the Terminal (there is a deault delay otherwise)
 
 
-### Capture Video [No robot movement]:
+## Capture Video [No robot movement]:
 Initialize pman and run: 0-roscore, 1-robotconfig-real, 5-rviz
 > cd gathering
 
@@ -43,7 +43,7 @@ Make sure in __name__ == "__main__":
 You can control+c the program whenever you think you have enough data
 
 
-### Predefined Tactile Exploration [Robot movement]:
+## Predefined Tactile Exploration [Robot movement]:
 Initialize pman and run: 0-roscore, 1-robotconfig-real, 2-abb, 3-hand, 5-rviz
 > cd gathering
 
@@ -57,7 +57,7 @@ In __name__ == "__main__":
 
 > python main_movement.py
 
-## 2. Calibrate the GelSlim position wrt World:
+# 2. Calibrate the GelSlim position wrt World:
 Steps:
  0. Change the robot finger for the calibraton tool and touch characteristic points in the environment. Take note of the (x, y, z) position wrt the base of the robot. Put the finger again.
  1. Using the **Predefined Tactile Exploration methodology** touch around the areas from, which you have characteristic points saved
@@ -67,9 +67,9 @@ Steps:
  > open fitting_package.py
 
 In __name__ == "__main__":
- 1. If your characteristic points are squares, border or line, then the positions are precalculated, uncomment the corresponding block and run the program, otherwise, you'll need to create a custom point_list in **def get_real_point_list()**
- 2. Change the touches_list to range of the number of touches you have for that particular touching set.
- 3. If you want to preload from previous automatic saving put the path to already_done
+ 2.1. If your characteristic points are squares, border or line, then the positions are precalculated, uncomment the corresponding block and run the program, otherwise, you'll need to create a custom point_list in **def get_real_point_list()**
+ 2.2. Change the touches_list to range of the number of touches you have for that particular touching set.
+ 2.3. If you want to preload from previous automatic saving put the path to already_done
  
  > python fitting_package.py
  
@@ -77,3 +77,51 @@ In __name__ == "__main__":
  
  4. 
  > open world_calib.py
+
+In __name__ == "__main__": Enter the .npy paths generated in the previous step into file_list
+
+5. 
+> python world_calib.py
+
+6. Copy the parameters printed in the terminal to the resources/params.yaml
+
+# 3. Calibrate the GelSlim height map:
+0. If you need to record new training data, follow the steps shown in **Capture Video [No robot movement]**
+
+1. First we will preprocess the data:
+> cd depth_calibration
+
+> open image_processing.py
+
+2.
+In __name__ == "__main__":
+2.1. in load_path enter the folder with the recorded data
+
+2.2 in save_path enter were you want to save it
+
+2.3 enter which geometric_shape you will be processing (sphere, semicone_1, hollowcone, semipyramid), if sphere enter sphere_R_mm too
+
+2.4 Enter how many copies of data augmentation you want in augmented_data_copies (0 if you don't want to augment)
+
+3.
+> python image_processing.py
+
+(do this for each object you want to train)
+
+4. Training the model:
+> open learning.py
+
+In train(...):
+4.1 simulator=False
+
+4.2 Make sure you change the weights_filepath (so that it doesn't overwrite)
+
+4.3 Enter the paths of the processed data you want to use for the training (the path to the folder with the processed GSimages)
+
+4.4 You can limit the amount of data by changing the param max_data_points
+
+(to change input/output sizes you can edit the file resources/params.yaml, to change generator params you can edit depth_calibration/Datagenerator.py)
+
+5.
+ > python learning.py
+ 
