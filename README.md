@@ -161,4 +161,4 @@ In train(...):
 
 (to change input/output sizes you can edit the file resources/params.yaml, to change generator params you can edit depth_calibration/Datagenerator.py)
 
-**Note:** What we are doing here is using the same network architecture but changing the input by to output and the output by the input and the first and last layer to match dimensions.
+**Note:** What we are doing here is using the same network architecture but changing input by output and output by input and the first and last layer to match dimensions.
