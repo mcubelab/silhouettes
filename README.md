@@ -67,8 +67,11 @@ Steps:
  > open fitting_package.py
 
 In __name__ == "__main__":
+
  2.1. If your characteristic points are squares, border or line, then the positions are precalculated, uncomment the corresponding block and run the program, otherwise, you'll need to create a custom point_list in **def get_real_point_list()**
+
  2.2. Change the touches_list to range of the number of touches you have for that particular touching set.
+
  2.3. If you want to preload from previous automatic saving put the path to already_done
  
  > python fitting_package.py
@@ -95,13 +98,14 @@ In __name__ == "__main__": Enter the .npy paths generated in the previous step i
 
 2.
 In __name__ == "__main__":
+
 2.1. in load_path enter the folder with the recorded data
 
-2.2 in save_path enter were you want to save it
+2.2. in save_path enter were you want to save it
 
-2.3 enter which geometric_shape you will be processing (sphere, semicone_1, hollowcone, semipyramid), if sphere enter sphere_R_mm too
+2.3. enter which geometric_shape you will be processing (sphere, semicone_1, hollowcone, semipyramid), if sphere enter sphere_R_mm too
 
-2.4 Enter how many copies of data augmentation you want in augmented_data_copies (0 if you don't want to augment)
+2.4. Enter how many copies of data augmentation you want in augmented_data_copies (0 if you don't want to augment)
 
 3.
 > python image_processing.py
@@ -112,16 +116,49 @@ In __name__ == "__main__":
 > open learning.py
 
 In train(...):
-4.1 simulator=False
+4.1. simulator=False
 
-4.2 Make sure you change the weights_filepath (so that it doesn't overwrite)
+4.2. Make sure you change the weights_filepath (so that it doesn't overwrite)
 
-4.3 Enter the paths of the processed data you want to use for the training (the path to the folder with the processed GSimages)
+4.3. Enter the paths of the processed data you want to use for the training (the path to the folder with the processed GSimages)
 
-4.4 You can limit the amount of data by changing the param max_data_points
+4.4. You can limit the amount of data by changing the param max_data_points
 
 (to change input/output sizes you can edit the file resources/params.yaml, to change generator params you can edit depth_calibration/Datagenerator.py)
 
 5.
  > python learning.py
  
+# 3. Reconstruct global shape:
+0. Collect a **Predefined Tactile Exploration [Robot movement]:** dataset if you haven't got one.
+
+1.
+> cd location
+
+> open location.py
+
+2. In __name__ == "__main__": Enter the number of the touches you want to consider in the reconstruction in touch_list
+3. In get_global_pointcloud(...): You can comment/uncomment if what type of local pointcloud stitching you want to use (simple vs icp)
+
+> python location.py
+
+# 4. Simulate GS image from gradients:
+0. If you don't have the data, follow the steps 0. to 4. of **3. Calibrate the GelSlim height map:**
+1. 
+> cd depth_calibration
+
+> open learning.py
+
+2. In train(...): 
+
+2.1. simulator=False
+
+2.2. Make sure you change the weights_filepath (so that it doesn't overwrite)
+
+2.3. Enter the paths of the processed data you want to use for the training (the path to the folder with the processed GSimages)
+
+2.4. You can limit the amount of data by changing the param max_data_points
+
+(to change input/output sizes you can edit the file resources/params.yaml, to change generator params you can edit depth_calibration/Datagenerator.py)
+
+**Note:** What we are doing here is using the same network architecture but changing the input by to output and the output by the input and the first and last layer to match dimensions.
