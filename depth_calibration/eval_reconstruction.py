@@ -2,10 +2,10 @@ import os, sys
 from depth_helper import *
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-SHAPES_ROOT = os.getcwd().split("/shapes/")[0] + "/weights/"
+SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 
 
-path = "data/objects3/"; pictures_range = range(0, 13)
+path = "/media/mcube/data/shapes_data/test_objects/"; pictures_range = range(1, 15)
 #path = "/media/mcube/data/shapes_data/ball_D28.5/"; pictures_range = range(40,3011)
 #path = "/media/mcube/data/shapes_data/semicone_1/"; pictures_range = range(1015,2011)
 
@@ -13,8 +13,7 @@ for img_number in pictures_range:
 
 
     test_image = cv2.imread(path + "GS2_" + str(img_number) + '.png')
-    weights_file = 'depth_calibration/weights/weights.augmented_v1.xy.hdf5'
-    weights_file = 'weights.color_semicone1_and_sphere.xy.hdf5'
+    weights_file = 'depth_calibration/weights/weights.v1.hdf5'
     '''
       #Investigate if we can change distribution
     test_image2 = cv2.imread(path + "GS2_" + str(1) + '.png')

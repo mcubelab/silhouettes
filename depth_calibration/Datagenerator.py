@@ -23,7 +23,7 @@ class DataGenerator(keras.utils.Sequence):
         self.n_channels = n_channels
         self.out_channels = 2
         if simulator:
-            self.n_channels = 4  # HACK
+            self.n_channels = 5  # HACK
             self.out_channels = 3  # HACK
         self.shuffle = shuffle
         self.on_epoch_end()
@@ -73,17 +73,7 @@ class DataGenerator(keras.utils.Sequence):
 
             if self.simulator:
                 # We compute input: gx, gy, posx, posy
-                img = copy.deepcopy(preprocess_grad_for_simulation(grad_x, grad_y, gs_id=2))
-
-                # We compute output (rgb image)
-                # im_temp0 = cv2.resize(im_temp[0], dsize=(self.dim_out[1], self.dim_out[0]), interpolation=cv2.INTER_LINEAR)
-                # im_temp1 = cv2.resize(im_temp[1], dsize=(self.dim_out[1], self.dim_out[0]), interpolation=cv2.INTER_LINEAR)
-                # im_temp0 = np.expand_dims(im_temp0, axis=2)
-                # im_temp1 = np.expand_dims(im_temp1, axis=2)
-                # im_temp2 = np.concatenate((im_temp0, im_temp1), axis = 2)
-                # img[:,:,0:2] = copy.deepcopy(grad2)
-                # img[:,:,2] = img[:,:,2]*0
-                # grad = im_temp2
+                img = copy.deepcopy(preprocess_grad_for_simulation(grad_x, grad_y, gs_id=2, include_depth_chanel=True))
                 im_temp = cv2.resize(im_temp, dsize=(self.dim_out[1], self.dim_out[0]), interpolation=cv2.INTER_LINEAR)
                 grad = copy.deepcopy(im_temp)
             else:

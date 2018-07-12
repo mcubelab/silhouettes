@@ -72,19 +72,21 @@ def wb2grb(point, gripper_pos, quaternion):
     # return v[0:3] + gripper_pos
     return v[0:3]
 
-def pxb2grb(point, gs_id, gripper_state, fitting_params):
+def px2mm(point, fitting_params):
     x, y = point
+    k1, k2, k3,  l1, l2, l3,  dx, dy, dz = fitting_params
+    p1 = (x, y - half_y)
+    p2 = (p1[0]*k1 + p1[1]*k2 + k3*p1[0]*p1[1],   p1[1]*l1 + p1[0]*l2 + l3*p1[1]*p1[0])
+    return p2
+
+def pxb2grb(point, gs_id, gripper_state, fitting_params):
+    p2 = px2mm(point, fitting_params)
     if gs_id == 1:
         normal = 1
     else:
         normal = -1
-
     Dx = gripper_state['Dx'] # Obertura
     Dz = gripper_state['Dz']
-
-    k1, k2, k3,  l1, l2, l3,  dx, dy, dz = fitting_params
-    p1 = (x, y - half_y)
-    p2 = (p1[0]*k1 + p1[1]*k2 + k3*p1[0]*p1[1],   p1[1]*l1 + p1[0]*l2 + l3*p1[1]*p1[0])
     p3 = (normal*(Dx + dx), p2[1] + dy, Dz + dz + p2[0])
 
     return p3

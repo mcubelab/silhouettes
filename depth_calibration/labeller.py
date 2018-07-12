@@ -9,8 +9,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 import yaml
 
-
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from location.world_positioning import *
 SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 
 class Labeller():
@@ -26,11 +26,12 @@ class Labeller():
 
     def __compute_xy_px(self, size):
         # We precompute x_pixel, y_pixel matrices (faster later)
-        dz_dx_mat = np.zeros(size)
-        dz_dy_mat = np.zeros(size)
-        xvalues = np.array(range(size[0]))
-        yvalues = np.array(range(size[1]))
-        self.x_pixel, self.y_pixel = np.meshgrid(xvalues, yvalues)
+        xvalues = np.array(range(size[0]))  # x is from left-top to left-bottom of the image
+        yvalues = np.array(range(size[1]))  # y is from left-top to right-top of the image
+        self.x_pixel, self.y_pixel = np.meshgrid(yvalues, xvalues)
+        # print "x_pixel shape: ", self.x_pixel.shape
+        # print "y_pixel shape: ", self.y_pixel.shape
+        # a = raw_input("press key")
 
     def __distance(self, point1, point2):
         x1, y1 = point1
@@ -38,12 +39,8 @@ class Labeller():
         return np.linalg.norm((x1-x2, y1-y2))
 
     def __pos_px_to_mm(self, point):
-        (x, y) = point
-        k1, k2, k3,   l1, l2, l3,   dx, dy, dz = self.mm2px_param_list
-        p1 = (x, y - 640.0/2)
-        p2 = (p1[0]*k1 + p1[1]*k2 + k3*p1[0]*p1[1],   p1[1]*l1 + p1[0]*l2 + l3*p1[1]*p1[0])
-        #p3 = (normal*(Dx + dx), p2[1] + dy, Dz + dz + p2[0])
-        return p2
+        p = px2mm(point, self.mm2px_param_list)
+        return p
 
     def __radius_px_to_mm(self, center_px, radius_mm):
         p1_px = (center_px[0] + radius_mm, center_px[1])
@@ -62,7 +59,6 @@ class Labeller():
         d3 = np.linalg.norm(np.subtract(center_mm, p3_mm))
         d4 = np.linalg.norm(np.subtract(center_mm, p4_mm))
 
-        # print d1, d2, d3, d4
         return float(d1+d2+d3+d4)/4.
 
     def __get_sphere_gradient(self, center_px, radius_px, R_mm):
@@ -111,7 +107,7 @@ class Labeller():
 
         return dz_dx_mat*h_px2mm, dz_dy_mat*h_px2mm
 
-    def __get_semicone_1_gradient(self, center_px, radius_px):
+    def __get_semicone_gradient(self, center_px, radius_px):
         # Shape params
         r_mm = 10./2 # Smaller radius object
         cone_slope=np.tan(np.radians(20))
@@ -232,11 +228,11 @@ class Labeller():
         c_mm = 15
 
 
-        print C_px, C_mm, c_mm
-        print s1, s2
-        print angle
-        print center_px
-        angle = np.radians(-45+angle)
+        # print C_px, C_mm, c_mm
+        # print s1, s2
+        # print angle
+        # print center_px
+        angle = np.radians(45-angle)
 
         if c_mm > C_mm:
             return None, None
@@ -244,10 +240,10 @@ class Labeller():
         H_mm = C_mm*np.tan(slope)/2
         h_mm = c_mm*np.tan(slope)/2
 
-        xx = (np.transpose(self.x_pixel) - center_px[1]).astype(np.float32)
-        yy = (np.transpose(self.y_pixel) - center_px[0]).astype(np.float32)
+        xx = (self.x_pixel - center_px[0]).astype(np.float32)
+        yy = (self.y_pixel - center_px[1]).astype(np.float32)
 
-        print self.x_pixel.shape
+        # print "x_pixel: ", self.x_pixel.shape
         x = xx*np.cos(angle) - yy*np.sin(angle)
         y = yy*np.cos(angle) + xx*np.sin(angle)
 
@@ -274,8 +270,8 @@ class Labeller():
         # cv2.waitKey(0)
 
         gy, gx = np.gradient(z)
-        print z.shape
-        print gx.shape
+        # print "z shape: ", z.shape
+        # print "gx shape: ",gx.shape
 
         return gx, gy
 
@@ -395,8 +391,8 @@ class Labeller():
         if shape == 'sphere':
             gx, gy = self.__get_sphere_gradient(center_px, radius_px, R_mm=sphere_R_mm)
             return gx, gy
-        if shape == 'semicone_1':
-            gx, gy = self.__get_semicone_1_gradient(center_px, radius_px)
+        if shape == 'semicone':
+            gx, gy = self.__get_semicone_gradient(center_px, radius_px)
             return gx, gy
         if shape == 'hollowcone':
             gx, gy = self.get_semicone_2_gradient(center_px, radius_px)
@@ -409,17 +405,13 @@ class Labeller():
 
 if __name__ == "__main__":
     labeller = Labeller2()
-    x, y = labeller.get_gradient_matrices(center_px=(200, 300), radius_px=90, shape='semicone_1')
-    # print x
-    # print y
+    x, y = labeller.get_gradient_matrices(center_px=(200, 300), radius_px=90, shape='semicone')
 
     cv2.imshow('gx', x)
     cv2.imshow('gy', y)
     cv2.waitKey(0)
 
     depth_map = poisson_reconstruct(y, x)
-    print depth_map.shape
-    print "Max: " + str(np.amax(depth_map))
 
     def plot(depth_map):
         fig = plt.figure()

@@ -37,8 +37,14 @@ def calibration(img,background, gs_id=2):
         M = np.load(SHAPES_ROOT + 'resources/GS2_M_color.npy')
         rows,cols,cha = img.shape
         imgw = cv2.warpPerspective(img, M, (cols, rows))
+        # print "imgw: ", imgw.shape
+        # cv2.imshow('imgw', imgw)
+        # imgw = cv2.warpPerspective(img, M, (rows, cols))
         imgwc = imgw[:,63:-80,:]
+        # cv2.imshow('imgwc', imgwc)
+        # cv2.waitKey(0)
         bg_imgw = cv2.warpPerspective(background, M, (cols, rows))
+        # bg_imgw = cv2.warpPerspective(background, M, (rows, cols))
         bg_imgwc = bg_imgw[:,63:-80,:]
         img_blur = cv2.GaussianBlur(bg_imgwc.astype(np.float32),(25,25),30)
         img_bs = imgwc.astype(np.int32) - img_blur.astype(np.int32) + np.mean(img_blur)
@@ -110,29 +116,32 @@ def check_center(center,radius,col,row):
 
 if __name__ == "__main__":
 
+    ## Select shape!
+
+    # shape = 'semicone'
+    # shape = 'hollowcone'
+    shape = 'ball_D6.35'
+    # shape = 'ball_D28.5'
+    # shape = 'test1'
+    # shape = 'semipyramid'
+    geometric_shape = 'sphere'
+    #geometric_shape = shape
+    sphere_R_mm = 6.35/2  # Only used if geometric_shape == 'sphere'
+
+
     ## Paths to obtain Gelsight raw images
-    # load_path = "/media/mcube/data/shapes_data/test_hollowcone/"
-    load_path = "/media/mcube/data/shapes_data/test_semipyramid/"
-    #load_path = "/media/mcube/data/shapes_data/ball_D28.5/"
-    # load_path = "/media/mcube/data/shapes_data/color3/"
+    load_path = "/media/mcube/data/shapes_data/raw/" + shape + "/"
     root, dirs, files = os.walk(load_path).next()
 
     ## Path to save new images and gradients
-    save_path = "/media/mcube/data/shapes_data/PROCESSED/test_semipyramid/"
-
-    ## Select shape!
-    # geometric_shape = 'sphere'
-    # geometric_shape = 'semicone_1'
-    # geometric_shape = 'hollowcone'
-    geometric_shape = 'semipyramid'
-    sphere_R_mm = 28.5/2  # Only used if geometric_shape == 'sphere'
+    save_path = "/media/mcube/data/shapes_data/processed/" + shape + "/"
 
     ## Basic parameters
     save_data = True
     show_data = False
 
     ## Augmented data params
-    augmented_data_copies = 3  # Number of copies of augmented data that will be created and saved, 0 if you don't want it
+    augmented_data_copies = 0  # Number of copies of augmented data that will be created and saved, 0 if you don't want it
     weight_mean = 1.
     weight_dev = 0.05
     biass_mean = 0.
@@ -149,6 +158,7 @@ if __name__ == "__main__":
 
     ref_bs,ref_warp = calibration(ref,ref)
     mask_bd = np.load(SHAPES_ROOT + 'resources/GS2_mask_color.npy')
+    # print "mask_bd: ", mask_bd.shape
     kernal1 = make_kernal(30)
     kernal2 = make_kernal(10)
     col,row = ref_warp[:,:,1].shape
@@ -171,6 +181,7 @@ if __name__ == "__main__":
             ## Apply calibration and mask to the raw image
             im_temp = cv2.imread(root+'/'+files[i])
             im_bs,im_wp = calibration(im_temp,ref)
+            # print "im_wp: ", im_wp.shape
             im_wp = im_wp*mask_bd
             im_wp_save = im_wp.copy()
 
@@ -202,8 +213,6 @@ if __name__ == "__main__":
             mask_color = cv2.erode(mask, kernal1, iterations=1).astype(np.uint8)
             # cv2.imshow('mask', mask)
 
-
-            # print mask_color.shape
             ## Detect circles if any exists
             if np.sum(mask_color)/255 > 225:  #Checks if the contact patch is big enough
                 im2,contours,hierarchy = cv2.findContours(mask_color, 1, 2)
@@ -228,13 +237,13 @@ if __name__ == "__main__":
                     center = (int(x),int(y))
                     if geometric_shape == 'sphere':
                         center = (int(x)-2,int(y))  # TODO: why are we doing this?
-                        radius = int(radius*0.77)  # TODO: this numbers seems a bit of a hack
-                    elif geometric_shape == 'semicone_1':
-                        radius = int(radius*0.85)
+                        radius = int(radius*0.8)  # TODO: this numbers seems a bit of a hack
+                    elif geometric_shape == 'semicone':
+                        radius = int(radius*0.9)
                     else:
                         radius = int(radius)  # TODO: this numbers seems a bit of a hack
 
-                    raw_input("Press Enter to continue...")
+                    #raw_input("Press Enter to continue...")
 
                     ## Checks if the circle found matches well with contact patch
                     mask_circle = ((x_mesh-center[0])**2 + (y_mesh-center[1])**2) < (radius)**2
@@ -260,6 +269,7 @@ if __name__ == "__main__":
                         ## Compute gradients given center and radius
                         # cv2.imshow('im', im_wp)
                         # cv2.waitKey(0)
+                        # print "im_wp_save shape: ", im_wp_save.shape
                         grad_x, grad_y = labeller.get_gradient_matrices(center,radius, shape=geometric_shape, sphere_R_mm=sphere_R_mm)
                         if (grad_x is not None) and (grad_y is not None):
 
@@ -273,7 +283,7 @@ if __name__ == "__main__":
                             # cv2.waitKey(0)
                             depth_map = poisson_reconstruct(grad_y, grad_x)
 
-                            print "Max: " + str(np.amax(depth_map))
+                            # print "Max: " + str(np.amax(depth_map))
 
                             def plot(depth_map):
                                 fig = plt.figure()
@@ -343,7 +353,7 @@ if __name__ == "__main__":
 
                     center_px = biggest_rect[0]
                     sides_px = biggest_rect[1]
-                    anlge = biggest_rect[2]
+                    angle = biggest_rect[2]
                     # im_wp = copy.deepcopy(im_wp_save)
                     cv2.drawContours(im_wp, [box], 0, (100, 100, 100), 2)
 
@@ -351,7 +361,7 @@ if __name__ == "__main__":
                     # cv2.imshow('mask_color', mask_color)
                     # cv2.waitKey(0)
 
-                    grad_x, grad_y = labeller.get_gradient_matrices(center_px=center_px, angle=anlge, sides_px=sides_px, shape=geometric_shape, sphere_R_mm=sphere_R_mm)
+                    grad_x, grad_y = labeller.get_gradient_matrices(center_px=center_px, angle=angle, sides_px=sides_px, shape=geometric_shape, sphere_R_mm=sphere_R_mm)
                     if (grad_x is not None) and (grad_y is not None):
 
                         ## Uncomment this to check gradients and heightmap
@@ -414,8 +424,8 @@ if __name__ == "__main__":
 
                                 ## Save the depth map with the maximum height in the name
                                 depth_map = poisson_reconstruct(grad_y, grad_x)
-                                print depth_map.shape
-                                print im_wp.shape
+                                # print "depth_map: ", depth_map.shape
+                                # print "im_wp: ", im_wp.shape
                                 # a = raw_input('aa')
                                 name = str(np.amax(depth_map))
                                 cv2.imwrite(save_path + 'heightmap/'+str(index) + '_' + name + '.png', depth_map*1000)

@@ -197,11 +197,11 @@ class Location():
         return pc.pc_data
 
 '''
-TODOM: purpose of translate_pointcloud function? visualization? 
+TODOM: purpose of translate_pointcloud function? visualization?
 IDEA: it might be useful some tool that justs helps visualize all the localpointclouds without merging
 '''
 
-    def translate_pointcloud(self, pointcloud, v): 
+    def translate_pointcloud(self, pointcloud, v):
         new_pc = []
         for elem in pointcloud:
             new_elem = (elem[0]+v[0], elem[1]+v[1], elem[2]+v[2])
@@ -222,6 +222,8 @@ IDEA: it might be useful some tool that justs helps visualize all the localpoint
             else:
                 # local_pointcloud = self.translate_pointcloud(local_pointcloud, v=(0, 5*i, 0))
                 global_pointcloud = self.simple_pointcloud_merge(global_pointcloud, local_pointcloud)
+                # merged = self.stitch_pointclouds(local_pointcloud_0, local_pointcloud_1)
+
         return global_pointcloud
 
 if __name__ == "__main__":

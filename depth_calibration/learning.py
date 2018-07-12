@@ -62,7 +62,7 @@ def get_data_paths(paths, gradient, val_fraction=0.2, max_data_points=99999):
         for inp in np.sort(inputs_raw):
             if '.png' in inp and 'img_' in inp:
                 a = [int(s) for s in inp.replace('_', ' ').replace('.', ' ').split() if s.isdigit()]
-                if a[0] > 3000:
+                if a[0] > 1500:
                     continue
                     # pass
                 inputs.append(path + inp)
@@ -83,15 +83,19 @@ def get_data_paths(paths, gradient, val_fraction=0.2, max_data_points=99999):
 
 def train(pretrain = False):
     # Params:
-    simulator = True
-    weights_filepath = "weights/weights.test_sim_v2.hdf5"
+    simulator = False
+    weights_filepath = "weights/weights.v2.hdf5"
 
-    #paths = ["/media/mcube/data/shapes_data/PROCESSED/semicone1_augmented/image/", "/media/mcube/data/shapes_data/PROCESSED/processed_color_D28.5_augmented/image/" ]
-    # paths = ["/media/mcube/data/shapes_data/PROCESSED/processed_color_D28.5_h_mm/image/", "/media/mcube/data/shapes_data/PROCESSED/semicone_1_processed_h_mm/image/"]
-    paths = ["/media/mcube/data/shapes_data/PROCESSED/semicone_1_processed_h_mm/image/"]
+    paths = [
+	"/media/mcube/data/shapes_data/processed/ball_D6.35/image/",
+	"/media/mcube/data/shapes_data/processed/ball_D28.5/image/",
+	"/media/mcube/data/shapes_data/processed/hollowcone/image/",
+	"/media/mcube/data/shapes_data/processed/semicone/image/",
+	"/media/mcube/data/shapes_data/processed/semipyramid/image/",
+	]
 
     # Datasets
-    inputs_train, labels_train, inputs_val, labels_val = get_data_paths(paths=paths, gradient='x', val_fraction=0.2, max_data_points=999999)
+    inputs_train, labels_train, inputs_val, labels_val = get_data_paths(paths=paths, gradient='x', val_fraction=0.2, max_data_points=9999999)
     print "Train size: " + str(len(inputs_train))
     print "Validation size: " + str(len(inputs_val))
 
@@ -99,12 +103,12 @@ def train(pretrain = False):
     params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
     input_shape = params_dict['input_shape_gs2']
     if simulator:
-        input_shape[2] = 4  # HACK
+        input_shape[2] = 5  # HACK
     input_image_shape = params_dict['input_shape_gs2'][0:2]
     output_shape = params_dict['output_shape_gs2'][0:2]
 
     # Generators
-    train_batch_size = 8
+    train_batch_size = 12
     val_batch_size = 8
 
     training_generator = DataGenerator(inputs_train, labels_train, batch_size=train_batch_size, dim_in=input_image_shape, dim_out=output_shape, simulator=simulator)

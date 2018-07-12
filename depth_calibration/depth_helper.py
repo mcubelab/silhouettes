@@ -55,7 +55,7 @@ def preprocess_label(arr):
     f = np.vectorize(f, otypes=[np.float])
     return f(arr)
 
-def preprocess_grad_for_simulation(grad_x, grad_y, gs_id=2):
+def preprocess_grad_for_simulation(grad_x, grad_y, gs_id=2, include_depth_chanel=False):
     # We get the network input dims
     params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
     if gs_id == 1:
@@ -65,16 +65,32 @@ def preprocess_grad_for_simulation(grad_x, grad_y, gs_id=2):
         dim = params_dict['input_shape_gs2'][0:2]
 
     # We get the pos matrices
-    xvalues = np.array(range(dim[0])).astype('float32')/float(dim[0]) -0.5  # Normalized
-    yvalues = np.array(range(dim[1])).astype('float32')/float(dim[1])  -0.5 # Normalized
+    xvalues = np.array(range(dim[0])).astype('float32')/float(dim[0]) - 0.5  # Normalized
+    yvalues = np.array(range(dim[1])).astype('float32')/float(dim[1]) - 0.5 # Normalized
     pos = np.stack((np.meshgrid(yvalues, xvalues)), axis = 2)
 
     # We compute input: gx, gy, posx, posy
+    print "br"
+    print float(grad_x.shape[0])/float(grad_x.shape[1])
     grad_x = cv2.resize(grad_x, dsize=(dim[1], dim[0]), interpolation=cv2.INTER_LINEAR)
     grad_y = cv2.resize(grad_y, dsize=(dim[1], dim[0]), interpolation=cv2.INTER_LINEAR)
+    print "ar"
+    print float(grad_x.shape[0])/float(grad_x.shape[1])
+    cv2.imshow('arx', grad_x)
+    cv2.imshow('ary', grad_y)
+    cv2.waitKey(0)
+
+    if include_depth_chanel:
+        depth_map = poisson_reconstruct(grad_y, grad_x)
+        depth_map = np.expand_dims(depth_map, axis=2)
+
     grad_x = np.expand_dims(grad_x, axis=2)
     grad_y = np.expand_dims(grad_y, axis=2)
     grad2 = np.concatenate((grad_x, grad_y), axis = 2)
+
+    if include_depth_chanel:
+        grad2 = np.concatenate((grad2, depth_map), axis = 2)
+
     return np.concatenate((grad2, pos), axis = 2) # We add pos channels
 
 def get_rgb_noise(weight_mean, weight_dev, biass_mean, biass_dev):
@@ -99,7 +115,7 @@ def posprocess_label(arr):
     f = np.vectorize(f, otypes=[np.float])
     return f(arr)
 
-def plot_depth_map(depth_map, show=True, save=False, path='', img_number = ''):
+def plot_depth_map(depth_map, show=True, save=False, path='', img_number = '', top_view=False):
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     X = np.arange(depth_map.shape[0], step=1)
@@ -107,8 +123,9 @@ def plot_depth_map(depth_map, show=True, save=False, path='', img_number = ''):
     X, Y = np.meshgrid(X, Y)
     surf = ax.plot_surface(X, Y, np.transpose(depth_map), rstride=1, cstride=1, cmap=cm.BuPu, linewidth=0, antialiased=False)
     ax.set_zlim(0, 5)
-    ax.view_init(elev=90., azim=0)
     ax.view_init(elev=45., azim=5)
+    if top_view:
+        ax.view_init(elev=90., azim=0)
     # ax.axes().set_aspect('equal')
 
     if save:
@@ -216,7 +233,7 @@ def raw_gs_to_depth_map(gs_id=2, test_image=None, ref=None, model_path=None, plo
     return depth_map
 
 def grad_to_gs(model_path, gx, gy, gs_id=2):
-    inp = copy.deepcopy(preprocess_grad_for_simulation(gx, gy, gs_id=2))
+    inp = copy.deepcopy(preprocess_grad_for_simulation(gx, gy, gs_id=2, include_depth_chanel=True))
     inp = np.expand_dims(inp, axis=0)
 
     keras.losses.custom_loss = custom_loss
@@ -224,7 +241,7 @@ def grad_to_gs(model_path, gx, gy, gs_id=2):
 
     gs_sim = model.predict(inp)
     gs_sim = np.squeeze(gs_sim)
-    
+
     gs_sim = posprocess_image(gs_sim)
 
     return gs_sim

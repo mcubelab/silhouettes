@@ -32,8 +32,8 @@ class DataCollector():
     def __callback(self, data, key):
         if self.only_one_shot:
             self.subscribers[key].unregister() # Comment to record during indefinite time
-            self.it += 1
-            print self.it
+        self.it += 1
+        print self.it
 
         if self.topic_dict[key]['msg_format'] == Image:
             try:
@@ -55,8 +55,8 @@ class DataCollector():
             # print "Total Force: " + str(data_dict['force'])
             # print "Finger 1: " + str(data_dict['force_finger0']
             # print "Finger 2: " + str(data_dict['force_finger1']
-        if self.only_one_shot:
-            self.__save_data(get_gs1=False, get_gs2=True, get_wsg=False, directory=self.save_path, iteration=self.it)
+        # if self.only_one_shot:
+        self.__save_data(get_gs1=False, get_gs2=True, get_wsg=False, directory=self.save_path, iteration=self.it)
         return
 
     def getCart(self):
@@ -90,7 +90,7 @@ class DataCollector():
                 cv2.imwrite(directory+'/GS2.png', self.data_recorded['gs_image2'])
 
 
-    def get_data(self, get_cart=False, get_gs1=False, get_gs2=True, get_wsg=True, save=True, directory='', iteration=0):
+    def get_data(self, get_cart=False, get_gs1=False, get_gs2=True, get_wsg=True, iteration=0):
         # 1. We get the cartesian pos from the robot
         if get_cart is True:
             self.cart = getCart()
@@ -121,12 +121,12 @@ class DataCollector():
             time.sleep(0.5) # We whait for 0.5 seconds
 
         # 3. We save things
-        if save is True:
-            self.__save_data(get_gs1=get_gs1, get_gs2=get_gs2, get_wsg=get_wsg, directory=directory, iteration=iteration)
+        # if save is True:
+        #     self.__save_data(get_gs1=get_gs1, get_gs2=get_gs2, get_wsg=get_wsg, directory=directory, iteration=iteration)
 
 
 if __name__ == "__main__":
-    dc = DataCollector(only_one_shot=True, save_path='/media/mcube/data/shapes_data/test_square/')
+    dc = DataCollector(only_one_shot=True, save_path='/media/mcube/data/shapes_data/test_objects')
     # dc.get_data(get_cart=False, get_gs1=False, get_gs2=False, get_wsg=True, save=False, directory='', iteration=0)
     #
     # cart = dc.getCart()
@@ -135,11 +135,11 @@ if __name__ == "__main__":
 
     #rospy.init_node('listener', anonymous=True) # Maybe we should only initialize one general node
     # dc.get_data(get_cart=False, get_gs1=False, get_gs2=False, get_wsg=True, save=False, directory='', iteration=0)
-    for ite in range(20):
+    for ite in range(2,20):
         dc.it = ite
-    # dc.it = -1
-        dc.get_data(get_cart=False, get_gs1=False, get_gs2=True, get_wsg=False, save=False, directory='', iteration=0)
-
+        dc.get_data(get_cart=False, get_gs1=False, get_gs2=True, get_wsg=False, iteration=0)
         time.sleep(1)
+        a = raw_input("Capture")
+
 
     # print dc.data_recorded
