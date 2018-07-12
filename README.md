@@ -107,6 +107,8 @@ In __name__ == "__main__":
 
 2.4. Enter how many copies of data augmentation you want in augmented_data_copies (0 if you don't want to augment)
 
+2.5 Choose whether visualize or save
+
 3.
 > python image_processing.py
 
