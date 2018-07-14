@@ -181,7 +181,7 @@ def poisson_reconstruct(grady, gradx):
 def custom_loss(y_true, y_pred):
     return K.sum(K.square(y_true-y_pred))
 
-def raw_gs_to_depth_map(gs_id=2, test_image=None, ref=None, model_path=None, plot=False, save=False, path='', img_number=''):
+def raw_gs_to_depth_map(gs_id=2, test_image=None, ref=None, model_path=None, plot=False, save=False, path='', img_number='', only_height=False):
     start = time.time()
 
     if ref == None:
@@ -214,14 +214,19 @@ def raw_gs_to_depth_map(gs_id=2, test_image=None, ref=None, model_path=None, plo
     test_image = np.concatenate((test_image, pos),axis = 2)
     test_image = np.expand_dims(test_image, axis=0)
 
-    grad = model.predict(test_image)
-    grad_x = grad[...,0]
-    grad_y = grad[...,1]
+    if not only_height:
+        grad = model.predict(test_image)
+        grad_x = grad[...,0]
+        grad_y = grad[...,1]
 
-    grad_x = posprocess_label(grad_x)
-    grad_y = posprocess_label(grad_y)
+        grad_x = posprocess_label(grad_x)
+        grad_y = posprocess_label(grad_y)
 
-    depth_map = poisson_reconstruct(np.squeeze(grad_y), np.squeeze(grad_x))
+        depth_map = poisson_reconstruct(np.squeeze(grad_y), np.squeeze(grad_x))
+    else:
+        depth_map = model.predict(test_image)[0,:,:,0]
+        print depth_map.shape
+
     print "Max: " + str(np.amax(depth_map))
 
     print "Time used:"

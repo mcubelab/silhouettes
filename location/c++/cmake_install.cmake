@@ -1,4 +1,4 @@
-# Install script for directory: /home/oleguer/shapes/processing/c++
+# Install script for directory: /home/mcube/silhouettes/location/c++
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -40,5 +40,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/oleguer/shapes/processing/c++/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/mcube/silhouettes/location/c++/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

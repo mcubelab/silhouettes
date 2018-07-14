@@ -7,6 +7,7 @@ import math, cv2, os, pickle
 import yaml
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
+
 from world_positioning import pxb_2_wb_3d
 from depth_calibration.depth_helper import *
 
@@ -19,7 +20,10 @@ class Location():
 
     def visualize_pointcloud(self, np_pointcloud):
         pointcloud = {'x': [], 'y': [], 'z': []}
-        for i in range(len(np_pointcloud)):
+        a = np.random.permutation(len(np_pointcloud))
+        max_points = 5000
+        a = a[0:min(max_points, len(np_pointcloud))]
+        for i in a:
             pointcloud['x'].append(np_pointcloud[i][0])
             pointcloud['y'].append(np_pointcloud[i][1])
             pointcloud['z'].append(np_pointcloud[i][2])
@@ -49,7 +53,55 @@ class Location():
         axisEqual3D(ax)
         plt.show()
 
-    def get_contact_info(self, directory, num):
+    def visualize2_pointclouds(self, pc1, pc2):
+        ax = plt.axes(projection='3d')
+
+        pointcloud = {'x': [], 'y': [], 'z': []}
+        a = np.random.permutation(len(pc1))
+        max_points = 5000
+        a = a[0:min(max_points, len(pc1))]
+        for i in a:
+            pointcloud['x'].append(pc1[i][0])
+            pointcloud['y'].append(pc1[i][1])
+            pointcloud['z'].append(pc1[i][2])
+
+        ax.scatter3D(pointcloud['x'], pointcloud['y'], pointcloud['z'],
+            c=pointcloud['y'], cmap='Blues')
+
+        pointcloud = {'x': [], 'y': [], 'z': []}
+        a = np.random.permutation(len(pc2))
+        max_points = 5000
+        a = a[0:min(max_points, len(pc2))]
+        for i in a:
+            pointcloud['x'].append(pc2[i][0])
+            pointcloud['y'].append(pc2[i][1])
+            pointcloud['z'].append(pc2[i][2])
+
+        ax.scatter3D(pointcloud['x'], pointcloud['y'], pointcloud['z'],
+            c=pointcloud['y'], cmap='Reds')
+
+        # Set viewpoint.
+        ax.azim = -90
+        ax.elev = 0
+
+        # Label axes.
+        ax.set_xlabel('x (mm)')
+        ax.set_ylabel('y (mm)')
+        ax.set_zlabel('z (mm)')
+
+        def axisEqual3D(ax):
+            extents = np.array([getattr(ax, 'get_{}lim'.format(dim))() for dim in 'xyz'])
+            sz = extents[:, 1] - extents[:, 0]
+            centers = np.mean(extents, axis=1)
+            maxsize = max(abs(sz))
+            r = maxsize/2
+            for ctr, dim in zip(centers, 'xyz'):
+                getattr(ax, 'set_{}lim'.format(dim))(ctr - r, ctr + r)
+
+        axisEqual3D(ax)
+        plt.show()
+
+    def get_contact_info(self, directory, num, only_cart=False):
         def get_cart(path):
             cart = np.load(path)
             a = cart[3]
@@ -59,6 +111,11 @@ class Location():
             c = cart[5]
             cart[5] = b
             cart[6] = c
+            return cart
+
+        if only_cart:
+            directory += '/p_' + str(num)
+            cart = get_cart(directory + '/cart.npy')
             return cart
 
         def load_obj(path):
@@ -100,9 +157,12 @@ class Location():
 
         return cart, gs1_list, gs2_list, wsg_list, force_list, gs1_back, gs2_back
 
-    def get_local_pointcloud(self, gs_id, directory='', num=-1):
+    def get_local_pointcloud(self, gs_id, directory='', num=-1, new_cart=None):
         # 1. We convert the raw image to height_map data
         cart, gs1_list, gs2_list, wsg_list, force_list, gs1_back, gs2_back = self.get_contact_info(directory, num) #TODOM: why so many info?
+        if new_cart is not None:
+            cart = new_cart
+
         if gs_id == 1:
             pass # TODO: GET height_map
         elif gs_id == 2:
@@ -111,21 +171,29 @@ class Location():
 
 
             test_image = gs2_list[0]
-            test_image2 = cv2.imread("GS2_" + str(1) + '.png')
+            # test_image2 = cv2.imread("GS2_" + str(1) + '.png')
 
-            for it in range(3):
-                print np.mean(test_image[:,:,it])
-                print np.mean(test_image2[:,:,it])
-                test_image[:,:,it] = test_image[:,:,it]/np.mean(test_image[:,:,it])*np.mean(test_image2[:,:,it])
-                print np.mean(test_image[:,:,it])
+            # cv2.imshow('test_image', test_image)
+            # cv2.imshow('test_image2', test_image2)
+
+
+            # for it in range(3):
+            #     print np.mean(test_image[:,:,it])
+            #     print np.mean(test_image2[:,:,it])
+            #     test_image[:,:,it] = test_image[:,:,it]/np.mean(test_image[:,:,it])*np.mean(test_image2[:,:,it])
+            #     print np.mean(test_image[:,:,it])
 
             height_map = raw_gs_to_depth_map(
                 test_image=test_image,
                 ref=None,
-                model_path=SHAPES_ROOT + 'depth_calibration/weights/weights.color_semicone1_and_sphere.xy.hdf5',
+                model_path=SHAPES_ROOT + 'depth_calibration/weights/weights.aug.v1.hdf5',
                 plot=False,
                 save=False,
                 path='')
+
+            # cv2.imshow('hm', height_map)
+            # cv2.waitKey(0)
+
             mean = np.mean(height_map)
             dev = np.std(height_map)
             a = mean - dev
@@ -145,7 +213,7 @@ class Location():
         pointcloud = []
         for i in range(height_map.shape[0]):
             for j in range(height_map.shape[1]):
-                if(height_map[i][j] != 0):
+                if(height_map[i][j] >= 0.10):
                     world_point = pxb_2_wb_3d(
                         point_3d=(i, j, height_map[i][j]),
                         gs_id=gs_id,
@@ -172,10 +240,12 @@ class Location():
         return string
 
     def stitch_pointclouds(self, fixed, moved):
+        print 'stitching'
         fixed = np.asarray(fixed)
         moved = np.asarray(moved)
 
         # 1. We save the pointclouds in .pcd format
+        print 'saving PointClouds'
         name = 'c++/cloud' + str(0) + '.pcd'
         with open(name, 'w') as f:
             f.write(self.__get_string_pc(fixed))
@@ -185,21 +255,24 @@ class Location():
             f.write(self.__get_string_pc(moved))
 
         # 2. We run the c++ program to stitch them
+        print 'command sent'
         command = 'cd c++/; ./pairwise_incremental_registration cloud[0-1].pcd'
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
         process.wait()
 
         # 3. We load and return the merged pointcloud
+        print 'c++ part done'
         path = 'c++/1.pcd'
         pc = pypcd.PointCloud.from_path(path)
         # pointcloud = npPC2dictPC(pc.pc_data)
+        print type(pc)
         print 'Stitched'
         return pc.pc_data
 
-'''
-TODOM: purpose of translate_pointcloud function? visualization?
-IDEA: it might be useful some tool that justs helps visualize all the localpointclouds without merging
-'''
+    '''
+    TODOM: purpose of translate_pointcloud function? visualization?
+    IDEA: it might be useful some tool that justs helps visualize all the localpointclouds without merging
+    '''
 
     def translate_pointcloud(self, pointcloud, v):
         new_pc = []
@@ -212,45 +285,77 @@ IDEA: it might be useful some tool that justs helps visualize all the localpoint
         for i in touches:
             exp = str(i)
             print "Processing img " + exp + "..."
-            local_pointcloud = loc.get_local_pointcloud(
-                gs_id=gs_id,
-                directory=directory,
-                num=i)
+            try:
+                local_pointcloud = loc.get_local_pointcloud(
+                    gs_id=gs_id,
+                    directory=directory,
+                    num=i)
 
-            if global_pointcloud is None:
-                global_pointcloud = local_pointcloud
-            else:
-                # local_pointcloud = self.translate_pointcloud(local_pointcloud, v=(0, 5*i, 0))
-                global_pointcloud = self.simple_pointcloud_merge(global_pointcloud, local_pointcloud)
-                # merged = self.stitch_pointclouds(local_pointcloud_0, local_pointcloud_1)
-
+                if global_pointcloud is None:
+                    global_pointcloud = local_pointcloud
+                else:
+                    # local_pointcloud = self.translate_pointcloud(local_pointcloud, v=(0, 5*i, 0))
+                    global_pointcloud = self.simple_pointcloud_merge(global_pointcloud, local_pointcloud)
+                    # merged = self.stitch_pointclouds(local_pointcloud_0, local_pointcloud_1)
+            except Exception as e:
+                print "Error computing local PointCloud"
+                print e
         return global_pointcloud
 
 if __name__ == "__main__":
+    name = 'only_front.npy'
     loc = Location()
 
-    touch_list = [0, 5, 23, 25]
+    touch_list = range(3, 6)
+    touch_list += range(7, 50)
     # touch_list = [0, 5, 23]
-    global_pointcloud = loc.get_global_pointcloud(
-        gs_id=2,
-        directory='sample/',
-        touches=touch_list,
-        global_pointcloud = None
-    )
-    print 'len: ' + str(len(global_pointcloud))
-    # local_pointcloud_0 = loc.get_local_pointcloud(
+    # global_pointcloud = loc.get_global_pointcloud(
     #     gs_id=2,
-    #     directory='sample/',
-    #     num=0)
+    #     directory='/media/mcube/data/shapes_data/pos_calib/bar_front/',
+    #     touches=touch_list,
+    #     global_pointcloud = None
+    # )
+    global_pointcloud = np.load('/media/mcube/data/shapes_data/pointclouds/' + name)
 
-    # loc.visualize_pointcloud(local_pointcloud_0)
+    max_points = 50000
+    a = np.random.permutation(len(global_pointcloud))
+    a = a[0: min(max_points, len(global_pointcloud))]
+    global_pointcloud = global_pointcloud[a,:]
+    # loc.visualize_pointcloud(global_pointcloud)
 
-    # local_pointcloud_1 = loc.get_local_pointcloud(
+    # missing = loc.get_local_pointcloud(
     #     gs_id=2,
-    #     directory='sample/',
-    #     num=1)
-    # # loc.visualize_pointcloud(local_pointcloud_1)
+    #     directory='/media/mcube/data/shapes_data/pos_calib/bar_front/',
+    #     num=16
+    # )
+    # loc.visualize_pointcloud(missing)
 
-    # merged = loc.simple_pointcloud_merge(local_pointcloud_0, local_pointcloud_1)
-    # merged = loc.stitch_pointclouds(local_pointcloud_0, local_pointcloud_1)
-    loc.visualize_pointcloud(global_pointcloud)
+    for num in touch_list[0:10]:
+        directory = '/media/mcube/data/shapes_data/pos_calib/bar_front/'
+        cart = loc.get_contact_info(directory, num, only_cart=True)
+        missing = loc.get_local_pointcloud(
+            gs_id=2,
+            directory='/media/mcube/data/shapes_data/pos_calib/bar_front/',
+            num=6,
+            new_cart=cart
+        )
+        new_pointcloud = loc.stitch_pointclouds(global_pointcloud, missing)
+        loc.visualize2_pointclouds(new_pointcloud, missing)
+    # touch_list = range(1, 17)
+    # global_pointcloud = loc.get_global_pointcloud(
+    #     gs_id=2,
+    #     directory='/media/mcube/data/shapes_data/pos_calib/bar_side/',
+    #     touches=touch_list,
+    #     global_pointcloud = global_pointcloud
+    # )
+    #
+    # touch_list = range(1, 50)
+    # global_pointcloud = loc.get_global_pointcloud(
+    #     gs_id=2,
+    #     directory='/media/mcube/data/shapes_data/pos_calib/bar_back/',
+    #     touches=touch_list,
+    #     global_pointcloud = global_pointcloud
+    # )
+
+    np.save('/media/mcube/data/shapes_data/pointclouds/' + name, global_pointcloud)
+    loc.visualize2_pointclouds(global_pointcloud, missing)

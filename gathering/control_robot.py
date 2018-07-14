@@ -28,6 +28,12 @@ class ControlRobot():
         #move robot to new pose
         setCartRos(c.x+dx, c.y+dy, c.z+dz, c.q0, c.qx, c.qy, c.qz)
 
+    def set_cart_mm(self, cart):
+        x, y, z, q0, qx, qy, qz = cart
+        setCartRos = rospy.ServiceProxy('/robot1_SetCartesian', robot_SetCartesian)
+        setCartRos(x, y, z, q0, qx, qy, qz)
+
+
     def close_gripper_f(self, grasp_speed=50, grasp_force=40):
         graspinGripper(grasp_speed=grasp_speed, grasp_force=grasp_force)
 
@@ -40,7 +46,7 @@ class ControlRobot():
             os.makedirs(path)
 
         # 1. We get and save the cartesian coord.
-        dc = DataCollector()
+        dc = DataCollector(only_one_shot=False, automatic=True)
         cart = dc.getCart()
         if save is True:
             np.save(path + '/cart.npy', cart)
@@ -58,7 +64,7 @@ class ControlRobot():
 
     def perfrom_experiment(self, experiment_name='test', movement_list=[]):
         # 1. We save the background image:
-        dc = DataCollector(only_one_shot=False)
+        dc = DataCollector(only_one_shot=False, automatic=True)
         dc.get_data(get_cart=False, get_gs1=(1 in self.gs_id), get_gs2=(2 in self.gs_id), get_wsg=False, save=True, directory=experiment_name+'/air', iteration=-1)
         print "Air data gathered"
 
@@ -91,5 +97,5 @@ if __name__ == "__main__":
 
     #cr.move_cart_mm(dx=5, dy=0, dz=0)
     #cr.palpate(speed=40, force_list=[10, 20, 30], save=True, path='air_palpate_test')
-    cr.move_cart_mm(0, 0, 0)
+    cr.move_cart_mm(0, 0, 3)
     print 'done!'

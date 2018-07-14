@@ -8,12 +8,17 @@ SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 path = "/media/mcube/data/shapes_data/test_objects/"; pictures_range = range(1, 15)
 #path = "/media/mcube/data/shapes_data/ball_D28.5/"; pictures_range = range(40,3011)
 #path = "/media/mcube/data/shapes_data/semicone_1/"; pictures_range = range(1015,2011)
-
+# pictures_range = [46,103,210,217,334]
 for img_number in pictures_range:
 
+    img_path = path + "GS2_" + str(img_number) + '.png'
+    # img_path ='/media/mcube/data/shapes_data/pos_calib/bar_front/p_{}/GS2_0.png'.format(img_number)
+    # img_path ='/media/mcube/data/shapes_data/height_test/GS2_{}.png'.format(img_number)
+    test_image = cv2.imread(img_path)
 
-    test_image = cv2.imread(path + "GS2_" + str(img_number) + '.png')
-    weights_file = 'depth_calibration/weights/weights.v1.hdf5'
+    weights_file = 'depth_calibration/weights/weights.aug.v2.hdf5'
+
+
     '''
       #Investigate if we can change distribution
     test_image2 = cv2.imread(path + "GS2_" + str(1) + '.png')
@@ -28,6 +33,7 @@ for img_number in pictures_range:
     cv2.waitKey(0)
     #cv2.destroyAllWindows()
     '''
+
     depth_map = raw_gs_to_depth_map(
         gs_id = 2,
         test_image=test_image,
@@ -35,4 +41,5 @@ for img_number in pictures_range:
         plot=True,
         save=False,
         path=path+'converted/',
-        img_number = img_number)
+        img_number = img_number,
+        only_height=False)

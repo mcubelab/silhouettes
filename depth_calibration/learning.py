@@ -20,7 +20,7 @@ keras.losses.custom_loss = custom_loss
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 
-def createModel(input_shape, simulator=False):
+def createModel(input_shape, simulator=False, only_height=False):
     print input_shape
     model = Sequential()
     model.add(Conv2D(64, (3, 3), padding='same',activation='relu', input_shape=input_shape)) #,kernel_initializer='he_normal'))
@@ -43,7 +43,10 @@ def createModel(input_shape, simulator=False):
     if simulator:
         model.add(Conv2D(3, (1, 1), activation='tanh')) #,kernel_initializer='he_normal'))
     else:
-        model.add(Conv2D(2, (1, 1), activation='tanh')) #,kernel_initializer='he_normal'))
+        if only_height:
+            model.add(Conv2D(1, (1, 1), activation='tanh')) #,kernel_initializer='he_normal'))
+        else:
+            model.add(Conv2D(2, (1, 1), activation='tanh')) #,kernel_initializer='he_normal'))
 
     # Compile model
     ad = optimizers.Adam(lr=0.0001)
@@ -62,7 +65,7 @@ def get_data_paths(paths, gradient, val_fraction=0.2, max_data_points=99999):
         for inp in np.sort(inputs_raw):
             if '.png' in inp and 'img_' in inp:
                 a = [int(s) for s in inp.replace('_', ' ').replace('.', ' ').split() if s.isdigit()]
-                if a[0] > 1500:
+                if a[0] > 4000:
                     continue
                     # pass
                 inputs.append(path + inp)
@@ -84,18 +87,19 @@ def get_data_paths(paths, gradient, val_fraction=0.2, max_data_points=99999):
 def train(pretrain = False):
     # Params:
     simulator = False
-    weights_filepath = "weights/weights.v2.hdf5"
+    only_height = True
+    weights_filepath = "weights/weights.aug.height.v1.hdf5"
 
     paths = [
-	"/media/mcube/data/shapes_data/processed/ball_D6.35/image/",
-	"/media/mcube/data/shapes_data/processed/ball_D28.5/image/",
-	"/media/mcube/data/shapes_data/processed/hollowcone/image/",
-	"/media/mcube/data/shapes_data/processed/semicone/image/",
-	"/media/mcube/data/shapes_data/processed/semipyramid/image/",
+	# "/media/mcube/data/shapes_data/processed/ball_D6.35/image/",
+	# "/media/mcube/data/shapes_data/processed/ball_D28.5/image/",
+	# "/media/mcube/data/shapes_data/processed/hollowcone/image/",
+	"/media/mcube/data/shapes_data/processed/semicone_augmented/image/",
+	"/media/mcube/data/shapes_data/processed/semipyramid_augmented/image/",
 	]
 
     # Datasets
-    inputs_train, labels_train, inputs_val, labels_val = get_data_paths(paths=paths, gradient='x', val_fraction=0.2, max_data_points=9999999)
+    inputs_train, labels_train, inputs_val, labels_val = get_data_paths(paths=paths, gradient='x', val_fraction=0.2, max_data_points=999999)
     print "Train size: " + str(len(inputs_train))
     print "Validation size: " + str(len(inputs_val))
 
@@ -104,6 +108,7 @@ def train(pretrain = False):
     input_shape = params_dict['input_shape_gs2']
     if simulator:
         input_shape[2] = 5  # HACK
+
     input_image_shape = params_dict['input_shape_gs2'][0:2]
     output_shape = params_dict['output_shape_gs2'][0:2]
 
@@ -111,15 +116,15 @@ def train(pretrain = False):
     train_batch_size = 12
     val_batch_size = 8
 
-    training_generator = DataGenerator(inputs_train, labels_train, batch_size=train_batch_size, dim_in=input_image_shape, dim_out=output_shape, simulator=simulator)
-    validation_generator = DataGenerator(inputs_val, labels_val, batch_size=val_batch_size, dim_in=input_shape, dim_out=output_shape, simulator=simulator)
+    training_generator = DataGenerator(inputs_train, labels_train, batch_size=train_batch_size, dim_in=input_image_shape, dim_out=output_shape, simulator=simulator, only_height=only_height)
+    validation_generator = DataGenerator(inputs_val, labels_val, batch_size=val_batch_size, dim_in=input_shape, dim_out=output_shape, simulator=simulator, only_height=only_height)
 
     # Load weights
     history_save_filename=weights_filepath.replace(".hdf5", "_hist")
     if pretrain:
         model = load_model(weights_filepath)
     else:
-        model = createModel(input_shape=input_shape, simulator=simulator)
+        model = createModel(input_shape=input_shape, simulator=simulator, only_height=only_height)
 
     # Checkpoint
     checkpoint = ModelCheckpoint(weights_filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='min')

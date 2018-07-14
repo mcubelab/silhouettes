@@ -6,7 +6,9 @@
 
 #IncludeRegexTransform: 
 
-/home/oleguer/shapes/processing/c++/pairwise_incremental_registration.cpp
+/home/mcube/silhouettes/location/c++/pairwise_incremental_registration.cpp
+string
+-
 boost/make_shared.hpp
 -
 pcl/point_types.h

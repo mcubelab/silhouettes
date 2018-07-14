@@ -118,14 +118,14 @@ if __name__ == "__main__":
 
     ## Select shape!
 
-    # shape = 'semicone'
+    shape = 'semicone'
     # shape = 'hollowcone'
-    shape = 'ball_D6.35'
+    # shape = 'ball_D6.35'
     # shape = 'ball_D28.5'
     # shape = 'test1'
     # shape = 'semipyramid'
-    geometric_shape = 'sphere'
-    #geometric_shape = shape
+    # geometric_shape = 'sphere'
+    geometric_shape = shape
     sphere_R_mm = 6.35/2  # Only used if geometric_shape == 'sphere'
 
 
@@ -134,14 +134,14 @@ if __name__ == "__main__":
     root, dirs, files = os.walk(load_path).next()
 
     ## Path to save new images and gradients
-    save_path = "/media/mcube/data/shapes_data/processed/" + shape + "/"
+    save_path = "/media/mcube/data/shapes_data/processed/" + shape + "_augmented/"
 
     ## Basic parameters
     save_data = True
     show_data = False
 
     ## Augmented data params
-    augmented_data_copies = 0  # Number of copies of augmented data that will be created and saved, 0 if you don't want it
+    augmented_data_copies = 4 # Number of copies of augmented data that will be created and saved, 0 if you don't want it
     weight_mean = 1.
     weight_dev = 0.05
     biass_mean = 0.

@@ -170,27 +170,28 @@ class fittingPackage():
 
 
 if __name__ == "__main__":
-    # name = 'squares'
-    # from_path = 'pos_calibration/pos_calibration_squares_color'
-    # touches_list = range(38)
-    # save_path = 'pos_calibration/no_mirror/'
-    # gs_id = 2
+    name = 'squares'
+    from_path = '/media/mcube/data/shapes_data/pos_calib/squares'
+    touches_list = range(24)
+    save_path = '/media/mcube/data/shapes_data/pos_calib/marked'
+    already_done='/media/mcube/data/shapes_data/pos_calib/marked/squares.npy'
+    gs_id = 2
     #
     # name = 'border'
-    # from_path = 'pos_calibration/pos_calibration_border_color'
-    # touches_list = range(38)
-    # save_path = 'pos_calibration/no_mirror'
+    # from_path = '/media/mcube/data/shapes_data/pos_calib/border'
+    # touches_list = range(29)
+    # save_path = '/media/mcube/data/shapes_data/pos_calib/marked'
     # already_done=''
     # gs_id = 2
-    #
-    name = 'line'
-    from_path = 'pos_calibration/pos_calibration_line_color'
-    touches_list = range(54)
-    save_path = 'pos_calibration/no_mirror'
-    already_done=''
-    gs_id = 2
 
-    already_done = ''
+    # name = 'line'
+    # from_path = '/media/mcube/data/shapes_data/pos_calib/line'
+    # touches_list = range(33)
+    # save_path = '/media/mcube/data/shapes_data/pos_calib/marked'
+    # already_done=''
+    # gs_id = 2
+
+    # already_done = ''
     fp = fittingPackage(
         line_top=(1299, 253, 463),
         square_vertex=(476, 605, 386),

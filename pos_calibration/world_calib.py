@@ -13,6 +13,8 @@ class PosCalib():
     def __init__(self):
         self.ini_x = [0, 0, 0,  0, 0, 0,  0, 0, 0]
         self.ini_x = [0.08306509459312332, -0.0006996618309678892, 1.5431217937797345e-06, 0.08153356084518493, 0.005461568194849241, -1.5973694835128038e-06, 2.0757556565435884, 7.694306015560224, -13.986576864912136]
+        self.ini_x = [0.08295346972326595, -0.0006986908608089011, 1.534820803225009e-06, 0.08153680361598074, 0.005577312408175804, -1.6102298444167873e-06, 2.075895215306912, 1.8642114082527796, -13.936494376527996]
+        self.ini_x = [0.07835168669290037, -4.221476330432822e-05, -1.6811485728606957e-06, 0.07768172299720112, 0.006936919318359956, -1.5701541829697096e-06, 2.856983575297971, 3.4512714390353536, -15.578807446701708]
 
     def __pos_after_warp(self, point, size, warp_matrix_path):
         a = np.zeros(size)
@@ -68,7 +70,7 @@ class PosCalib():
         # Solve optimization problem
         x0 = self.ini_x
         # res = minimize(eq_sys, x0, bounds=bounds, options={'xtol': 1e-8, 'disp': False})
-        res = minimize(eq_sys, x0, options={'xtol': 1e-8, 'disp': True})
+        res = minimize(eq_sys, x0)
         print "Success: " + str(res.success)
         print "Average distance: " + str(res.fun)
 
@@ -130,9 +132,11 @@ class PosCalib():
 
 
 if __name__ == "__main__":
-    # file_list = ['pos_calibration/no_mirror/border.npy']
-    # file_list = ['pos_calibration/no_mirror/squares.npy']
-    file_list = ['pos_calibration/no_mirror/squares.npy', 'pos_calibration/no_mirror/border.npy', 'pos_calibration/no_mirror/line.npy']
+    file_list = [
+        '/media/mcube/data/shapes_data/pos_calib/marked/line.npy',
+        '/media/mcube/data/shapes_data/pos_calib/marked/border.npy',
+        '/media/mcube/data/shapes_data/pos_calib/marked/squares.npy',
+    ]
 
     pc = PosCalib()
     cts = pc.get_px2mm_params(path_list=file_list, warp_matrix_path=SHAPES_ROOT + '/resources/GS2_M_color.npy')

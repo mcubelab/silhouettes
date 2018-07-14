@@ -87,6 +87,7 @@ def pxb2grb(point, gs_id, gripper_state, fitting_params):
         normal = -1
     Dx = gripper_state['Dx'] # Obertura
     Dz = gripper_state['Dz']
+    k1, k2, k3,  l1, l2, l3,  dx, dy, dz = fitting_params
     p3 = (normal*(Dx + dx), p2[1] + dy, Dz + dz + p2[0])
 
     return p3

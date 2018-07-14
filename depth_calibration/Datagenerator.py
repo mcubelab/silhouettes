@@ -14,24 +14,30 @@ SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, list_IDs, labels, batch_size, dim_in, dim_out, n_channels=5, shuffle=True, simulator=False):
+    def __init__(self, list_IDs, labels, batch_size, dim_in, dim_out, n_channels=5, shuffle=True, simulator=False, only_height=False):
         'Initialization'
         self.dim = dim_in
         self.batch_size = batch_size
         self.labels = labels
         self.list_IDs = list_IDs
+
         self.n_channels = n_channels
         self.out_channels = 2
         if simulator:
             self.n_channels = 5  # HACK
             self.out_channels = 3  # HACK
+        if only_height:
+            self.out_channels = 1  # HACK
+
         self.shuffle = shuffle
         self.on_epoch_end()
         self.xvalues = np.array(range(self.dim[0])).astype('float32')/float(self.dim[0]) -0.5  # Normalized
         self.yvalues = np.array(range(self.dim[1])).astype('float32')/float(self.dim[1])  -0.5 # Normalized
         self.pos = np.stack((np.meshgrid(self.yvalues, self.xvalues)), axis = 2)
         self.dim_out = dim_out
+
         self.simulator = simulator
+        self.only_height = only_height
 
     def __len__(self):
         'Denotes the number of batches per epoch'
@@ -84,9 +90,13 @@ class DataGenerator(keras.utils.Sequence):
                 grad_x = preprocess_label(grad_x)
                 grad_y = preprocess_label(grad_y)
 
-                grad_x = np.expand_dims(grad_x, axis=2)
-                grad_y = np.expand_dims(grad_y, axis=2)
-                grad = np.concatenate((grad_x, grad_y), axis = 2)
+                if self.only_height:
+                    grad = poisson_reconstruct(grad_y, grad_x)
+                    grad = np.expand_dims(grad, axis=2)
+                else:
+                    grad_x = np.expand_dims(grad_x, axis=2)
+                    grad_y = np.expand_dims(grad_y, axis=2)
+                    grad = np.concatenate((grad_x, grad_y), axis = 2)
 
                 img = np.concatenate((im_temp, self.pos),axis = 2)
             X[i,] = np.array(img)

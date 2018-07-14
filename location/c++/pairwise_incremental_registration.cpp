@@ -37,7 +37,7 @@
 
 /* \author Radu Bogdan Rusu
  * adaptation Raphael Favier*/
-
+#include <string>
 #include <boost/make_shared.hpp>
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
@@ -292,7 +292,6 @@ void pairAlign (const PointCloud::Ptr cloud_src, const PointCloud::Ptr cloud_tgt
     // visualize current state
     //showCloudsRight(points_with_normals_tgt, points_with_normals_src);
   }
-
 	//
   // Get the transformation from target to source
   targetToSource = Ti.inverse();
@@ -362,7 +361,24 @@ int main (int argc, char** argv)
     pcl::transformPointCloud (*temp, *result, GlobalTransform);
 
     //update the global transform
-    GlobalTransform = GlobalTransform * pairTransform;
+    GlobalTransform = GlobalTransform * pairTransform; //I understand that this is usefull if you are stitching a lot of pointclous, with 2 there is no need
+
+		std::cout << GlobalTransform;
+		// We write the transformation to file:
+		std::string trans = "";
+		for(int ii=0; ii<4; ii++){
+			for(int jj=0; jj<4; jj++){
+				std::ostringstream sss;
+				sss << GlobalTransform(ii, jj);
+				std::string s(sss.str());
+				trans += s + ",";
+			}
+		}
+    //
+		std::ofstream myfile;
+	  myfile.open ("movement.txt");
+	  myfile << trans;
+	  myfile.close();
 
 		//save aligned pair, transformed into the first cloud's frame
     std::stringstream ss;

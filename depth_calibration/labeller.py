@@ -9,8 +9,10 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 import yaml
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-from location.world_positioning import *
+# sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append("/home/mcube/silhouettes/location/")
+
+from world_positioning import *
 SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 
 class Labeller():
