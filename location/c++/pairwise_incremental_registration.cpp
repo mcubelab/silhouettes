@@ -230,7 +230,7 @@ void pairAlign (const PointCloud::Ptr cloud_src, const PointCloud::Ptr cloud_tgt
   pcl::NormalEstimation<PointT, PointNormalT> norm_est;
   pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
   norm_est.setSearchMethod (tree);
-  norm_est.setKSearch (30);
+  norm_est.setKSearch (300);
 
   norm_est.setInputCloud (src);
   norm_est.compute (*points_with_normals_src);
@@ -250,10 +250,10 @@ void pairAlign (const PointCloud::Ptr cloud_src, const PointCloud::Ptr cloud_tgt
   //
   // Align
   pcl::IterativeClosestPointNonLinear<PointNormalT, PointNormalT> reg;
-  reg.setTransformationEpsilon (1e-6);
+  reg.setTransformationEpsilon (1e-4);
   // Set the maximum distance between two correspondences (src<->tgt) to 10cm
   // Note: adjust tweak this parameter based on the size of your datasets, Original : 0.1
-  reg.setMaxCorrespondenceDistance (1);
+  reg.setMaxCorrespondenceDistance (10);
   // Set the point representation
   reg.setPointRepresentation (boost::make_shared<const MyPointRepresentation> (point_representation));
 
@@ -374,7 +374,7 @@ int main (int argc, char** argv)
 				trans += s + ",";
 			}
 		}
-    //
+    //save transformation
 		std::ofstream myfile;
 	  myfile.open ("movement.txt");
 	  myfile << trans;

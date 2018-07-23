@@ -7,9 +7,21 @@ import math, cv2, os, pickle
 import yaml
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
-
+from keras.applications.resnet50 import ResNet50
+from keras.preprocessing import image
+from keras.applications.resnet50 import preprocess_input, decode_predictions
 from world_positioning import pxb_2_wb_3d
 from depth_calibration.depth_helper import *
+import scipy
+import open3d
+
+def draw_registration_result(source, target, transformation):
+    source_temp = copy.deepcopy(source)
+    target_temp = copy.deepcopy(target)
+    source_temp.paint_uniform_color([1, 0.706, 0])
+    target_temp.paint_uniform_color([0, 0.651, 0.929])
+    source_temp.transform(transformation)
+    open3d.draw_geometries([source_temp, target_temp])
 
 
 class Location():
@@ -18,11 +30,12 @@ class Location():
         self.params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
         self.params_gs2 = self.params_dict['params_gs2']
 
-    def visualize_pointcloud(self, np_pointcloud):
+    def old_visualize_pointcloud(self, pointcloud):
+        
         pointcloud = {'x': [], 'y': [], 'z': []}
         a = np.random.permutation(len(np_pointcloud))
         max_points = 5000
-        a = a[0:min(max_points, len(np_pointcloud))]
+        a = np.sort(a[0:min(max_points, len(np_pointcloud))])
         for i in a:
             pointcloud['x'].append(np_pointcloud[i][0])
             pointcloud['y'].append(np_pointcloud[i][1])
@@ -53,33 +66,46 @@ class Location():
         axisEqual3D(ax)
         plt.show()
 
-    def visualize2_pointclouds(self, pc1, pc2):
-        ax = plt.axes(projection='3d')
-
+    def old_visualize2_pointclouds(self, pcs):
+        pc1 = pcs[0]
+        pc2 = pcs[1]
         pointcloud = {'x': [], 'y': [], 'z': []}
         a = np.random.permutation(len(pc1))
         max_points = 5000
-        a = a[0:min(max_points, len(pc1))]
+        a =np.sort(a[0:min(max_points, len(pc1))])
         for i in a:
             pointcloud['x'].append(pc1[i][0])
             pointcloud['y'].append(pc1[i][1])
             pointcloud['z'].append(pc1[i][2])
-
+        mean_y = np.mean(pointcloud['y'])
+        std_y = np.std(pointcloud['y'])
+        vmin = mean_y - 4*std_y
+        vmax = mean_y + 4*std_y
         ax.scatter3D(pointcloud['x'], pointcloud['y'], pointcloud['z'],
-            c=pointcloud['y'], cmap='Blues')
-
+            c=pointcloud['y'], cmap='Blues', s=3, vmin = vmin, vmax=vmax)
+        #surf = ax.plot_trisurf(pointcloud['x'], pointcloud['y'], pointcloud['z'], cmap='Blues', linewidth=0)
         pointcloud = {'x': [], 'y': [], 'z': []}
         a = np.random.permutation(len(pc2))
         max_points = 5000
-        a = a[0:min(max_points, len(pc2))]
+        a = np.sort(a[0:min(max_points, len(pc2))])
         for i in a:
             pointcloud['x'].append(pc2[i][0])
             pointcloud['y'].append(pc2[i][1])
             pointcloud['z'].append(pc2[i][2])
-
+        mean_y = np.mean(pointcloud['y'])
+        std_y = np.std(pointcloud['y'])
+        vmin = mean_y - 4*std_y
+        vmax = mean_y + 2*std_y
         ax.scatter3D(pointcloud['x'], pointcloud['y'], pointcloud['z'],
-            c=pointcloud['y'], cmap='Reds')
+            c=pointcloud['y'], cmap='Reds', s=6, vmin = vmin, vmax=vmax)
 
+        #surf = ax.plot_trisurf(pointcloud['x'], pointcloud['y'], pointcloud['z'], cmap='Reds', linewidth=0)
+        '''
+        from scipy.interpolate import griddata
+        X, Y = np.meshgrid(pointcloud['x'], pointcloud['z'])
+        Z = griddata((pointcloud['x'], pointcloud['z']), pointcloud['y'], (X, Y), method='linear')
+        ax.plot_surface(X,Z,Y, cmap=cm.jet)
+        '''
         # Set viewpoint.
         ax.azim = -90
         ax.elev = 0
@@ -100,6 +126,26 @@ class Location():
 
         axisEqual3D(ax)
         plt.show()
+        
+    def check_pointcloud_type(self, pointcloud):
+        if isinstance(pointcloud, np.ndarray):
+            pcd = open3d.PointCloud()
+            pcd.points = open3d.Vector3dVector(pointcloud)
+            pointcloud = pcd
+        return pointcloud
+        
+    def visualize_pointcloud(self, pointcloud, color = None):
+        pcd = self.check_pointcloud_type(pointcloud)
+        if color is not None:
+            pcd.paint_uniform_color(color)
+        open3d.draw_geometries([pcd])
+
+    def visualize2_pointclouds(self, pc_list, color_list):
+        for i, pc in enumerate(pc_list):
+            pc = self.check_pointcloud_type(pc)
+            if color_list is not None:
+                pc.paint_uniform_color(color_list[i])
+        open3d.draw_geometries(pc_list)
 
     def get_contact_info(self, directory, num, only_cart=False):
         def get_cart(path):
@@ -199,6 +245,7 @@ class Location():
             a = mean - dev
             height_map = (height_map > 0.1)*height_map*10  # NOTE: We are multiplying the height by 10 for visualization porpuses!!!!!
             height_map = (height_map > a)*height_map
+            #height_map = height_map+0.05
             height_map = cv2.resize(height_map, dsize=(size[1], size[0]), interpolation=cv2.INTER_LINEAR) #TODOM: why?
             # cv2.imshow('a', height_map)
             # cv2.waitKey()
@@ -238,6 +285,29 @@ class Location():
         for elem in pointcloud:
             string += '\n' + str(elem[0]) + ' ' + str(elem[1]) + ' ' + str(elem[2])
         return string
+
+    def stitch_pointclouds_open3D(self, source, target, threshold = 1, trans_init = np.eye(4), max_iteration = 2000, with_plot = True):
+        source = self.check_pointcloud_type(source)
+        target = self.check_pointcloud_type(target)
+        target.paint_uniform_color([0.1, 0.1, 0.7])
+        print dir(open3d)
+        if with_plot:
+            draw_registration_result(source, target, trans_init)
+            
+        print("Initial alignment")
+        evaluation = open3d.evaluate_registration(source, target, threshold, trans_init)
+        print(evaluation)
+
+        print("Apply point-to-point ICP")
+        reg_p2p = open3d.registration_icp(source, target, threshold, trans_init,
+                open3d.TransformationEstimationPointToPoint(),
+                open3d.ICPConvergenceCriteria(max_iteration = max_iteration))
+        print(reg_p2p)
+        print("Transformation is:")
+        print(reg_p2p.transformation)
+        print("")
+        if with_plot:
+            draw_registration_result(source, target, reg_p2p.transformation)
 
     def stitch_pointclouds(self, fixed, moved):
         print 'stitching'
@@ -302,25 +372,46 @@ class Location():
                 print e
         return global_pointcloud
 
+    def get_distance_images(self, img1, img2):
+
+        model = ResNet50(weights='imagenet', include_top=False)
+
+        x = image.img_to_array(img1)
+        x = np.expand_dims(x, axis=0)
+        x = preprocess_input(x)
+
+        x2 = image.img_to_array(img2)
+        x2 = np.expand_dims(x2, axis=0)
+        x2 = preprocess_input(x2)
+
+        features = model.predict(x).flatten()
+        features2 = model.predict(x2).flatten()
+        return scipy.spatial.distance.cosine(features, features2)
+
 if __name__ == "__main__":
     name = 'only_front.npy'
+    name = 'pointcloud_bar.npy'
     loc = Location()
 
     touch_list = range(3, 6)
     touch_list += range(7, 50)
+    
+    touch_list_aux = copy.deepcopy(touch_list)
+    #touch_list = range(3, 7)
+    #touch_list += range(7, 13)
     # touch_list = [0, 5, 23]
-    # global_pointcloud = loc.get_global_pointcloud(
-    #     gs_id=2,
-    #     directory='/media/mcube/data/shapes_data/pos_calib/bar_front/',
-    #     touches=touch_list,
-    #     global_pointcloud = None
-    # )
+    '''
+    global_pointcloud = loc.get_global_pointcloud(
+         gs_id=2,
+         directory='/media/mcube/data/shapes_data/pos_calib/bar_front/',
+         touches=touch_list,
+         global_pointcloud = None
+     )
+    global_pointcloud = np.array(global_pointcloud)
+    np.save('/media/mcube/data/shapes_data/pointclouds/' + name, global_pointcloud)
+    '''
     global_pointcloud = np.load('/media/mcube/data/shapes_data/pointclouds/' + name)
-
-    max_points = 50000
-    a = np.random.permutation(len(global_pointcloud))
-    a = a[0: min(max_points, len(global_pointcloud))]
-    global_pointcloud = global_pointcloud[a,:]
+    
     # loc.visualize_pointcloud(global_pointcloud)
 
     # missing = loc.get_local_pointcloud(
@@ -329,18 +420,43 @@ if __name__ == "__main__":
     #     num=16
     # )
     # loc.visualize_pointcloud(missing)
-
-    for num in touch_list[0:10]:
+    from skimage.measure import compare_ssim as ssim
+    imageA = cv2.imread('/media/mcube/data/shapes_data/pos_calib/full_bar_v2_front/p_20/GS2_0.png')
+    #touch_list = touch_list_aux
+    touch_list = range(16, 21)
+    touch_list += range(21, 50)
+    for num in touch_list[1:10]:
         directory = '/media/mcube/data/shapes_data/pos_calib/bar_front/'
         cart = loc.get_contact_info(directory, num, only_cart=True)
+        print cart
         missing = loc.get_local_pointcloud(
             gs_id=2,
-            directory='/media/mcube/data/shapes_data/pos_calib/bar_front/',
+            directory=directory,
             num=6,
             new_cart=cart
         )
-        new_pointcloud = loc.stitch_pointclouds(global_pointcloud, missing)
-        loc.visualize2_pointclouds(new_pointcloud, missing)
+        #np.save('/media/mcube/data/shapes_data/pointclouds/' + 'pcd_6_front_bar.npy', global_pointcloud)
+        missing = np.array(missing)
+        loc.visualize_pointcloud(global_pointcloud)
+        
+        #new_pointcloud = loc.stitch_pointclouds(global_pointcloud, missing)
+        trans_init = np.eye(4)
+        trans_init[0,-1] = 105
+        trans_init[1,-1] = 0
+        new_pointcloud = loc.stitch_pointclouds_open3D(global_pointcloud, missing, trans_init = trans_init, threshold = 0.5)
+        print 'num: ', num
+        imageB = cv2.imread('/media/mcube/data/shapes_data/pos_calib/full_bar_front/p_{}/GS2_0.png'.format(num))
+        print 'ssim: ', ssim(imageA, imageB, multichannel=True)
+        print 'cosine distance', loc.get_distance_images(imageA, imageB)
+        imageB = cv2.imread('/media/mcube/data/shapes_data/pos_calib/full_bar_v2_front/p_{}/GS2_0.png'.format(num))
+        #print 'ssim: ', ssim(imageA, imageB, multichannel=True)
+        print 'cosine distance v2 ', loc.get_distance_images(imageA, imageB)
+        imageB = cv2.imread('/media/mcube/data/shapes_data/pos_calib/full_bar_f=20_v1_front/p_{}/GS2_0.png'.format(num))
+        #print 'ssim: ', ssim(imageA, imageB, multichannel=True)
+        print 'cosine distance f=20 ', loc.get_distance_images(imageA, imageB)
+
+        loc.visualize2_pointclouds([new_pointcloud, missing])
+
     # touch_list = range(1, 17)
     # global_pointcloud = loc.get_global_pointcloud(
     #     gs_id=2,
@@ -357,5 +473,5 @@ if __name__ == "__main__":
     #     global_pointcloud = global_pointcloud
     # )
 
-    np.save('/media/mcube/data/shapes_data/pointclouds/' + name, global_pointcloud)
-    loc.visualize2_pointclouds(global_pointcloud, missing)
+    #np.save('/media/mcube/data/shapes_data/pointclouds/' + name, global_pointcloud)
+    #loc.visualize2_pointclouds([global_pointcloud, missing])

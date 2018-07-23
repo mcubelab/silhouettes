@@ -2,11 +2,11 @@ import numpy as np
 from control_robot import ControlRobot
 
 if __name__ == "__main__":
-    experiment_name = "/media/mcube/data/shapes_data/pos_calib/full_bar"
+    experiment_name = "/media/mcube/data/shapes_data/pos_calib/full_bar_f=20_v1"
     do_touch_motion = True
 
 
-    cr = ControlRobot(gs_ids=[2], force_list=[5])
+    cr = ControlRobot(gs_ids=[2], force_list=[20])
 
     ###################### Front
     print 'RELOCATING...'

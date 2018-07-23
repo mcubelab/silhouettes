@@ -119,3 +119,4 @@ depth_calibration/core
 gathering/core
 pos_calibration/core
 location/core
+location/c++/core
