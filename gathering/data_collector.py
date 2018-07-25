@@ -91,7 +91,6 @@ class DataCollector():
             if get_gs2 is True:
                 cv2.imwrite(directory+'/GS2.png', self.data_recorded['gs_image2'])
 
-
     def get_data(self, get_cart=False, get_gs1=False, get_gs2=True, get_wsg=True, save=False, directory='', iteration=0):
         # 1. We get the cartesian pos from the robot
         if get_cart is True:

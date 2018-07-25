@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import sys
 sys.path.append('/home/mcube/silhouettes/')
-import depth_calibration.depth_helper 
+import depth_calibration.depth_helper
 
 paths = ['ball_D6.35', 'ball_D28.5', 'hollowcone', 'semicone', 'semipyramid']
 img_num = 125

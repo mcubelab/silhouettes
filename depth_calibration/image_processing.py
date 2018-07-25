@@ -115,9 +115,10 @@ def check_center(center,radius,col,row):
 #%%
 
 if __name__ == "__main__":
+    ## Select GS Id!
+    gs_id = 2
 
     ## Select shape!
-
     shape = 'semicone'
     # shape = 'hollowcone'
     # shape = 'ball_D6.35'

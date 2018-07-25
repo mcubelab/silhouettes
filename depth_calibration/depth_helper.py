@@ -59,8 +59,7 @@ def preprocess_grad_for_simulation(grad_x, grad_y, gs_id=2, include_depth_chanel
     # We get the network input dims
     params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
     if gs_id == 1:
-        # dim= params_dict['input_image_hw_gs1'][0:2]
-        pass
+        dim = params_dict['input_image_hw_gs1'][0:2]
     else:
         dim = params_dict['input_shape_gs2'][0:2]
 
@@ -70,15 +69,12 @@ def preprocess_grad_for_simulation(grad_x, grad_y, gs_id=2, include_depth_chanel
     pos = np.stack((np.meshgrid(yvalues, xvalues)), axis = 2)
 
     # We compute input: gx, gy, posx, posy
-    print "br"
-    print float(grad_x.shape[0])/float(grad_x.shape[1])
     grad_x = cv2.resize(grad_x, dsize=(dim[1], dim[0]), interpolation=cv2.INTER_LINEAR)
     grad_y = cv2.resize(grad_y, dsize=(dim[1], dim[0]), interpolation=cv2.INTER_LINEAR)
-    print "ar"
-    print float(grad_x.shape[0])/float(grad_x.shape[1])
-    cv2.imshow('arx', grad_x)
-    cv2.imshow('ary', grad_y)
-    cv2.waitKey(0)
+
+    # cv2.imshow('arx', grad_x)
+    # cv2.imshow('ary', grad_y)
+    # cv2.waitKey(0)
 
     if include_depth_chanel:
         depth_map = poisson_reconstruct(grad_y, grad_x)
@@ -86,12 +82,12 @@ def preprocess_grad_for_simulation(grad_x, grad_y, gs_id=2, include_depth_chanel
 
     grad_x = np.expand_dims(grad_x, axis=2)
     grad_y = np.expand_dims(grad_y, axis=2)
-    grad2 = np.concatenate((grad_x, grad_y), axis = 2)
+    grad2 = np.concatenate((grad_x, grad_y), axis=2)
 
     if include_depth_chanel:
-        grad2 = np.concatenate((grad2, depth_map), axis = 2)
+        grad2 = np.concatenate((grad2, depth_map), axis=2)
 
-    return np.concatenate((grad2, pos), axis = 2) # We add pos channels
+    return np.concatenate((grad2, pos), axis=2) # We add pos channels
 
 def get_rgb_noise(weight_mean, weight_dev, biass_mean, biass_dev):
     noise_coefs = []
@@ -200,7 +196,7 @@ def raw_gs_to_depth_map(gs_id=2, test_image=None, ref=None, model_path=None, plo
 
     params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
     if gs_id == 1:
-        # dim= params_dict['input_image_hw_gs1'][0:2]
+        dim = params_dict['input_image_hw_gs1'][0:2]
         pass
     else:
         dim = params_dict['input_shape_gs2'][0:2]

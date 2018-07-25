@@ -7,7 +7,7 @@ if __name__ == "__main__":
 
 
     cr = ControlRobot(gs_ids=[2], force_list=[20])
-    gripper_rotation = "0"  # "+30" "-30"
+    gripper_rotation = "0"  # "0" "+30" "-30"
 
     if gripper_rotation == "0":
         front_quat = 0.0, 0.7111, 0.7031, -0.0001
