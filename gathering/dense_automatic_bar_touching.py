@@ -8,7 +8,7 @@ if __name__ == "__main__":
 
 
     cr = ControlRobot(gs_ids=[2], force_list=[20])
-    gripper_rotation = "-30"  # "0" "+30" "-30"
+    gripper_rotation = "0"  # "0" "+30" "-30"
 
     if gripper_rotation == "0":
         front_pos = 674.69, 644.55, 748.03, 0.0, 0.7111, 0.7031, -0.0001
@@ -22,6 +22,7 @@ if __name__ == "__main__":
         front_pos = 588., 660., 740., 0.08, 0.7111, 0.6855, 0.06
         side_pos = 635., 782., 727., 0.03, 0.006, 0.9826, -0.183
         back_pos = 587., 651., 734., 0.097, -0.6846, 0.71, -0.1
+        # NOTE: I don't know why, when I go to that last point the robot gives an "out of workspace" error
 
     ###################### Front
     print 'RELOCATING...'
