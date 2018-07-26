@@ -391,7 +391,7 @@ class Location():
             new_pc.append(new_elem)
         return new_pc
 
-    def get_global_pointcloud(self, gs_id, directory, touches, global_pointcloud):
+    def get_global_pointcloud(self, gs_id, directory, touches, global_pointcloud, threshold = 1):
         for i in touches:
             exp = str(i)
             print "Processing img " + exp + "..."
@@ -406,7 +406,7 @@ class Location():
                 else:
                     #global_pointcloud = self.simple_pointcloud_merge(global_pointcloud, local_pointcloud)
                     trans_init = np.eye(4)
-                    global_pointcloud = self.stitch_pointclouds_open3D(global_pointcloud, local_pointcloud, trans_init = trans_init, threshold = 2, with_plot = False)
+                    global_pointcloud = self.stitch_pointclouds_open3D(global_pointcloud, local_pointcloud, trans_init = trans_init, threshold = threshold, with_plot = False)
                     # merged = self.stitch_pointclouds(local_pointcloud_0, local_pointcloud_1)
             except Exception as e:
                 print "Error computing local PointCloud"
@@ -431,7 +431,7 @@ class Location():
 
 if __name__ == "__main__":
     name = 'only_front.npy'
-    name = 'pointcloud_full_bar_front_d=5_all_and_convew_hull_with_complex_stitch_thres=2.npy'
+    name = 'pointcloud_full_bar_front_d=5_all_and_convew_hull_with_complex_stitch_thres=10.npy'
     loc = Location()
 
     touch_list = range(0, 7)
@@ -446,15 +446,16 @@ if __name__ == "__main__":
          gs_id=2,
          directory='/media/mcube/data/shapes_data/pos_calib/full_bar_f=20_d=5_v1_front/',
          touches=touch_list,
-         global_pointcloud = None
+         global_pointcloud = None,
+         threshold = 10
      )
     global_pointcloud = np.array(global_pointcloud)
     np.save('/media/mcube/data/shapes_data/pointclouds/' + name, global_pointcloud)
     
-    global_pointcloud = np.load('/media/mcube/data/shapes_data/pointclouds/' + name)
+    #global_pointcloud = np.load('/media/mcube/data/shapes_data/pointclouds/' + name)
     
     loc.visualize_pointcloud(global_pointcloud)
-
+    pdb.set_trace()
     # missing = loc.get_local_pointcloud(
     #     gs_id=2,
     #     directory='/media/mcube/data/shapes_data/pos_calib/bar_front/',
