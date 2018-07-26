@@ -14,15 +14,9 @@ from world_positioning import pxb_2_wb_3d
 from depth_calibration.depth_helper import *
 import scipy
 import open3d
-
-def draw_registration_result(source, target, transformation):
-    source_temp = copy.deepcopy(source)
-    target_temp = copy.deepcopy(target)
-    source_temp.paint_uniform_color([1, 0.706, 0])
-    target_temp.paint_uniform_color([0, 0.651, 0.929])
-    source_temp.transform(transformation)
-    open3d.draw_geometries([source_temp, target_temp])
-
+from scipy.spatial import ConvexHull
+from matplotlib.path import Path
+import pdb
 
 class Location():
     def __init__(self):
@@ -130,6 +124,8 @@ class Location():
     def check_pointcloud_type(self, pointcloud):
         if isinstance(pointcloud, np.ndarray):
             pcd = open3d.PointCloud()
+            print type(pointcloud)
+            print 'what is getting', pointcloud.shape
             pcd.points = open3d.Vector3dVector(pointcloud)
             pointcloud = pcd
         return pointcloud
@@ -203,7 +199,7 @@ class Location():
 
         return cart, gs1_list, gs2_list, wsg_list, force_list, gs1_back, gs2_back
 
-    def get_local_pointcloud(self, gs_id, directory='', num=-1, new_cart=None):
+    def get_local_pointcloud(self, gs_id, directory='', num=-1, new_cart=None, with_convex_hull = True):
         # 1. We convert the raw image to height_map data
         cart, gs1_list, gs2_list, wsg_list, force_list, gs1_back, gs2_back = self.get_contact_info(directory, num) #TODOM: why so many info?
         if new_cart is not None:
@@ -239,7 +235,9 @@ class Location():
 
             # cv2.imshow('hm', height_map)
             # cv2.waitKey(0)
-
+            
+            
+            ## Here it is where we modify / create point cloud
             mean = np.mean(height_map)
             dev = np.std(height_map)
             a = mean - dev
@@ -258,9 +256,11 @@ class Location():
         gripper_state['Dz'] = 139.8 + 72.5 + 160  # Base + wsg + finger
 
         pointcloud = []
+        pixel_list = []
         for i in range(height_map.shape[0]):
             for j in range(height_map.shape[1]):
                 if(height_map[i][j] >= 0.10):
+                    pixel_list.append([i,j])
                     world_point = pxb_2_wb_3d(
                         point_3d=(i, j, height_map[i][j]),
                         gs_id=gs_id,
@@ -269,7 +269,32 @@ class Location():
                     )
                     a = np.asarray(world_point)
                     pointcloud.append(a)
+        if with_convex_hull:
+            ## Comput convex hull and add those points:
+            hull = ConvexHull(pixel_list)
+            pixel_list = np.array(pixel_list)
+            
+            tupVerts=np.array([pixel_list[hull.vertices,0], pixel_list[hull.vertices,1]])
+            tupVerts = np.concatenate([tupVerts, tupVerts[:,0:1]], axis=1)
+            
+            pix_x, pix_y = np.meshgrid(np.arange(height_map.shape[1]), np.arange(height_map.shape[0])) # make a canvas with coordinates
+            pix_x, pix_y = pix_x.flatten(), pix_y.flatten()
+            points = np.vstack((pix_y,pix_x)).T 
 
+            p = Path(tupVerts.T)
+            grid = p.contains_points(points)
+            mask = grid.reshape(height_map.shape[0],height_map.shape[1])
+            for i in range(height_map.shape[0]):
+                for j in range(height_map.shape[1]):
+                    if mask[i][j] and height_map[i][j] < 0.10:
+                        world_point = pxb_2_wb_3d(
+                            point_3d=(i, j, height_map[i][j]),
+                            gs_id=gs_id,
+                            gripper_state = gripper_state,
+                            fitting_params = params_gs
+                        )
+                        a = np.asarray(world_point)
+                        pointcloud.append(a)
         return pointcloud
 
     def simple_pointcloud_merge(self, pointcloud1, pointcloud2):
@@ -286,13 +311,23 @@ class Location():
             string += '\n' + str(elem[0]) + ' ' + str(elem[1]) + ' ' + str(elem[2])
         return string
 
-    def stitch_pointclouds_open3D(self, source, target, threshold = 1, trans_init = np.eye(4), max_iteration = 2000, with_plot = True):
-        source = self.check_pointcloud_type(source)
-        target = self.check_pointcloud_type(target)
+    def draw_registration_result(self, source, target, transformation):
+        source_temp = copy.deepcopy(source)
+        target_temp = copy.deepcopy(target)
+        source_temp.paint_uniform_color([1, 0.706, 0])
+        target_temp.paint_uniform_color([0, 0.651, 0.929])
+        source_temp.transform(transformation)
+        open3d.draw_geometries([source_temp, target_temp])
+
+
+
+    def stitch_pointclouds_open3D(self, target, source, threshold = 1, trans_init = np.eye(4), max_iteration = 2000, with_plot = True):
+        source = self.check_pointcloud_type(np.array(source))
+        target = self.check_pointcloud_type(np.array(target))
         target.paint_uniform_color([0.1, 0.1, 0.7])
         print dir(open3d)
         if with_plot:
-            draw_registration_result(source, target, trans_init)
+            self.draw_registration_result(source, target, trans_init)
             
         print("Initial alignment")
         evaluation = open3d.evaluate_registration(source, target, threshold, trans_init)
@@ -302,13 +337,18 @@ class Location():
         reg_p2p = open3d.registration_icp(source, target, threshold, trans_init,
                 open3d.TransformationEstimationPointToPoint(),
                 open3d.ICPConvergenceCriteria(max_iteration = max_iteration))
-        print(reg_p2p)
         print("Transformation is:")
         print(reg_p2p.transformation)
         print("")
         if with_plot:
-            draw_registration_result(source, target, reg_p2p.transformation)
-
+            self.draw_registration_result(source, target, reg_p2p.transformation)
+        
+        xyz_source = np.asarray(source.points)
+        xyz_target = np.asarray(target.points)
+        xyz_global = np.concatenate([xyz_source, xyz_target], axis = 0)
+        return xyz_global
+        
+        
     def stitch_pointclouds(self, fixed, moved):
         print 'stitching'
         fixed = np.asarray(fixed)
@@ -364,8 +404,9 @@ class Location():
                 if global_pointcloud is None:
                     global_pointcloud = local_pointcloud
                 else:
-                    # local_pointcloud = self.translate_pointcloud(local_pointcloud, v=(0, 5*i, 0))
-                    global_pointcloud = self.simple_pointcloud_merge(global_pointcloud, local_pointcloud)
+                    #global_pointcloud = self.simple_pointcloud_merge(global_pointcloud, local_pointcloud)
+                    trans_init = np.eye(4)
+                    global_pointcloud = self.stitch_pointclouds_open3D(global_pointcloud, local_pointcloud, trans_init = trans_init, threshold = 2, with_plot = False)
                     # merged = self.stitch_pointclouds(local_pointcloud_0, local_pointcloud_1)
             except Exception as e:
                 print "Error computing local PointCloud"
@@ -390,29 +431,29 @@ class Location():
 
 if __name__ == "__main__":
     name = 'only_front.npy'
-    name = 'pointcloud_bar.npy'
+    name = 'pointcloud_full_bar_front_d=5_all_and_convew_hull_with_complex_stitch_thres=2.npy'
     loc = Location()
 
-    touch_list = range(3, 6)
-    touch_list += range(7, 50)
+    touch_list = range(0, 7)
+    touch_list += range(7, 28)
     
     touch_list_aux = copy.deepcopy(touch_list)
     #touch_list = range(3, 7)
     #touch_list += range(7, 13)
     # touch_list = [0, 5, 23]
-    '''
+    
     global_pointcloud = loc.get_global_pointcloud(
          gs_id=2,
-         directory='/media/mcube/data/shapes_data/pos_calib/bar_front/',
+         directory='/media/mcube/data/shapes_data/pos_calib/full_bar_f=20_d=5_v1_front/',
          touches=touch_list,
          global_pointcloud = None
      )
     global_pointcloud = np.array(global_pointcloud)
     np.save('/media/mcube/data/shapes_data/pointclouds/' + name, global_pointcloud)
-    '''
+    
     global_pointcloud = np.load('/media/mcube/data/shapes_data/pointclouds/' + name)
     
-    # loc.visualize_pointcloud(global_pointcloud)
+    loc.visualize_pointcloud(global_pointcloud)
 
     # missing = loc.get_local_pointcloud(
     #     gs_id=2,
@@ -422,6 +463,8 @@ if __name__ == "__main__":
     # loc.visualize_pointcloud(missing)
     from skimage.measure import compare_ssim as ssim
     imageA = cv2.imread('/media/mcube/data/shapes_data/pos_calib/full_bar_v2_front/p_20/GS2_0.png')
+    heightA = raw_gs_to_depth_map(test_image=imageA, ref=None, model_path=SHAPES_ROOT + 'depth_calibration/weights/weights.aug.v1.hdf5', plot=False, save=False, path='')
+    heightA = np.repeat(np.expand_dims(heightA, axis=2), 3, axis=2)
     #touch_list = touch_list_aux
     touch_list = range(16, 21)
     touch_list += range(21, 50)
@@ -435,26 +478,38 @@ if __name__ == "__main__":
             num=6,
             new_cart=cart
         )
+        print 'Cart: ,', cart
+        print 'Other: ', loc.get_contact_info(directory, 6, only_cart=True)
         #np.save('/media/mcube/data/shapes_data/pointclouds/' + 'pcd_6_front_bar.npy', global_pointcloud)
         missing = np.array(missing)
         loc.visualize_pointcloud(global_pointcloud)
         
         #new_pointcloud = loc.stitch_pointclouds(global_pointcloud, missing)
+        #Assumir trans_init == identity --> assum that cart provided to build pointcloud are correct
         trans_init = np.eye(4)
-        trans_init[0,-1] = 105
-        trans_init[1,-1] = 0
-        new_pointcloud = loc.stitch_pointclouds_open3D(global_pointcloud, missing, trans_init = trans_init, threshold = 0.5)
+        #trans_init[0,-1] = 0
+        #trans_init[1,-1] = 0
+        '''
         print 'num: ', num
         imageB = cv2.imread('/media/mcube/data/shapes_data/pos_calib/full_bar_front/p_{}/GS2_0.png'.format(num))
-        print 'ssim: ', ssim(imageA, imageB, multichannel=True)
+        heightB = raw_gs_to_depth_map(test_image=imageB, ref=None, model_path=SHAPES_ROOT + 'depth_calibration/weights/weights.aug.v1.hdf5', plot=False, save=False, path='')
+        heightB = np.repeat(np.expand_dims(heightB, axis=2), 3, axis=2)
         print 'cosine distance', loc.get_distance_images(imageA, imageB)
+        print 'cosine distance height', loc.get_distance_images(heightA, heightB)
         imageB = cv2.imread('/media/mcube/data/shapes_data/pos_calib/full_bar_v2_front/p_{}/GS2_0.png'.format(num))
-        #print 'ssim: ', ssim(imageA, imageB, multichannel=True)
+        heightB = raw_gs_to_depth_map(test_image=imageB, ref=None, model_path=SHAPES_ROOT + 'depth_calibration/weights/weights.aug.v1.hdf5', plot=False, save=False, path='')
+        heightB = np.repeat(np.expand_dims(heightB, axis=2), 3, axis=2)
         print 'cosine distance v2 ', loc.get_distance_images(imageA, imageB)
+        print 'cosine distance v2 height', loc.get_distance_images(heightA, heightB)
         imageB = cv2.imread('/media/mcube/data/shapes_data/pos_calib/full_bar_f=20_v1_front/p_{}/GS2_0.png'.format(num))
+        heightB = raw_gs_to_depth_map(test_image=imageB, ref=None, model_path=SHAPES_ROOT + 'depth_calibration/weights/weights.aug.v1.hdf5', plot=False, save=False, path='')
+        heightB = np.repeat(np.expand_dims(heightB, axis=2), 3, axis=2)
         #print 'ssim: ', ssim(imageA, imageB, multichannel=True)
         print 'cosine distance f=20 ', loc.get_distance_images(imageA, imageB)
-
+        print 'cosine distance f=20 height', loc.get_distance_images(heightA, heightB)
+        '''
+        trans_init = np.eye(4)
+        new_pointcloud = loc.stitch_pointclouds_open3D(global_pointcloud, missing, trans_init = trans_init, threshold = 0.5)
         loc.visualize2_pointclouds([new_pointcloud, missing])
 
     # touch_list = range(1, 17)
