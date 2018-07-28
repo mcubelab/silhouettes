@@ -33,6 +33,24 @@ class ControlRobot():
         setCartRos = rospy.ServiceProxy('/robot1_SetCartesian', robot_SetCartesian)
         setCartRos(x, y, z, q0, qx, qy, qz)
 
+    def move_joint(self, dj1=0, dj2=0, dj3=0, dj4=0, dj5=0, dj6=0, print_cart=False):
+        getJointRos = rospy.ServiceProxy('/robot1_GetJoints', robot_GetJoints)
+        setJointRos = rospy.ServiceProxy('/robot1_SetJoints', robot_SetJoints)
+        j = getJointRos()
+        j.j1 += dj1
+        j.j2 += dj2
+        j.j3 += dj3
+        j.j4 += dj4
+        j.j5 += dj5
+        j.j6 += dj6
+        setJointRos(j.j1, j.j2, j.j3, j.j4, j.j5, j.j6)
+
+        if print_cart:
+            a = raw_input("Press enter to get cartesian (wait until done):")
+            getCartRos = rospy.ServiceProxy('/robot1_GetCartesian', robot_GetCartesian)
+            c = getCartRos()
+            print c
+
 
     def close_gripper_f(self, grasp_speed=50, grasp_force=40):
         graspinGripper(grasp_speed=grasp_speed, grasp_force=grasp_force)
@@ -97,5 +115,8 @@ if __name__ == "__main__":
 
     #cr.move_cart_mm(dx=5, dy=0, dz=0)
     #cr.palpate(speed=40, force_list=[10, 20, 30], save=True, path='air_palpate_test')
-    cr.move_cart_mm(0, 0, 100)
+
+
+    # cr.move_cart_mm(0, 0, 5)
+    cr.move_joint(dj6=-180, print_cart=True)
     print 'done!'
