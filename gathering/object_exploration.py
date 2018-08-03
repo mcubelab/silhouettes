@@ -2,23 +2,24 @@ import numpy as np
 from control_robot import ControlRobot
 
 if __name__ == "__main__":
-    experiment_name = "/media/mcube/data/shapes_data/object_exploration/test_void_-20"
+    experiment_name = "/media/mcube/data/shapes_data/object_exploration/test_rectangle"
 
     # Enter object main dimensions in [mm]
-    length = 30
-    height = 20
+    length = 80
+    height = 40
     starting_angle = 0
 
     # Enter minimum step distance (d) in [mm]
-    d = 10
+    d = 20
 
     # Enter these other params
-    cr = ControlRobot(gs_ids=[2], force_list=[20])
+    cr = ControlRobot(gs_ids=[1, 2], force_list=[20])
     gripper_rotation = "0"  # "0" "+20" "-20"
 
-    # IMPORTANT NOTE: Make sure you start at a save position
+    # IMPORTANT NOTE: Make sure you start at a save position ()
+
     if gripper_rotation == "0":
-        start_pos = 840.6, 373., 660., 0., 0.7045, -0.7097, 0.
+        start_pos = 830.6, 373., 660., 0., 0.7045, -0.7097, 0.
         gripper_save_turning_pos = 833.6, 373., 862., 0., 0.7045, -0.7097, 0.
         gripper_turned_pos = 833.6, 373., 862., 0., -0.716, -0.69, 0.
         restart_pos = 840.6, 373., 660., 0., -0.716, -0.69, 0.
@@ -79,3 +80,10 @@ if __name__ == "__main__":
         experiment_name=experiment_name + '_2',
         movement_list=movement_list
     )
+
+    print 'RELOCATING...'
+    cart = gripper_turned_pos
+    cr.set_cart_mm(cart)
+
+    cart = gripper_save_turning_pos
+    cr.set_cart_mm(cart)

@@ -128,6 +128,6 @@ if __name__ == "__main__":
     #cr.palpate(speed=40, force_list=[10, 20, 30], save=True, path='air_palpate_test')
 
 
-    # cr.move_cart_mm(0, 0, 5)
-    cr.move_joint(dj6=-180, print_cart=True)
+    # cr.move_cart_mm(0, 0, 100)
+    cr.move_joint(dj6=90, print_cart=False)
     print 'done!'
