@@ -3,28 +3,28 @@ from control_robot import ControlRobot
 import time
 
 if __name__ == "__main__":
-    experiment_name = "/media/mcube/data/shapes_data/raw/automatic_test"
+    object_angle = 0
+    experiment_name = "/media/mcube/data/shapes_data/raw/automatic_test_semipyramid_" + str(object_angle)
 
     # Enter gs_id:
     gs_id = 2
-    object_angle = 0
 
     # Enter object main dimensions in [mm]
     length = 40 # distance from the magnetic base to the top
     # Enter area to area to explore uniformly
-    height = 20
-    width = 20
-    number_of_points = 3
+    height = 8
+    width = 8
+    number_of_points = 1
 
     # Enter these other params
     cr = ControlRobot(gs_ids=[gs_id], force_list=[20])
 
     # IMPORTANT NOTE: Make sure you start at a save position
-    if gs_id == 2:
-        start_cart = 883.57-length, 380., 662.93, 0., -0.9998, 0.0185, 0.
-    elif gs_id == 1:
-        start_cart = 883.57-length, 358.06, 662.93, 0., -0.0185, -0.9998, 0.
 
+    if gs_id == 1:
+        start_cart = 895-length, 364., 660., -0.0205, -0.00833, -0.9997, 0.
+    elif gs_id == 2:
+        start_cart = 900-length, 387., 660., 0.01, 0.9999, -0.0102, 0.008
 
     # We generate all the random offsets from the center:
     rnd_x = np.random.uniform(-width/2, width/2, size=number_of_points)
@@ -50,5 +50,6 @@ if __name__ == "__main__":
     print 'TOUCHING...'
     cr.perfrom_experiment(
         experiment_name=experiment_name,
-        movement_list=movement_list
+        movement_list=movement_list,
+        save_only_picture=True
     )

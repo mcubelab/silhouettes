@@ -5,7 +5,7 @@ import copy
 if __name__ == "__main__":
 
   print("Testing mesh in open3d ...")
-  mesh = read_triangle_mesh("/home/mcube/Downloads/hex.ply")
+  mesh = read_triangle_mesh("sync2.ply")
   print(mesh)
   print(np.asarray(mesh.vertices))
   print(np.asarray(mesh.triangles))

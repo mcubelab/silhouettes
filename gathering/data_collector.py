@@ -15,9 +15,10 @@ import time
 
 
 class DataCollector():
-    def __init__(self, only_one_shot=False, save_path='data_collected/', automatic=False):
+    def __init__(self, only_one_shot=False, save_path='data_collected/', automatic=False, save_only_picture=False):
         self.bridge = CvBridge()
         self.automatic = automatic
+        self.save_only_picture = save_only_picture
 
         # Only one shot variables
         self.only_one_shot = only_one_shot
@@ -58,7 +59,7 @@ class DataCollector():
             # print "Finger 2: " + str(data_dict['force_finger1']
         # if self.only_one_shot:
         if not self.automatic:
-            self.__save_data(get_gs1=False, get_gs2=True, get_wsg=False, directory=self.save_path, iteration=self.it)
+            self.__save_data(get_gs1=self.get_gs1, get_gs2=self.get_gs2, get_wsg=self.get_wsg, directory=self.save_path, iteration=self.it)
         return
 
     def getCart(self):
@@ -74,24 +75,34 @@ class DataCollector():
             return False
 
     def __save_data(self, get_gs1=False, get_gs2=True, get_wsg=True, directory='', iteration=0):
-        if not os.path.exists(directory): # If the directory does not exist, we create it
-            os.makedirs(directory)
-        if iteration != -1:
-            if get_wsg is True:
-                self.__save(directory, self.data_recorded['wsg_driver'], 'wsg_'+ str(iteration))
+        if self.save_only_picture:
             if get_gs1 is True:
                 cv2.imwrite(directory+'/GS1_' + str(iteration) + '.png', self.data_recorded['gs_image'])
             if get_gs2 is True:
                 cv2.imwrite(directory+'/GS2_' + str(iteration) + '.png', self.data_recorded['gs_image2'])
         else:
-            if get_wsg is True:
-                self.__save(directory, self.data_recorded['wsg_driver'], 'wsg')
-            if get_gs1 is True:
-                cv2.imwrite(directory+'/GS1.png', self.data_recorded['gs_image'])
-            if get_gs2 is True:
-                cv2.imwrite(directory+'/GS2.png', self.data_recorded['gs_image2'])
+            if not os.path.exists(directory): # If the directory does not exist, we create it
+                os.makedirs(directory)
+            if iteration != -1:
+                if get_wsg is True:
+                    self.__save(directory, self.data_recorded['wsg_driver'], 'wsg_'+ str(iteration))
+                if get_gs1 is True:
+                    cv2.imwrite(directory+'/GS1_' + str(iteration) + '.png', self.data_recorded['gs_image'])
+                if get_gs2 is True:
+                    cv2.imwrite(directory+'/GS2_' + str(iteration) + '.png', self.data_recorded['gs_image2'])
+            else:
+                if get_wsg is True:
+                    self.__save(directory, self.data_recorded['wsg_driver'], 'wsg')
+                if get_gs1 is True:
+                    cv2.imwrite(directory+'/GS1.png', self.data_recorded['gs_image'])
+                if get_gs2 is True:
+                    cv2.imwrite(directory+'/GS2.png', self.data_recorded['gs_image2'])
 
     def get_data(self, get_cart=False, get_gs1=False, get_gs2=True, get_wsg=True, save=False, directory='', iteration=0):
+        self.get_gs1 = get_gs1
+        self.get_gs2 = get_gs2
+        self.get_wsg = get_wsg
+
         # 1. We get the cartesian pos from the robot
         if get_cart is True:
             self.cart = getCart()
@@ -127,7 +138,7 @@ class DataCollector():
 
 
 if __name__ == "__main__":
-    dc = DataCollector(only_one_shot=False, save_path='/media/mcube/data/shapes_data/test_video')
+    dc = DataCollector(only_one_shot=True, save_path='/media/mcube/data/shapes_data/siyuan_calib')
 
     #### If single picture uncomment this:
     # for ite in range(2,20):
@@ -137,5 +148,6 @@ if __name__ == "__main__":
     #     a = raw_input("Capture")
 
     ### If video uncomment this:
-    dc.get_data(get_cart=False, get_gs1=False, get_gs2=True, get_wsg=False, iteration=0)
+    dc.it = 3
+    dc.get_data(get_cart=False, get_gs1=True, get_gs2=False, get_wsg=False, iteration=0)
     time.sleep(9999)

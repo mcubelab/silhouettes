@@ -58,46 +58,57 @@ class ControlRobot():
     def open_gripper(self):
         open(speed=100)
 
-    def palpate(self, speed=40, force_list=[1, 10, 20, 40], save=False, path=''):
+    def palpate(self, speed=80, force_list=[1, 10, 20, 40], save=False, path='', save_only_picture=False, i=0):
         # 0. We create the directory
         if save is True and not os.path.exists(path): # If the directory does not exist, we create it
             os.makedirs(path)
 
         # 1. We get and save the cartesian coord.
-        dc = DataCollector(only_one_shot=False, automatic=True)
+        dc = DataCollector(only_one_shot=False, automatic=True, save_only_picture=save_only_picture)
         cart = dc.getCart()
-        if save is True:
+        if save and not save_only_picture:
             np.save(path + '/cart.npy', cart)
 
         # 2. We get wsg forces and gs images at every set force and store them
-        i = 0
         for force in force_list:
             self.close_gripper_f(grasp_speed=speed, grasp_force=force)
             print "Applying: " + str(force)
-            time.sleep(1.0)
+            time.sleep(0.2)
             dc.get_data(get_cart=False, get_gs1=(1 in self.gs_id), get_gs2=(2 in self.gs_id), get_wsg=True, save=save, directory=path, iteration=i)
             self.open_gripper()
-            time.sleep(1.0)
             i += 1
 
-    def perfrom_experiment(self, experiment_name='test', movement_list=[]):
+    def perfrom_experiment(self, experiment_name='test', movement_list=[], save_only_picture=False):
         # 1. We save the background image:
-        dc = DataCollector(only_one_shot=False, automatic=True)
+        dc = DataCollector(only_one_shot=False, automatic=True, save_only_picture=save_only_picture)
         dc.get_data(get_cart=False, get_gs1=(1 in self.gs_id), get_gs2=(2 in self.gs_id), get_wsg=False, save=True, directory=experiment_name+'/air', iteration=-1)
         print "Air data gathered"
 
         # 2. We perfomr the experiment:
+        ini = time.time()
         i = 0
         if not os.path.exists(experiment_name): # If the directory does not exist, we create it
             os.makedirs(experiment_name)
         for movement in movement_list:
-            path = experiment_name + '/p_' + str(i) + '/'
-            self.palpate(speed=40, force_list=self.force_list, save=True, path=path)
+            if i>0:
+                print "Done: " + str(i) + "/" + str(len(movement_list)) + ", Remaining minutes: " + str(((len(movement_list)-i)*(time.time()-ini)/i)/60.)
+            if save_only_picture:
+                path = experiment_name + '/'
+                j = i
+            else:
+                path = experiment_name + '/p_' + str(i) + '/'
+                j = 0
+            self.palpate(speed=40, force_list=self.force_list, save=True, path=path, save_only_picture=save_only_picture, i=j)
             self.move_cart_mm(movement[0], movement[1], movement[2])
-            time.sleep(6)
+            print "moved"
             i += 1
-        path = experiment_name + '/p_' + str(i) + '/'
-        self.palpate(speed=40, force_list=self.force_list, save=True, path=path)
+        if save_only_picture:
+            path = experiment_name + '/'
+            j = i
+        else:
+            path = experiment_name + '/p_' + str(i) + '/'
+            j = 0
+        self.palpate(speed=40, force_list=self.force_list, save=True, path=path, save_only_picture=save_only_picture, i=j)
 
 
 if __name__ == "__main__":
