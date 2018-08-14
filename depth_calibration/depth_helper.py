@@ -1,21 +1,25 @@
 from image_processing import *
 
-from keras.models import Sequential
-from keras.layers import *
-from keras.models import model_from_json
-from keras import optimizers
-from keras.callbacks import ModelCheckpoint
-import keras.losses
-from keras.models import load_model
-from keras.utils import to_categorical
-from sklearn.model_selection import train_test_split
+try:
+    from keras.models import Sequential
+    from keras.layers import *
+    from keras.models import model_from_json
+    from keras import optimizers
+    from keras.callbacks import ModelCheckpoint
+    import keras.losses
+    from keras.models import load_model
+    from keras.utils import to_categorical
+    from sklearn.model_selection import train_test_split
+    from keras import backend as K
+except Exception as e:
+    print "Not importing keras"
+
 import pylab
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import os
 import cv2
 import scipy
-from keras import backend as K
 import scipy.io
 import cPickle as pickle
 import h5py
@@ -97,12 +101,19 @@ def get_rgb_noise(weight_mean, weight_dev, biass_mean, biass_dev):
         noise_coefs.append((weight, biass))
     return noise_coefs
 
-def introduce_noise(img, noise_coefs):
+def introduce_noise(img, noise_coefs, mask=None):
     # Applies: channel = weight*channel + biass
     # to each channel, where weight, biass are random normal values with the given mean, dev
     for i in range(3):
         weight, biass = noise_coefs[i]
         img[...,i] = weight*img[...,i] + biass
+
+    if mask is not None:
+        if (len(img[0, 0, :]) > 0):
+            for i in range(len(img[0, 0, :])):
+                img[:, :, i] = img[:, :, i]*mask
+        else:
+            img = img*mask
     return img
 
 def posprocess_label(arr):

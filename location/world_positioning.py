@@ -3,8 +3,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numpy.linalg import inv
 import math, os, sys, cv2, yaml
-import tf.transformations as tfm
-
+try:
+    import tf.transformations as tfm
+except Exception as e:
+    pass
+    
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))

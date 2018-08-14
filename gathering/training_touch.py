@@ -51,5 +51,5 @@ if __name__ == "__main__":
     cr.perfrom_experiment(
         experiment_name=experiment_name,
         movement_list=movement_list,
-        save_only_picture=True
+        save_only_picture=False
     )
