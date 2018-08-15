@@ -2,7 +2,7 @@ import numpy as np
 from control_robot import ControlRobot
 
 if __name__ == "__main__":
-    experiment_name = "/media/mcube/data/shapes_data/object_exploration/test_rectangle"
+    experiment_name = "/media/mcube/data/shapes_data/object_exploration/video_rectangle"
 
     # Enter object main dimensions in [mm]
     length = 80

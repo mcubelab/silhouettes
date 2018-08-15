@@ -1,10 +1,12 @@
 import numpy as np
 from control_robot import ControlRobot
-import time
+import time, pdb
+import matplotlib.pyplot as plt
+import copy
 
 if __name__ == "__main__":
-    object_angle = 0
-    experiment_name = "/media/mcube/data/shapes_data/raw/automatic_test_semipyramid_" + str(object_angle)
+    object_angle = '0'
+    experiment_name = "/media/mcube/data/shapes_data/raw/sphere_08-15-2018_gs2_rot=" + str(object_angle)
 
     # Enter gs_id:
     gs_id = 2
@@ -14,7 +16,7 @@ if __name__ == "__main__":
     # Enter area to area to explore uniformly
     height = 8
     width = 8
-    number_of_points = 1
+    number_of_points = 2000
 
     # Enter these other params
     cr = ControlRobot(gs_ids=[gs_id], force_list=[20])
@@ -32,16 +34,17 @@ if __name__ == "__main__":
 
     # We compute all the movememts
     movement_list = [(0, 0, 0)]
+    prev_x = 0
+    prev_y = 0
     for x, y in zip(rnd_x, rnd_y):
         movement = [0, 0, 0]
         movement[0] = 0
-        movement[1] = x - movement_list[-1][1]
-        movement[2] = y - movement_list[-1][2]
+        movement[1] = x - prev_x
+        movement[2] = y - prev_y
         movement_list.append(movement)
-
-    # print zip(rnd_x, rnd_y)
-    print movement_list
-
+        prev_x = copy.deepcopy(x)
+        prev_y = copy.deepcopy(y)
+        
     # We perform the movement
     print 'RELOCATING...'
     cr.set_cart_mm(start_cart)
@@ -51,5 +54,5 @@ if __name__ == "__main__":
     cr.perfrom_experiment(
         experiment_name=experiment_name,
         movement_list=movement_list,
-        save_only_picture=True
+        save_only_picture=False
     )
