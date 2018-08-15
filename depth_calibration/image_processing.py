@@ -133,8 +133,18 @@ def check_center(center,radius,col,row):
     else:
         return True
 
-
-#%%
+def get_files(load_path, only_pictures=True):
+    if only_pictures:
+        root, dirs, files = os.walk(load_path).next()
+    else:
+        files = []
+        root, ds, fs = os.walk(load_path).next()
+        for d in ds:
+            root2, ds2, fs2 = os.walk(load_path).next()
+            for f in fs2:
+                if "GS" in f:
+                    files.append(ds2 + "/" + f)
+    return root, files
 
 if __name__ == "__main__":
     # NOTE: remember we assume GSx_0 is air picture
@@ -157,7 +167,8 @@ if __name__ == "__main__":
     ## Paths to obtain Gelsight raw images
     # load_path = "/media/mcube/data/shapes_data/raw/" + shape + "/"
     load_path = "sample_data/"
-    root, dirs, files = os.walk(load_path).next()
+    only_pictures = True  # If in the load_path there are only the pictures and not folders with each cartesian info
+    root, files = get_files(load_path, only_pictures=only_pictures)
 
     ## Path to save new images and gradients
     # save_path = "/media/mcube/data/shapes_data/processed/" + shape + "_augmented/"

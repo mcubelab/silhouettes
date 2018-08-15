@@ -77,6 +77,7 @@ def get_data_paths(paths, gradient, val_fraction=0.2, max_data_points=99999):
         if it >= max_data_points:
             break
 
+
     combined = list(zip(inputs, labels))
     shuffle(combined)
 
