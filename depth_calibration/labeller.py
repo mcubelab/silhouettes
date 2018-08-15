@@ -29,8 +29,8 @@ class Labeller():
         self.px_to_mm_average = 1/12.5
 
         input_shape = params_dict['input_shape_gs2'][0:2]
-        print input_shape
-        print type(input_shape)
+        # print input_shape
+        # print type(input_shape)
         self.__compute_xy_px(input_shape)
 
     def __compute_xy_px(self, size):
@@ -396,7 +396,7 @@ class Labeller():
 
 
     def get_gradient_matrices(self, center_px, radius_px=0, angle=None, sides_px=None, shape='sphere', sphere_R_mm=28.5/2):
-        print shape
+        # print shape
         # Everyhting given in pixel space
         if shape == 'sphere':
             gx, gy = self.__get_sphere_gradient(center_px, radius_px, R_mm=sphere_R_mm)

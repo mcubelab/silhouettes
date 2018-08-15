@@ -232,7 +232,7 @@ def raw_gs_to_depth_map(gs_id=2, test_image=None, ref=None, model_path=None, plo
         depth_map = poisson_reconstruct(np.squeeze(grad_y), np.squeeze(grad_x))
     else:
         depth_map = model.predict(test_image)[0,:,:,0]
-        print depth_map.shape
+        # print depth_map.shape
 
     print "Max: " + str(np.amax(depth_map))
 

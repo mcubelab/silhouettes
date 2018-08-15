@@ -21,6 +21,8 @@ import time
 from PIL import Image
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
+_EPS = 1e-5
+
 
 def rgb2gray(rgb):
     return np.dot(rgb[...,:3], [0.299, 0.587, 0.114])
@@ -46,7 +48,7 @@ def calibration(img,background, gs_id=2, mask_bd=None):
         imgw = cv2.warpPerspective(img, M, (cols, rows))
         imgw = apply_mask_bd(imgw)
         imgwc = imgw[10:, 65:572]
-        print "New gs1 shpae: " + str(imgwc.shape)
+        # print "New gs1 shpae: " + str(imgwc.shape)
 
         bg_imgw = cv2.warpPerspective(background, M, (cols, rows))
         bg_imgw = apply_mask_bd(bg_imgw)
@@ -59,9 +61,9 @@ def calibration(img,background, gs_id=2, mask_bd=None):
         rows, cols, cha = img.shape
         imgw = cv2.warpPerspective(img, M, (cols, rows))
         imgw = apply_mask_bd(imgw)
-        print "GS2 after warp shpae: " + str(imgw.shape)
+        # print "GS2 after warp shpae: " + str(imgw.shape)
         imgwc = imgw[10:, 65:572]
-        print "New gs2 shpae: " + str(imgwc.shape)
+        # print "New gs2 shpae: " + str(imgwc.shape)
 
         bg_imgw = cv2.warpPerspective(background, M, (cols, rows))
         bg_imgw = apply_mask_bd(bg_imgw)
@@ -71,7 +73,7 @@ def calibration(img,background, gs_id=2, mask_bd=None):
     return img_bs.astype(np.uint8), imgwc
 
 def contact_detection(im,im_ref,low_bar,high_bar):
-    im_sub = im/im_ref*70
+    im_sub = im/(im_ref+_EPS)*70
     im_gray = im_sub.astype(np.uint8)
     im_canny = cv2.Canny(im_gray, low_bar, high_bar)
 
@@ -135,20 +137,22 @@ def check_center(center,radius,col,row):
 #%%
 
 if __name__ == "__main__":
+    # NOTE: remember we assume GSx_0 is air picture
     ## Select GS Id!
     gs_id = 2
 
     ## Select shape!
+    shape = 'sphere'
     # shape = 'semicone'
     # shape = 'hollowcone'
     # shape = 'test1'
     # shape = 'semipyramid'
-    # geometric_shape = shape
 
-    # IMPORTANT NOTE:If NOT sphere COMMENT this!!!!!!!!!!!!!
-    geometric_shape = 'sphere'
+    # IMPORTANT NOTE: If sphere MAKE SURE THIS IS OK!!!!!!!!!!!!!
     sphere_R_mm = 28.5/2  # Only used if geometric_shape == 'sphere'
 
+    # Don't touch this
+    geometric_shape = shape
 
     ## Paths to obtain Gelsight raw images
     # load_path = "/media/mcube/data/shapes_data/raw/" + shape + "/"
@@ -175,10 +179,11 @@ if __name__ == "__main__":
 
     ## NOTE: ASSUMPTION: first image has no contact and can be used as background
     ## TODO: THIS SPECIAL CASE FOR THE HOLLOWCONE HAS TO BE REMOVED
-    if geometric_shape == 'hollowcone':
-        ref = cv2.imread(load_path+'GS' + str(gs_id) + '_0.png')
-    else:
-        ref = cv2.imread(root+'/'+'GS' + str(gs_id) + '_1.png')
+    ref = cv2.imread(load_path + 'GS' + str(gs_id) + '_0.png')
+    # if geometric_shape == 'hollowcone':
+    #     ref = cv2.imread(load_path+'GS' + str(gs_id) + '_0.png')
+    # else:
+    #     ref = cv2.imread(root+'/'+'GS' + str(gs_id) + '_1.png')
 
     # Load a different mask for each gelsight
     if gs_id == 1:
@@ -202,14 +207,17 @@ if __name__ == "__main__":
     index = 0
     n = len(files)
     for i in range(n):
-        if ((gs_id == 1) and ('GS1' in files[i])) or ((gs_id == 2) and ('GS2' in files[i])):
+        if ('_0' not in files[i]) and (((gs_id == 1) and ('GS1' in files[i])) or ((gs_id == 2) and ('GS2' in files[i]))):
             print 'Progress made: ' + str(100.*float(i)/float(n)) + ' %'
 
             ## Apply calibration and mask to the raw image
             im_temp = cv2.imread(root+'/'+files[i])
+
             im_bs, im_wp = calibration(im_temp, ref, gs_id, mask_bd)
-            print "Shape im_bs: " + str(im_bs.shape)
-            print "Shape im_wp: " + str(im_wp.shape)
+            # print "Shape im_bs: " + str(im_bs.shape)
+            # print "Shape im_wp: " + str(im_wp.shape)
+
+            # cv2.imshow("im_temp", im_temp)
             # cv2.imshow("im_bs", im_bs)
             # cv2.imshow("im_wp", im_wp)
             # cv2.waitKey(0)
@@ -218,21 +226,27 @@ if __name__ == "__main__":
 
             ## Remove background to the iamge and place its minimum to zero
             im_diff = im_wp.astype(np.int32) - ref_warp.astype(np.int32)
-            im_diff_show = ((im_diff - np.min(im_diff))).astype(np.uint8)
-            # cv2.imshow("im_diff_show", im_diff_show)
+            # cv2.imshow("im_wp", im_wp)
+            # cv2.imshow("ref_warp", ref_warp)
             # cv2.waitKey(0)
+
+            im_diff_show = ((im_diff - np.min(im_diff))).astype(np.uint8)
+            cv2.imshow("im_diff_show", im_diff_show)
+            cv2.waitKey(0)
+            # print "MAX dif: " + str(np.amax(im_diff))
+            # print "MAX dif: " + str(np.amin(im_diff))
             im_diff = im_diff - np.min(im_diff)
 
             ## Take into account different channels and create masks for the contact patch
-            mask1 = (im_diff[:,:,0]-im_diff[:,:,1])>15
-            mask2 = (im_diff[:,:,1]-im_diff[:,:,0])>12
+            mask1 = (im_diff[:, :, 0]-im_diff[:, :, 1]) > 15
+            mask2 = (im_diff[:, :, 1]-im_diff[:, :, 0]) > 12
             # cv2.imshow('mask1', ((mask1)*255).astype(np.uint8))
             # cv2.imshow('mask2', ((mask2)*255).astype(np.uint8))
             mask = ((mask1 + mask2)*255).astype(np.uint8)
             # cv2.imshow("mask", mask)
             # cv2.waitKey(0)
 
-            mask = rgb2gray(contact_detection(rgb2gray(im_wp).astype(np.float32),rgb2gray(ref_warp).astype(np.float32),20,50))
+            mask = rgb2gray(contact_detection(rgb2gray(im_wp).astype(np.float32), rgb2gray(ref_warp).astype(np.float32),20,50))
             # mask = mask*mask_bd[:,:,0]
             # mask = mask*mask_bd
 
@@ -266,11 +280,13 @@ if __name__ == "__main__":
                     else:
                         (x_, y_), radius_ = cv2.minEnclosingCircle(c)
                         if radius_ > radius:
-                            (x,y), radius = (x_, y_), radius_
+                            (x, y), radius = (x_, y_), radius_
+
+                # print (x, y), radius
                 if geometric_shape != 'semipyramid':
-                    center = (int(x),int(y))
+                    center = (int(x), int(y))
                     if geometric_shape == 'sphere':
-                        center = (int(x)-2,int(y))  # TODO: why are we doing this?
+                        # center = (int(x)-2, int(y))  # TODO: why are we doing this?
                         radius = int(radius*0.8)  # TODO: this numbers seems a bit of a hack
                     elif geometric_shape == 'semicone':
                         radius = int(radius*0.9)
@@ -282,23 +298,23 @@ if __name__ == "__main__":
                     ## Checks if the circle found matches well with contact patch
                     mask_circle = ((x_mesh-center[0])**2 + (y_mesh-center[1])**2) < (radius)**2
 
-                    contact = contact_detection(rgb2gray(im_wp).astype(np.float32),rgb2gray(ref_warp).astype(np.float32),20,50)
-                    contact_mask = contact[:,:,2]*mask_circle
+                    contact = contact_detection(rgb2gray(im_wp).astype(np.float32), rgb2gray(ref_warp).astype(np.float32),20,50)
+                    contact_mask = contact[:, :, 2]*mask_circle
                     # cv2.imshow('contact_mask', contact_mask)
                     # cv2.waitKey(0)
-                    if np.sum(contact_mask)/255 < 50 and len(contours)> 1:
-                        (x,y),radius = cv2.minEnclosingCircle(contours[1])
-                        center = (int(x)-2,int(y))
+                    if np.sum(contact_mask)/255 < 50 and len(contours) > 1:
+                        (x, y), radius = cv2.minEnclosingCircle(contours[1])
+                        center = (int(x)-2, int(y))
                         radius = int(radius*0.71)
                         mask_circle = ((x_mesh-center[0])**2 + (y_mesh-center[1])**2) < (radius)**2
-                        contact = contact_detection(rgb2gray(im_wp).astype(np.float32),rgb2gray(ref_warp).astype(np.float32),20,50)
-                        contact_mask = contact[:,:,2]*mask_circle
+                        contact = contact_detection(rgb2gray(im_wp).astype(np.float32), rgb2gray(ref_warp).astype(np.float32), 20, 50)
+                        contact_mask = contact[:, :, 2]*mask_circle
 
                     center_ok = center[0] > 100 or center[1] > 100
-                    if center_ok and radius > 30 and radius < max_rad and check_center(center,radius,col,row) and np.sum(contact_mask)/255 > 50:
-                        contact = contact_detection(rgb2gray(im_wp).astype(np.float32),rgb2gray(ref_warp).astype(np.float32),20,40)
-                        contact_mask = contact[:,:,2]*mask_circle
-                        cv2.circle(im_wp,center,radius,(0,0,255),1)
+                    if center_ok and radius > 30 and radius < max_rad and check_center(center, radius, col, row) and np.sum(contact_mask)/255 > 50:
+                        contact = contact_detection(rgb2gray(im_wp).astype(np.float32), rgb2gray(ref_warp).astype(np.float32), 20, 40)
+                        contact_mask = contact[:, :, 2]*mask_circle
+                        cv2.circle(im_wp, center, radius, (0, 0, 255), 1)
                         # print 'get gradient params: ', center, radius
                         ## Compute gradients given center and radius
                         # cv2.imshow('im', im_wp)
@@ -345,16 +361,13 @@ if __name__ == "__main__":
                                     # print noise_coefs
                                     # print '#####'
 
-                                if gs_id == 1:
-                                    noise_mask = mask_bd[10:, 65:572]
-                                elif gs_id == 2:
-                                    noise_mask = mask_bd[10:, 65:572]
+                                noise_mask = mask_bd[10:, 65:572]
 
                                 if show_data:
                                     cv2.imshow('contact_mask', contact_mask.astype(np.uint8))
                                     cv2.imshow('image', cv2.cvtColor(introduce_noise(im_wp, noise_coefs, mask=noise_mask), cv2.COLOR_BGR2RGB))
-                                    cv2.imshow('grad_x',grad_x)
-                                    cv2.imshow('grad_y',grad_y)
+                                    cv2.imshow('grad_x', grad_x)
+                                    cv2.imshow('grad_y', grad_y)
                                     cv2.waitKey(100)
                                 if save_data:
                                     index = index + 1
@@ -383,6 +396,8 @@ if __name__ == "__main__":
                                     ii = Image.open(save_path + 'heightmap/'+str(index) + '_' + name + '.png').resize(io.size).convert("RGB") #depth map
                                     result = Image.blend(io, ii, alpha=0.5)
                                     result.save(save_path + 'heightmap/'+str(index) + '_blend.png')
+                    else:
+                        print "[ERROR]: Circle out of defined limits"
 
                 elif geometric_shape == "semipyramid":
                     box = cv2.boxPoints(biggest_rect)
@@ -400,8 +415,9 @@ if __name__ == "__main__":
                     # cv2.waitKey(0)
 
                     grad_x, grad_y = labeller.get_gradient_matrices(center_px=center_px, angle=angle, sides_px=sides_px, shape=geometric_shape, sphere_R_mm=sphere_R_mm)
-                    if (grad_x is not None) and (grad_y is not None):
 
+                    if (grad_x is not None) and (grad_y is not None):
+                        # print "NOT none"
                         ## Uncomment this to check gradients and heightmap
 
                         #print "Max: " + str(np.amax(grad_x))
@@ -442,10 +458,7 @@ if __name__ == "__main__":
                                 # print noise_coefs
                                 # print '#####'
 
-                            if gs_id == 1:
-                                noise_mask = mask_bd[10:, 65:572]
-                            elif gs_id == 2:
-                                noise_mask = mask_bd[10:, 65:572]
+                            noise_mask = mask_bd[10:, 65:572]
                             if show_data:
                                 # cv2.imshow('contact_mask', contact_mask.astype(np.uint8))
                                 cv2.imshow('image', cv2.cvtColor(introduce_noise(im_wp, noise_coefs, mask=noise_mask), cv2.COLOR_BGR2RGB))
