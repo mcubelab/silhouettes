@@ -95,9 +95,9 @@ def train(pretrain = False):
     # "/media/mcube/data/shapes_data/processed/ball_D6.35/image/",
     # "/media/mcube/data/shapes_data/processed/ball_D28.5/image/",
     # "/media/mcube/data/shapes_data/processed/hollowcone/image/",
-    "/media/mcube/data/shapes_data/processed/semicone_augmented/image/",
+    #"/media/mcube/data/shapes_data/processed/semicone_augmented/image/",
     #"/media/mcube/data/shapes_data/processed/semipyramid_augmented/image/",
-    #'/media/mcube/data/shapes_data/processed/sphere_08-15-2018_gs2_rot=0/image/'
+    '/media/mcube/data/shapes_data/processed/sphere_08-15-2018_gs2_rot=0/image/'
     ]
 
     # Datasets
@@ -115,7 +115,7 @@ def train(pretrain = False):
     output_shape = params_dict['output_shape_gs2'][0:2]
 
     # Generators
-    train_batch_size = 12
+    train_batch_size = 8
     val_batch_size = 8
 
     training_generator = DataGenerator(inputs_train, labels_train, batch_size=train_batch_size, dim_in=input_image_shape, dim_out=output_shape, simulator=simulator, only_height=only_height)
