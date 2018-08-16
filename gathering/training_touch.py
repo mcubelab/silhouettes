@@ -6,7 +6,7 @@ import copy
 
 if __name__ == "__main__":
     object_angle = '0'
-    experiment_name = "/media/mcube/data/shapes_data/raw/sphere_08-15-2018_gs2_rot=" + str(object_angle)
+    experiment_name = "/media/mcube/data/shapes_data/raw/cross_stamp_08-15-2018_gs2_rot=" + str(object_angle)
 
     # Enter gs_id:
     gs_id = 2
