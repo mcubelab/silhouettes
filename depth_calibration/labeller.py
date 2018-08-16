@@ -3,16 +3,23 @@ import sys, os
 import cv2, math, scipy.io
 from PIL import Image
 from scipy.misc import toimage
-from grad_to_depth import *
+from depth_helper import *
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 import yaml
 
-# sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.append("/home/mcube/silhouettes/location/")
-
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+try:
+    sys.path.append("/home/mcube/silhouettes/location/")
+except Exception as e:
+    pass
+try:
+    sys.path.append("/home/oleguer/silhouettes/location/")
+except Exception as e:
+    pass
 from world_positioning import *
+
 SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 
 class Labeller():
@@ -22,8 +29,8 @@ class Labeller():
         self.px_to_mm_average = 1/12.5
 
         input_shape = params_dict['input_shape_gs2'][0:2]
-        print input_shape
-        print type(input_shape)
+        # print input_shape
+        # print type(input_shape)
         self.__compute_xy_px(input_shape)
 
     def __compute_xy_px(self, size):
@@ -389,6 +396,7 @@ class Labeller():
 
 
     def get_gradient_matrices(self, center_px, radius_px=0, angle=None, sides_px=None, shape='sphere', sphere_R_mm=28.5/2):
+        # print shape
         # Everyhting given in pixel space
         if shape == 'sphere':
             gx, gy = self.__get_sphere_gradient(center_px, radius_px, R_mm=sphere_R_mm)

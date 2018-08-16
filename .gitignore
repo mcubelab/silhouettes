@@ -106,6 +106,7 @@ venv.bak/
 #Folders to ignore
 depth_calibration/gs1_data/
 depth_calibration/data/
+depth_calibration/sample_data/
 depth_calibration/old/
 depth_calibration/weights/
 location/old/
