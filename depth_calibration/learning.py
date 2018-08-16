@@ -89,15 +89,16 @@ def train(pretrain = False):
     # Params:
     simulator = False
     only_height = True
-    weights_filepath = "weights/weights.aug.height.v1.hdf5"
+    weights_filepath = "weights/weights_sphere_08-15-2018.hdf5"
 
     paths = [
-	# "/media/mcube/data/shapes_data/processed/ball_D6.35/image/",
-	# "/media/mcube/data/shapes_data/processed/ball_D28.5/image/",
-	# "/media/mcube/data/shapes_data/processed/hollowcone/image/",
-	"/media/mcube/data/shapes_data/processed/semicone_augmented/image/",
-	"/media/mcube/data/shapes_data/processed/semipyramid_augmented/image/",
-	]
+    # "/media/mcube/data/shapes_data/processed/ball_D6.35/image/",
+    # "/media/mcube/data/shapes_data/processed/ball_D28.5/image/",
+    # "/media/mcube/data/shapes_data/processed/hollowcone/image/",
+    "/media/mcube/data/shapes_data/processed/semicone_augmented/image/",
+    #"/media/mcube/data/shapes_data/processed/semipyramid_augmented/image/",
+    #'/media/mcube/data/shapes_data/processed/sphere_08-15-2018_gs2_rot=0/image/'
+    ]
 
     # Datasets
     inputs_train, labels_train, inputs_val, labels_val = get_data_paths(paths=paths, gradient='x', val_fraction=0.2, max_data_points=999999)

@@ -9,8 +9,9 @@ except Exception as e:
     pass
     
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
-params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
+#SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
+#params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
+params_dict = yaml.load(open('/home/mcube/silhouettes/' + 'resources/params.yaml'))
 half_y = params_dict['input_shape_gs2'][1]/2.
 
 def __quaternion_matrix(quaternion):

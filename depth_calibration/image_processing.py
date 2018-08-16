@@ -152,26 +152,26 @@ if __name__ == "__main__":
     gs_id = 2
 
     ## Select shape!
-    shape = 'sphere'
-    # shape = 'semicone'
-    # shape = 'hollowcone'
+    #shape = 'sphere'
+    shape = 'semicone'
+    #shape = 'hollowcone'
     # shape = 'test1'
-    # shape = 'semipyramid'
+    #shape = 'semipyramid'
 
     # IMPORTANT NOTE: If sphere MAKE SURE THIS IS OK!!!!!!!!!!!!!
     sphere_R_mm = 28.5/2  # Only used if geometric_shape == 'sphere'
 
     # Don't touch this
     geometric_shape = shape
-
+    folder_data_name = shape + '_08-15-2018_gs2_rot=0/'
     ## Paths to obtain Gelsight raw images
-    load_path = "/media/mcube/data/shapes_data/raw/sphere_08-15-2018_gs2_rot=0/"
+    load_path = "/media/mcube/data/shapes_data/raw/" + folder_data_name
     # load_path = "sample_data/"
     only_pictures = False  # If in the load_path there are only the pictures and not folders with each cartesian info
     root, files = get_files(load_path, only_pictures=only_pictures)
 
     ## Path to save new images and gradients
-    save_path = "/media/mcube/data/shapes_data/processed/sphere_08-15-2018_gs2_rot=0/"
+    save_path = "/media/mcube/data/shapes_data/processed/"+ folder_data_name
     # save_path = "sample_data/"
 
     ## Basic parameters
@@ -282,7 +282,8 @@ if __name__ == "__main__":
             ## Detect circles if any exists
             if np.sum(mask_color)/255 > 225:  #Checks if the contact patch is big enough
                 im2, contours, hierarchy = cv2.findContours(mask_color, 1, 2)
-
+                
+                import pdb; pdb.set_trace()                
                 (x, y), radius = (0, 0), 0
                 biggest_area = 0
                 biggest_rect = None
