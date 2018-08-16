@@ -116,10 +116,10 @@ class Labeller():
 
         return dz_dx_mat*h_px2mm, dz_dy_mat*h_px2mm
 
-    def __get_semicone_gradient(self, center_px, radius_px):
+    def __get_semicone_gradient(self, center_px, radius_px, r_mm=5., cone_slope=np.tan(np.radians(20))):
         # Shape params
-        r_mm = 10./2 # Smaller radius object
-        cone_slope=np.tan(np.radians(20))
+        # r_mm = 10./2 # Smaller radius object
+        # cone_slope=np.tan(np.radians(20))
         R_mm = self.__radius_px_to_mm(center_px, radius_px) # Detected radius # NOTE: center_px and radius_px need to come from warped image
 
         if R_mm <= r_mm:
@@ -173,10 +173,10 @@ class Labeller():
 
         return dz_dx_mat*h_px2mm, dz_dy_mat*h_px2mm
 
-    def get_semicone_2_gradient(self, center_px, radius_px, cone_slope=np.tan(np.radians(10))):
+    def get_semicone_2_gradient(self, center_px, radius_px, r_mm=5., R_mm=9.2, cone_slope=np.tan(np.radians(10))):
         RR_mm = self.__radius_px_to_mm(center_px, radius_px)
-        R_mm = 18.43/2
-        r_mm = 10./2
+        # R_mm = 18.43/2
+        # r_mm = 10./2
         # print RR_mm
         # print R_mm
         # print r_mm
@@ -393,19 +393,21 @@ class Labeller():
 
         return h
 
+    def get_gradient_matrices(self, center_px, radius_px=0, angle=None, sides_px=None, shape='sphere', shape_params=None):
 
-
-    def get_gradient_matrices(self, center_px, radius_px=0, angle=None, sides_px=None, shape='sphere', sphere_R_mm=28.5/2):
         # print shape
+        if shape_params:
+            sphere_R_mm, hollow_r_mm, hollow_R_mm, semicone_r_mm, hollowcone_slope, semicone_slope = shape_params
+
         # Everyhting given in pixel space
         if shape == 'sphere':
             gx, gy = self.__get_sphere_gradient(center_px, radius_px, R_mm=sphere_R_mm)
             return gx, gy
         if shape == 'semicone':
-            gx, gy = self.__get_semicone_gradient(center_px, radius_px)
+            gx, gy = self.__get_semicone_gradient(center_px, radius_px, r_mm=semicone_r_mm, cone_slope=semicone_slope)
             return gx, gy
         if shape == 'hollowcone':
-            gx, gy = self.get_semicone_2_gradient(center_px, radius_px)
+            gx, gy = self.get_semicone_2_gradient(center_px, radius_px, r_mm=hollow_r_mm, R_mm=hollow_R_mm, cone_slope=hollowcone_slope)
             return gx, gy
         if shape == 'semipyramid':
             gx, gy = self.get_semipyramid_gradient(center_px, angle, sides_px)

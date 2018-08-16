@@ -153,4 +153,4 @@ def train(pretrain = False):
     model.to_json()
 
 if __name__ == "__main__":
-    train(pretrain = False)
+    train(pretrain=False)
