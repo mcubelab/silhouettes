@@ -140,10 +140,10 @@ def get_files(load_path, only_pictures=True):
         files = []
         root, ds, fs = os.walk(load_path).next()
         for d in ds:
-            root2, ds2, fs2 = os.walk(load_path).next()
+            root2, ds2, fs2 = os.walk(load_path + "/" + d).next()
             for f in fs2:
                 if "GS" in f:
-                    files.append(ds2 + "/" + f)
+                    files.append("/" + d + "/" + f)
     return root, files
 
 if __name__ == "__main__":
@@ -165,14 +165,14 @@ if __name__ == "__main__":
     geometric_shape = shape
 
     ## Paths to obtain Gelsight raw images
-    # load_path = "/media/mcube/data/shapes_data/raw/" + shape + "/"
-    load_path = "sample_data/"
-    only_pictures = True  # If in the load_path there are only the pictures and not folders with each cartesian info
+    load_path = "/media/mcube/data/shapes_data/raw/sphere_08-15-2018_gs2_rot=0/"
+    # load_path = "sample_data/"
+    only_pictures = False  # If in the load_path there are only the pictures and not folders with each cartesian info
     root, files = get_files(load_path, only_pictures=only_pictures)
 
     ## Path to save new images and gradients
-    # save_path = "/media/mcube/data/shapes_data/processed/" + shape + "_augmented/"
-    save_path = "sample_data/"
+    save_path = "/media/mcube/data/shapes_data/processed/sphere_08-15-2018_gs2_rot=0/"
+    # save_path = "sample_data/"
 
     ## Basic parameters
     save_data = True
@@ -188,9 +188,12 @@ if __name__ == "__main__":
     ## Create labeler so that we can get the ground truth of the gradients and height of the pictures
     labeller = Labeller()
 
-    ## NOTE: ASSUMPTION: first image has no contact and can be used as background
+    ## NOTE: ASSUMPTION: first image has no contact and can be used as background, if not only image we assume that there exists air folder
     ## TODO: THIS SPECIAL CASE FOR THE HOLLOWCONE HAS TO BE REMOVED
-    ref = cv2.imread(load_path + 'GS' + str(gs_id) + '_0.png')
+    if only_pictures:
+        ref = cv2.imread(load_path + 'GS' + str(gs_id) + '_0.png')
+    else:
+        ref = cv2.imread(load_path + '/air/GS' + str(gs_id) + '.png')
     # if geometric_shape == 'hollowcone':
     #     ref = cv2.imread(load_path+'GS' + str(gs_id) + '_0.png')
     # else:
@@ -218,11 +221,13 @@ if __name__ == "__main__":
     index = 0
     n = len(files)
     for i in range(n):
-        if ('_0' not in files[i]) and (((gs_id == 1) and ('GS1' in files[i])) or ((gs_id == 2) and ('GS2' in files[i]))):
+	print files[i]
+        if (((gs_id == 1) and ('GS1' in files[i])) or ((gs_id == 2) and ('GS2' in files[i]))):
             print 'Progress made: ' + str(100.*float(i)/float(n)) + ' %'
 
             ## Apply calibration and mask to the raw image
             im_temp = cv2.imread(root+'/'+files[i])
+	    #print root+'/'+files[i]
 
             im_bs, im_wp = calibration(im_temp, ref, gs_id, mask_bd)
             # print "Shape im_bs: " + str(im_bs.shape)
@@ -242,8 +247,8 @@ if __name__ == "__main__":
             # cv2.waitKey(0)
 
             im_diff_show = ((im_diff - np.min(im_diff))).astype(np.uint8)
-            cv2.imshow("im_diff_show", im_diff_show)
-            cv2.waitKey(0)
+            # cv2.imshow("im_diff_show", im_diff_show)
+            # cv2.waitKey(0)
             # print "MAX dif: " + str(np.amax(im_diff))
             # print "MAX dif: " + str(np.amin(im_diff))
             im_diff = im_diff - np.min(im_diff)
