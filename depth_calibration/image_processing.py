@@ -23,6 +23,12 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 _EPS = 1e-5
 
+sphere_R_mm = 0  # Only used if geometric_shape == 'sphere'
+hollow_r_mm = 0
+hollow_R_mm = 0
+semicone_r_mm = 0
+hollowcone_slope = 0
+semicone_slope = 0
 
 def rgb2gray(rgb):
     return np.dot(rgb[...,:3], [0.299, 0.587, 0.114])
@@ -158,11 +164,33 @@ if __name__ == "__main__":
     # shape = 'test1'
     # shape = 'semipyramid'
 
-    # IMPORTANT NOTE: If sphere MAKE SURE THIS IS OK!!!!!!!!!!!!!
+    # IMPORTANT NOTE: MAKE SURE YOU UNCOMMENT THE MESURES OF THE ONE YOU ARE PROCESSING!!!!!!!!!!!!!
+    # Sphere
     sphere_R_mm = 28.5/2  # Only used if geometric_shape == 'sphere'
+
+    # hollowcone 1
+    hollow_r_mm = 9.8/2
+    hollow_R_mm = 16.5/2
+    hollowcone_slope = 10
+
+    # # hollowcone 2
+    # hollow_r_mm = 9.8/2
+    # hollow_R_mm = 16.5/2
+    # hollowcone_slope = 20
+
+    # semicone 1
+    semicone_r_mm = 10.2/2
+    semicone_slope = 30
+
+    # # semicone 2
+    # semicone_r_mm = 16.5/2
+    # semicone_slope = 10
+
+
 
     # Don't touch this
     geometric_shape = shape
+    shape_params = (sphere_R_mm, hollow_r_mm, hollow_R_mm, semicone_r_mm, hollowcone_slope, semicone_slope)
 
     ## Paths to obtain Gelsight raw images
     # load_path = "/media/mcube/data/shapes_data/raw/" + shape + "/"
@@ -331,7 +359,7 @@ if __name__ == "__main__":
                         # cv2.imshow('im', im_wp)
                         # cv2.waitKey(0)
                         # print "im_wp_save shape: ", im_wp_save.shape
-                        grad_x, grad_y = labeller.get_gradient_matrices(center, radius, shape=geometric_shape, sphere_R_mm=sphere_R_mm)
+                        grad_x, grad_y = labeller.get_gradient_matrices(center, radius, shape=geometric_shape, shape_params=shape_params)
                         if (grad_x is not None) and (grad_y is not None):
 
                             ## Uncomment this to check gradients and heightmap
@@ -425,7 +453,7 @@ if __name__ == "__main__":
                     # cv2.imshow('mask_color', mask_color)
                     # cv2.waitKey(0)
 
-                    grad_x, grad_y = labeller.get_gradient_matrices(center_px=center_px, angle=angle, sides_px=sides_px, shape=geometric_shape, sphere_R_mm=sphere_R_mm)
+                    grad_x, grad_y = labeller.get_gradient_matrices(center_px=center_px, angle=angle, sides_px=sides_px, shape=geometric_shape, shape_params=shape_params)
 
                     if (grad_x is not None) and (grad_y is not None):
                         # print "NOT none"
