@@ -159,8 +159,8 @@ if __name__ == "__main__":
 
     ## Select shape!
     #shape = 'sphere'
-    shape = 'semicone'
-    #shape = 'hollowcone'
+    #shape = 'semicone'
+    shape = 'hollowcone'
     # shape = 'test1'
     #shape = 'semipyramid'
 
