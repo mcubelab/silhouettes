@@ -154,37 +154,47 @@ def get_files(load_path, only_pictures=True):
 
 if __name__ == "__main__":
     # NOTE: remember we assume GSx_0 is air picture
-    ## Select GS Id!
+
+        ## Select GS Id!!!!!!!!
     gs_id = 2
 
-    ## Select shape!
+        ## Select shape!!!!!!!
     #shape = 'sphere'
-    #shape = 'semicone'
-    shape = 'hollowcone'
+    #shape = 'semicone_1'
+    #shape = 'semicone_2'
+    #shape = 'hollowcone_1'
+    shape = 'hollowcone_2'
     # shape = 'test1'
-    #shape = 'semipyramid'
-
+    # shape = 'semipyramid'
+    '''
+    gs_ids = [1,2]
+    shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_1', 'hollowcone_2', 'semipyramid', 'stamp']
+    for gs_id in gs_ids:
+        for shape in shapes:
+    '''
+    print shape
     # IMPORTANT NOTE: MAKE SURE YOU UNCOMMENT THE MESURES OF THE ONE YOU ARE PROCESSING!!!!!!!!!!!!!
     # Sphere
     sphere_R_mm = 28.5/2  # Only used if geometric_shape == 'sphere'
 
-    # hollowcone 1
-    hollow_r_mm = 9.8/2
-    hollow_R_mm = 16.5/2
-    hollowcone_slope = 10
+    
+    if shape == 'hollowcone 1':
+        hollow_r_mm = 9.8/2
+        hollow_R_mm = 16.5/2
+        hollowcone_slope = 10
+    else:    
+        # # hollowcone 2
+        hollow_r_mm = 9.8/2
+        hollow_R_mm = 16.5/2
+        hollowcone_slope = 20
 
-    # # hollowcone 2
-    # hollow_r_mm = 9.8/2
-    # hollow_R_mm = 16.5/2
-    # hollowcone_slope = 20
-
-    # semicone 1
-    semicone_r_mm = 10.2/2
-    semicone_slope = 30
-
-    # # semicone 2
-    # semicone_r_mm = 16.5/2
-    # semicone_slope = 10
+    if shape == 'semicone 1':
+        semicone_r_mm = 10.2/2
+        semicone_slope = 30
+    else:
+        # # semicone 2
+        semicone_r_mm = 16.5/2
+        semicone_slope = 10
 
 
 
@@ -241,10 +251,12 @@ if __name__ == "__main__":
     x_mesh, y_mesh = np.meshgrid(range(row), range(col))
 
     ## Max_rad param:
-    if geometric_shape == 'hollowcone':
+    if 'hollowcone' in geometric_shape:
         max_rad = 200
-    else:
+    elif geometric_shape == 'semicone_1':
         max_rad = 80
+    else:
+        max_rad = 250
 
     ## Go through each raw gelsight image
     index = 0
@@ -312,7 +324,7 @@ if __name__ == "__main__":
             if np.sum(mask_color)/255 > 225:  #Checks if the contact patch is big enough
                 im2, contours, hierarchy = cv2.findContours(mask_color, 1, 2)
                 
-                import pdb; pdb.set_trace()                
+                #import pdb; pdb.set_trace()                
                 (x, y), radius = (0, 0), 0
                 biggest_area = 0
                 biggest_rect = None
@@ -334,7 +346,7 @@ if __name__ == "__main__":
                     if geometric_shape == 'sphere':
                         # center = (int(x)-2, int(y))  # TODO: why are we doing this?
                         radius = int(radius*0.8)  # TODO: this numbers seems a bit of a hack
-                    elif geometric_shape == 'semicone':
+                    elif 'semicone' in geometric_shape:
                         radius = int(radius*0.9)
                     else:
                         radius = int(radius)  # TODO: this numbers seems a bit of a hack
@@ -425,7 +437,7 @@ if __name__ == "__main__":
                                         os.makedirs(save_path + 'gradient/')
                                     if not os.path.exists(save_path + 'heightmap/'):
                                         os.makedirs(save_path + 'heightmap/')
-
+                                    
                                     ## Save the depth map with the maximum height in the name
                                     depth_map = poisson_reconstruct(grad_y, grad_x)
                                     name = str(np.amax(depth_map))
@@ -436,6 +448,8 @@ if __name__ == "__main__":
                                     cv2.imwrite(save_path + 'image_circled/img_'+str(index)+ '.png',cv2.cvtColor(introduce_noise(im_wp, noise_coefs, mask=noise_mask), cv2.COLOR_BGR2RGB))
                                     np.save(save_path + 'gradient/gx_'+ str(index) + '.npy', grad_x)
                                     np.save(save_path + 'gradient/gy_'+ str(index) + '.npy', grad_y)
+                                    np.save(save_path + 'gradient/gx_angle_'+ str(index) + '.npy', np.arctan(grad_x))
+                                    np.save(save_path + 'gradient/gy_angle_'+ str(index) + '.npy', np.arctan(grad_y))
 
                                     ## Save the raw image blended with the depth map
                                     io = Image.open(save_path + 'image_circled/img_'+str(index)+ '.png').convert("RGB") # image_for_input

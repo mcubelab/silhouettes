@@ -73,12 +73,12 @@ class ControlRobot():
         for force in force_list:
             self.close_gripper_f(grasp_speed=speed, grasp_force=force)
             print "Applying: " + str(force)
-            time.sleep(0.2)
+            time.sleep(0.5)
             dc.get_data(get_cart=False, get_gs1=(1 in self.gs_id), get_gs2=(2 in self.gs_id), get_wsg=True, save=save, directory=path, iteration=i)
             self.open_gripper()
             i += 1
 
-    def perfrom_experiment(self, experiment_name='test', movement_list=[], save_only_picture=False):
+    def perfrom_experiment(self, experiment_name='test', movement_list=[], save_only_picture=False, last_touch = 0):
         # 1. We save the background image:
         dc = DataCollector(only_one_shot=False, automatic=True, save_only_picture=save_only_picture)
         dc.get_data(get_cart=False, get_gs1=(1 in self.gs_id), get_gs2=(2 in self.gs_id), get_wsg=False, save=True, directory=experiment_name+'/air', iteration=-1)
@@ -86,7 +86,7 @@ class ControlRobot():
 
         # 2. We perfomr the experiment:
         ini = time.time()
-        i = 0
+        i = last_touch
         if not os.path.exists(experiment_name): # If the directory does not exist, we create it
             os.makedirs(experiment_name)
         for movement in movement_list:

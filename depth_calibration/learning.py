@@ -20,7 +20,7 @@ keras.losses.custom_loss = custom_loss
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 
-def createModel(input_shape, simulator=False, only_height=False):
+def createModel(input_shape, simulator=False, output_type = 'grad'):
     print input_shape
     model = Sequential()
     model.add(Conv2D(64, (3, 3), padding='same',activation='relu', input_shape=input_shape)) #,kernel_initializer='he_normal'))
@@ -43,7 +43,7 @@ def createModel(input_shape, simulator=False, only_height=False):
     if simulator:
         model.add(Conv2D(3, (1, 1), activation='tanh')) #,kernel_initializer='he_normal'))
     else:
-        if only_height:
+        if output_type == 'height':
             model.add(Conv2D(1, (1, 1), activation='tanh')) #,kernel_initializer='he_normal'))
         else:
             model.add(Conv2D(2, (1, 1), activation='tanh')) #,kernel_initializer='he_normal'))
@@ -88,8 +88,8 @@ def get_data_paths(paths, gradient, val_fraction=0.2, max_data_points=99999):
 def train(pretrain = False):
     # Params:
     simulator = False
-    only_height = True
-    weights_filepath = "weights/weights_sphere_08-15-2018.hdf5"
+    output_type = 'grad' #'height', 'angle'
+    weights_filepath = "weights/weights_sphere_08-15-2018_out_type=grad.hdf5"
 
     paths = [
     # "/media/mcube/data/shapes_data/processed/ball_D6.35/image/",
@@ -118,15 +118,15 @@ def train(pretrain = False):
     train_batch_size = 8
     val_batch_size = 8
 
-    training_generator = DataGenerator(inputs_train, labels_train, batch_size=train_batch_size, dim_in=input_image_shape, dim_out=output_shape, simulator=simulator, only_height=only_height)
-    validation_generator = DataGenerator(inputs_val, labels_val, batch_size=val_batch_size, dim_in=input_shape, dim_out=output_shape, simulator=simulator, only_height=only_height)
+    training_generator = DataGenerator(inputs_train, labels_train, batch_size=train_batch_size, dim_in=input_image_shape, dim_out=output_shape, simulator=simulator, output_type = output_type)
+    validation_generator = DataGenerator(inputs_val, labels_val, batch_size=val_batch_size, dim_in=input_shape, dim_out=output_shape, simulator=simulator, output_type = output_type)
 
     # Load weights
     history_save_filename=weights_filepath.replace(".hdf5", "_hist")
     if pretrain:
         model = load_model(weights_filepath)
     else:
-        model = createModel(input_shape=input_shape, simulator=simulator, only_height=only_height)
+        model = createModel(input_shape=input_shape, simulator=simulator, output_type = output_type)
 
     # Checkpoint
     checkpoint = ModelCheckpoint(weights_filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='min')

@@ -4,19 +4,15 @@ import time, pdb
 import matplotlib.pyplot as plt
 import copy
 
-if __name__ == "__main__":
-    object_angle = '0'
-    experiment_name = "/media/mcube/data/shapes_data/raw/cross_stamp_08-15-2018_gs2_rot=" + str(object_angle)
-
-    # Enter gs_id:
-    gs_id = 2
-
+def training_touch(experiment_name = '/media/mcube/data/shapes_data/raw/test', object_angle = '0', number_of_points = 10, gs_id = 2, last_touch = 0):
+    
+    #experiment_name = "/media/mcube/data/shapes_data/raw/cross_stamp_08-15-2018_gs2_rot=" + str(object_angle)
     # Enter object main dimensions in [mm]
     length = 40 # distance from the magnetic base to the top
     # Enter area to area to explore uniformly
     height = 8
     width = 8
-    number_of_points = 2000
+    
 
     # Enter these other params
     cr = ControlRobot(gs_ids=[gs_id], force_list=[20])
@@ -54,5 +50,11 @@ if __name__ == "__main__":
     cr.perfrom_experiment(
         experiment_name=experiment_name,
         movement_list=movement_list,
-        save_only_picture=False
+        save_only_picture=False,
+        last_touch = last_touch
     )
+
+
+if __name__ == "__main__":
+    num_data = 2000
+    training_touch(experiment_name = '/media/mcube/data/shapes_data/raw/test', object_angle = '0', number_of_points = num_data, gs_id = 2)

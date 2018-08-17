@@ -15,7 +15,7 @@ for img_number in pictures_range:
     # img_path ='/media/mcube/data/shapes_data/pos_calib/bar_front/p_{}/GS2_0.png'.format(img_number)
     # img_path ='/media/mcube/data/shapes_data/height_test/GS2_{}.png'.format(img_number)
     test_image = cv2.imread(img_path)
-
+    output_type = 'height'
     weights_file = 'depth_calibration/weights/weights.aug.v2.hdf5'
 
 
@@ -42,4 +42,4 @@ for img_number in pictures_range:
         save=False,
         path=path+'converted/',
         img_number = img_number,
-        only_height=False)
+        output_type=output_type)

@@ -14,7 +14,7 @@ SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, list_IDs, labels, batch_size, dim_in, dim_out, n_channels=5, shuffle=True, simulator=False, only_height=False):
+    def __init__(self, list_IDs, labels, batch_size, dim_in, dim_out, n_channels=5, shuffle=True, simulator=False, output_type='grad'):
         'Initialization'
         self.dim = dim_in
         self.batch_size = batch_size
@@ -26,7 +26,7 @@ class DataGenerator(keras.utils.Sequence):
         if simulator:
             self.n_channels = 5  # HACK
             self.out_channels = 3  # HACK
-        if only_height:
+        if output_type == 'height':
             self.out_channels = 1  # HACK
 
         self.shuffle = shuffle
@@ -37,7 +37,7 @@ class DataGenerator(keras.utils.Sequence):
         self.dim_out = dim_out
 
         self.simulator = simulator
-        self.only_height = only_height
+        self.output_type = output_type
 
     def __len__(self):
         'Denotes the number of batches per epoch'
@@ -76,6 +76,9 @@ class DataGenerator(keras.utils.Sequence):
 
             grad_x = np.load(labels_temp[i])
             grad_y = np.load(labels_temp[i].replace("gx_","gy_"))
+            if self.output_type == 'angle': #In order to consider angle
+                grad_x = np.load(labels_temp[i].replace("gy_","gx_angle_"))
+                grad_y = np.load(labels_temp[i].replace("gx_","gy_"))
 
             if self.simulator:
                 # We compute input: gx, gy, posx, posy
@@ -90,7 +93,7 @@ class DataGenerator(keras.utils.Sequence):
                 grad_x = preprocess_label(grad_x)
                 grad_y = preprocess_label(grad_y)
 
-                if self.only_height:
+                if self.output_type == 'height':
                     grad = poisson_reconstruct(grad_y, grad_x)
                     grad = np.expand_dims(grad, axis=2)
                 else:

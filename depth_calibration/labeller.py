@@ -403,10 +403,10 @@ class Labeller():
         if shape == 'sphere':
             gx, gy = self.__get_sphere_gradient(center_px, radius_px, R_mm=sphere_R_mm)
             return gx, gy
-        if shape == 'semicone':
+        if 'semicone' in shape:
             gx, gy = self.__get_semicone_gradient(center_px, radius_px, r_mm=semicone_r_mm, cone_slope=semicone_slope)
             return gx, gy
-        if shape == 'hollowcone':
+        if 'hollowcone' in shape:
             gx, gy = self.get_semicone_2_gradient(center_px, radius_px, r_mm=hollow_r_mm, R_mm=hollow_R_mm, cone_slope=hollowcone_slope)
             return gx, gy
         if shape == 'semipyramid':

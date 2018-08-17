@@ -188,7 +188,7 @@ def poisson_reconstruct(grady, gradx):
 def custom_loss(y_true, y_pred):
     return K.sum(K.square(y_true-y_pred))
 
-def raw_gs_to_depth_map(gs_id=2, test_image=None, ref=None, model_path=None, plot=False, save=False, path='', img_number='', only_height=False):
+def raw_gs_to_depth_map(gs_id=2, test_image=None, ref=None, model_path=None, plot=False, save=False, path='', img_number='', output_type='grad'):
     start = time.time()
 
     if ref == None:
@@ -221,7 +221,7 @@ def raw_gs_to_depth_map(gs_id=2, test_image=None, ref=None, model_path=None, plo
     test_image = np.concatenate((test_image, pos),axis = 2)
     test_image = np.expand_dims(test_image, axis=0)
 
-    if not only_height:
+    if output_type != 'height':
         grad = model.predict(test_image)
         grad_x = grad[...,0]
         grad_y = grad[...,1]
@@ -230,6 +230,8 @@ def raw_gs_to_depth_map(gs_id=2, test_image=None, ref=None, model_path=None, plo
         grad_y = posprocess_label(grad_y)
 
         depth_map = poisson_reconstruct(np.squeeze(grad_y), np.squeeze(grad_x))
+        if output_type == 'angle':
+            depth_map = poisson_reconstruct(np.squeeze(np.tan(grad_y)), np.squeeze(np.tan(grad_x)))
     else:
         depth_map = model.predict(test_image)[0,:,:,0]
         # print depth_map.shape
