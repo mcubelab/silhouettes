@@ -227,14 +227,13 @@ class Labeller():
         h_px2mm = h_mm/h_px
         return dz_dx_mat*h_px2mm, dz_dy_mat*h_px2mm
 
-    def get_semipyramid_gradient(self, center_px, angle, sides_px, slope=np.tan(np.radians(15))):
+    def get_semipyramid_gradient(self, center_px, angle, sides_px, c_mm=15, slope=np.tan(np.radians(15))):
         s1, s2 = sides_px
         if abs(float(s1)/float(s2) - 1) > 0.2:
             return None, None
 
         C_px = (s1 + s2)/2
         C_mm = C_px*self.px_to_mm_average
-        c_mm = 15
 
 
         # print C_px, C_mm, c_mm
@@ -397,7 +396,7 @@ class Labeller():
 
         # print shape
         if shape_params:
-            sphere_R_mm, hollow_r_mm, hollow_R_mm, semicone_r_mm, hollowcone_slope, semicone_slope = shape_params
+            sphere_R_mm, hollow_r_mm, hollow_R_mm, semicone_r_mm, hollowcone_slope, semicone_slope, semipyramid_side, semipyramid_slope = shape_params
 
         # Everyhting given in pixel space
         if shape == 'sphere':
@@ -410,7 +409,7 @@ class Labeller():
             gx, gy = self.get_semicone_2_gradient(center_px, radius_px, r_mm=hollow_r_mm, R_mm=hollow_R_mm, cone_slope=hollowcone_slope)
             return gx, gy
         if shape == 'semipyramid':
-            gx, gy = self.get_semipyramid_gradient(center_px, angle, sides_px)
+            gx, gy = self.get_semipyramid_gradient(center_px, angle, sides_px, c_mm=semipyramid_side, slope=semipyramid_slope)
             return gx, gy
         return None
 
