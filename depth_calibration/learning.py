@@ -55,32 +55,25 @@ def createModel(input_shape, simulator=False, output_type = 'grad'):
     return model
 
 def get_data_paths(paths, gradient, val_fraction=0.2, max_data_points=99999):
-    inputs = []
-    labels = []
-    it = 0
+    combined = []
 
-    for path in paths:
+    def get_pictures_from_path(path, max):
+        inp = []
+        lab = []
         root_aux, dirs_aux, inputs_raw = os.walk(path).next()
-
         for inp in np.sort(inputs_raw):
             if '.png' in inp and 'img_' in inp:
-                a = [int(s) for s in inp.replace('_', ' ').replace('.', ' ').split() if s.isdigit()]
-                if a[0] > 4000:
-                    continue
-                    # pass
-                inputs.append(path + inp)
-                labels.append(path.replace('image/', "gradient/g") + gradient + '_' + inp.replace('.png', '.npy').replace('img_', ''))
+                inp.append(path + inp)
+                lab.append(path.replace('image/', "gradient/g") + gradient + '_' + inp.replace('.png', '.npy').replace('img_', ''))
+        comb = list(zip(inp, lab))
+        shuffle(comb)
+        return comb[:max]
 
-                it += 1
-                if it >= max_data_points:
-                    break
-        if it >= max_data_points:
-            break
+    n_folders = len(paths)
+    for path in paths:
+        combined += get_pictures_from_path(path, max_data_points/n_folders)
 
-
-    combined = list(zip(inputs, labels))
     shuffle(combined)
-
     inputs[:], labels[:] = zip(*combined)
     m = int(len(inputs)*val_fraction)
     return inputs[m:], labels[m:], inputs[:m+1], labels[:m+1]
