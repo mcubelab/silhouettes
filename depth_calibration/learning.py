@@ -58,14 +58,14 @@ def get_data_paths(paths, gradient, val_fraction=0.2, max_data_points=99999):
     combined = []
 
     def get_pictures_from_path(path, max):
-        inp = []
+        inpu = []
         lab = []
         root_aux, dirs_aux, inputs_raw = os.walk(path).next()
         for inp in np.sort(inputs_raw):
             if '.png' in inp and 'img_' in inp:
-                inp.append(path + inp)
+                inpu.append(path + inp)
                 lab.append(path.replace('image/', "gradient/g") + gradient + '_' + inp.replace('.png', '.npy').replace('img_', ''))
-        comb = list(zip(inp, lab))
+        comb = list(zip(inpu, lab))
         shuffle(comb)
         return comb[:max]
 
@@ -73,8 +73,9 @@ def get_data_paths(paths, gradient, val_fraction=0.2, max_data_points=99999):
     for path in paths:
         combined += get_pictures_from_path(path, max_data_points/n_folders)
 
+    # print combined
     shuffle(combined)
-    inputs[:], labels[:] = zip(*combined)
+    inputs, labels = zip(*combined)
     m = int(len(inputs)*val_fraction)
     return inputs[m:], labels[m:], inputs[:m+1], labels[:m+1]
 
@@ -89,12 +90,12 @@ def train(pretrain = False):
     # "/media/mcube/data/shapes_data/processed/ball_D28.5/image/",
     # "/media/mcube/data/shapes_data/processed/hollowcone/image/",
     #"/media/mcube/data/shapes_data/processed/semicone_augmented/image/",
-    #"/media/mcube/data/shapes_data/processed/semipyramid_augmented/image/",
+    "/media/mcube/data/shapes_data/processed/semipyramid_augmented/image/",
     '/media/mcube/data/shapes_data/processed/sphere_08-15-2018_gs2_rot=0/image/'
     ]
 
     # Datasets
-    inputs_train, labels_train, inputs_val, labels_val = get_data_paths(paths=paths, gradient='x', val_fraction=0.2, max_data_points=999999)
+    inputs_train, labels_train, inputs_val, labels_val = get_data_paths(paths=paths, gradient='x', val_fraction=0.2, max_data_points=10)
     print "Train size: " + str(len(inputs_train))
     print "Validation size: " + str(len(inputs_val))
 

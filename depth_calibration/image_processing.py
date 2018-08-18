@@ -198,7 +198,7 @@ if __name__ == "__main__":
         semicone_r_mm = 16.5/2
         semicone_slope = 10
 
-    if shape = "semipyramid_1":
+    if shape == "semipyramid_1":
     	semipyramid_side = 15
     	semipyramid_slope = 10
     else:
