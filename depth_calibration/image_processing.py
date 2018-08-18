@@ -29,6 +29,8 @@ hollow_R_mm = 0
 semicone_r_mm = 0
 hollowcone_slope = 0
 semicone_slope = 0
+semipyramid_side = 0
+semipyramid_slope = 0
 
 def rgb2gray(rgb):
     return np.dot(rgb[...,:3], [0.299, 0.587, 0.114])
@@ -177,12 +179,12 @@ if __name__ == "__main__":
     # Sphere
     sphere_R_mm = 28.5/2  # Only used if geometric_shape == 'sphere'
 
-    
+
     if shape == 'hollowcone_1':
         hollow_r_mm = 9.8/2
         hollow_R_mm = 16.5/2
         hollowcone_slope = 10
-    else:    
+    else:
         # # hollowcone 2
         hollow_r_mm = 9.8/2
         hollow_R_mm = 16.5/2
@@ -197,18 +199,18 @@ if __name__ == "__main__":
         semicone_slope = 10
 
     if shape = "semipyramid_1":
-	semipyramid_side = 15
-	semipyramid_slope = 10
+    	semipyramid_side = 15
+    	semipyramid_slope = 10
     else:
         # # semipyramid 2
-	semipyramid_side = 15
-	semipyramid_slope = 30
+    	semipyramid_side = 15
+    	semipyramid_slope = 30
 
 
     # Don't touch this
     geometric_shape = shape
-    shape_params = (sphere_R_mm, hollow_r_mm, hollow_R_mm, semicone_r_mm, hollowcone_slope, semicone_slope)
-    
+    shape_params = (sphere_R_mm, hollow_r_mm, hollow_R_mm, semicone_r_mm, hollowcone_slope, semicone_slope, semipyramid_side, semipyramid_slope)
+
     ## Paths to obtain Gelsight raw images
     folder_data_name = shape + '_08-15-2018_gs2_rot=0/'
     load_path = "/media/mcube/data/shapes_data/raw/" + folder_data_name
@@ -330,8 +332,8 @@ if __name__ == "__main__":
             ## Detect circles if any exists
             if np.sum(mask_color)/255 > 225:  #Checks if the contact patch is big enough
                 im2, contours, hierarchy = cv2.findContours(mask_color, 1, 2)
-                
-                #import pdb; pdb.set_trace()                
+
+                #import pdb; pdb.set_trace()
                 (x, y), radius = (0, 0), 0
                 biggest_area = 0
                 biggest_rect = None
@@ -444,7 +446,7 @@ if __name__ == "__main__":
                                         os.makedirs(save_path + 'gradient/')
                                     if not os.path.exists(save_path + 'heightmap/'):
                                         os.makedirs(save_path + 'heightmap/')
-                                    
+
                                     ## Save the depth map with the maximum height in the name
                                     depth_map = poisson_reconstruct(grad_y, grad_x)
                                     name = str(np.amax(depth_map))
