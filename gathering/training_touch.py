@@ -25,8 +25,8 @@ def training_touch(experiment_name = '/media/mcube/data/shapes_data/raw/test', o
         start_cart = 900-length, 387., 660., 0.01, 0.9999, -0.0102, 0.008
 
     # We generate all the random offsets from the center:
-    rnd_x = np.random.uniform(-width/2, width/2, size=number_of_points)
-    rnd_y = np.random.uniform(-height/2, height/2, size=number_of_points)
+    rnd_x = np.random.uniform(-width/2, width/2, size=number_of_points-last_touch)
+    rnd_y = np.random.uniform(-height/2, height/2, size=number_of_points-last_touch)
 
     # We compute all the movememts
     movement_list = [(0, 0, 0)]

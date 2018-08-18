@@ -88,8 +88,8 @@ def get_data_paths(paths, gradient, val_fraction=0.2, max_data_points=99999):
 def train(pretrain = False):
     # Params:
     simulator = False
-    output_type = 'grad' #'height', 'angle'
-    weights_filepath = "weights/weights_sphere_08-15-2018_out_type=grad.hdf5"
+    output_type =  'angle' #'grad' #'height', 'angle'
+    weights_filepath = "weights/weights_sphere_08-15-2018_out_type=angle.hdf5"
 
     paths = [
     # "/media/mcube/data/shapes_data/processed/ball_D6.35/image/",

@@ -163,9 +163,9 @@ if __name__ == "__main__":
     #shape = 'semicone_1'
     #shape = 'semicone_2'
     #shape = 'hollowcone_1'
-    shape = 'hollowcone_2'
+    #shape = 'hollowcone_2'
     # shape = 'test1'
-    # shape = 'semipyramid'
+    shape = 'semipyramid'
     '''
     gs_ids = [1,2]
     shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_1', 'hollowcone_2', 'semipyramid', 'stamp']
@@ -178,7 +178,7 @@ if __name__ == "__main__":
     sphere_R_mm = 28.5/2  # Only used if geometric_shape == 'sphere'
 
     
-    if shape == 'hollowcone 1':
+    if shape == 'hollowcone_1':
         hollow_r_mm = 9.8/2
         hollow_R_mm = 16.5/2
         hollowcone_slope = 10
@@ -188,7 +188,7 @@ if __name__ == "__main__":
         hollow_R_mm = 16.5/2
         hollowcone_slope = 20
 
-    if shape == 'semicone 1':
+    if shape == 'semicone_1':
         semicone_r_mm = 10.2/2
         semicone_slope = 30
     else:
@@ -196,6 +196,13 @@ if __name__ == "__main__":
         semicone_r_mm = 16.5/2
         semicone_slope = 10
 
+    if shape = "semipyramid_1":
+	semipyramid_side = 15
+	semipyramid_slope = 10
+    else:
+        # # semipyramid 2
+	semipyramid_side = 15
+	semipyramid_slope = 30
 
 
     # Don't touch this
@@ -529,6 +536,8 @@ if __name__ == "__main__":
                                 index = index + 1
                                 if not os.path.exists(save_path + 'image/'):
                                     os.makedirs(save_path + 'image/')
+                                if not os.path.exists(save_path + 'image_gray/'):
+                                    os.makedirs(save_path + 'image_gray/')
                                 if not os.path.exists(save_path + 'image_circled/'):
                                     os.makedirs(save_path + 'image_circled/')
                                 if not os.path.exists(save_path + 'gradient/'):
@@ -546,6 +555,7 @@ if __name__ == "__main__":
 
                                 ## Save raw image, raw_image with circle and the gradients
                                 cv2.imwrite(save_path + 'image/img_'+str(index)+ '.png',cv2.cvtColor(introduce_noise(im_wp_save, noise_coefs, mask=noise_mask), cv2.COLOR_BGR2RGB))
+                                cv2.imwrite(save_path + 'image_gray/img_'+str(index)+ '.png',cv2.cvtColor(cv2.cvtColor(introduce_noise(im_wp_save, noise_coefs, mask=noise_mask), cv2.COLOR_BGR2GRAY),cv2.COLOR_GRAY2RGB))
                                 cv2.imwrite(save_path + 'image_circled/img_'+str(index)+ '.png',cv2.cvtColor(introduce_noise(im_wp, noise_coefs, mask=noise_mask), cv2.COLOR_BGR2RGB))
                                 np.save(save_path + 'gradient/gx_'+ str(index) + '.npy', grad_x)
                                 np.save(save_path + 'gradient/gy_'+ str(index) + '.npy', grad_y)

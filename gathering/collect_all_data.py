@@ -16,12 +16,14 @@ if __name__ == "__main__":
     num_test_data = 100
     for gs_id in gs_ids:
       for shape in shapes:
-        if () or ('stamp' in shape):
+        if ('semipyramid' in shape) or ('stamp' in shape):
             rotations = 180/8.0*np.arange(4)
             num_data = num_data/4
             num_test_data = num_test_data/4
         else:
             rotations = [0]
+            num_data = 500
+            num_test_data = 100
         for rotation in rotations:
             data_type = '/media/mcube/data/shapes_data/raw/' + shape + '_08-17-2018_gs_id={}_rot={}/'.format(gs_id, rotation)
             data_test_type = '/media/mcube/data/shapes_data/raw/' +shape + '_08-17-2018_test_gs_id={}_rot={}/'.format(gs_id, rotation)
