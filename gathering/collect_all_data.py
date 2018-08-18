@@ -27,7 +27,9 @@ if __name__ == "__main__":
         for rotation in rotations:
             data_type = '/media/mcube/data/shapes_data/raw/' + shape + '_08-17-2018_gs_id={}_rot={}/'.format(gs_id, rotation)
             data_test_type = '/media/mcube/data/shapes_data/raw/' +shape + '_08-17-2018_test_gs_id={}_rot={}/'.format(gs_id, rotation)
-            raw_input('Collecting data for: '+ data_type +'. Ready?')
+            start_again = False
+            while start_again != 'y':
+              start_again = raw_input('Collecting data for: '+ data_type +'. Ready?')
             if not os.path.exists(data_type): os.makedirs(data_type)
             if not os.path.exists(data_test_type): os.makedirs(data_test_type)
             collected_data = sum(os.path.isdir(data_type + i) for i in os.listdir(data_type))
