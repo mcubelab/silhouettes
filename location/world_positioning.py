@@ -11,7 +11,22 @@ except Exception as e:
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 #SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 #params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
-params_dict = yaml.load(open('/home/mcube/silhouettes/' + 'resources/params.yaml'))
+
+try:
+    params_dict = yaml.load(open('/home/mcube/silhouettes/' + 'resources/params.yaml'))
+except:
+    pass
+
+try:
+    params_dict = yaml.load(open('/home/ubuntu/silhouettes/' + 'resources/params.yaml'))
+except:
+    pass
+
+try:
+    params_dict = yaml.load(open('/home/oleguer/silhouettes/' + 'resources/params.yaml'))
+except:
+    pass
+
 half_y = params_dict['input_shape_gs2'][1]/2.
 
 def __quaternion_matrix(quaternion):

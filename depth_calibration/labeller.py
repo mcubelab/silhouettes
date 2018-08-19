@@ -18,6 +18,10 @@ try:
     sys.path.append("/home/oleguer/silhouettes/location/")
 except Exception as e:
     pass
+try:
+    sys.path.append("/home/ubuntu/silhouettes/location/")
+except Exception as e:
+    pass
 from world_positioning import *
 
 SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"

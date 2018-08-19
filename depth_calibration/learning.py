@@ -83,19 +83,20 @@ def train(pretrain = False):
     # Params:
     simulator = False
     output_type =  'angle' #'grad' #'height', 'angle'
-    weights_filepath = "weights/weights_sphere_08-15-2018_out_type=angle.hdf5"
+    weights_filepath = "/home/ubuntu/weights/weights.aws.v1.hdf5"
 
     paths = [
     # "/media/mcube/data/shapes_data/processed/ball_D6.35/image/",
     # "/media/mcube/data/shapes_data/processed/ball_D28.5/image/",
     # "/media/mcube/data/shapes_data/processed/hollowcone/image/",
     #"/media/mcube/data/shapes_data/processed/semicone_augmented/image/",
-    "/media/mcube/data/shapes_data/processed/semipyramid_augmented/image/",
-    '/media/mcube/data/shapes_data/processed/sphere_08-15-2018_gs2_rot=0/image/'
+    #"/media/mcube/data/shapes_data/processed/semipyramid_augmented/image/",
+    #'/media/mcube/data/shapes_data/processed/sphere_08-15-2018_gs2_rot=0/image/'
+    "/home/ubuntu/test_data/image/",
     ]
 
     # Datasets
-    inputs_train, labels_train, inputs_val, labels_val = get_data_paths(paths=paths, gradient='x', val_fraction=0.2, max_data_points=10)
+    inputs_train, labels_train, inputs_val, labels_val = get_data_paths(paths=paths, gradient='x', val_fraction=0.2, max_data_points=100)
     print "Train size: " + str(len(inputs_train))
     print "Validation size: " + str(len(inputs_val))
 
