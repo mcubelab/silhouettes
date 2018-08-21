@@ -93,10 +93,12 @@ def train(pretrain = False):
     #"/media/mcube/data/shapes_data/processed/semipyramid_augmented/image/",
     #'/media/mcube/data/shapes_data/processed/sphere_08-17-2018_gs_id=1_rot=0/image/',
     #'/media/mcube/data/shapes_data/processed/semicone_2_08-17-2018_gs_id=1_rot=0/image/',
-    '/media/mcube/data/shapes_data/processed/semipyramid_2_08-17-2018_gs_id=1_rot=0/image/',
-    '/media/mcube/data/shapes_data/processed/semipyramid_2_08-17-2018_gs_id=1_rot=1/image/',
-    '/media/mcube/data/shapes_data/processed/semipyramid_2_08-17-2018_gs_id=1_rot=2/image/',
-    '/media/mcube/data/shapes_data/processed/semipyramid_2_08-17-2018_gs_id=1_rot=3/image/'
+    #'/media/mcube/data/shapes_data/processed/semipyramid_2_08-17-2018_gs_id=1_rot=0/image/',
+    #'/media/mcube/data/shapes_data/processed/semipyramid_2_08-17-2018_gs_id=1_rot=1/image/',
+    #'/media/mcube/data/shapes_data/processed/semipyramid_2_08-17-2018_gs_id=1_rot=2/image/',
+    #'/media/mcube/data/shapes_data/processed/semipyramid_2_08-17-2018_gs_id=1_rot=3/image/',
+    #'/media/mcube/data/shapes_data/processed/sphere_08-15-2018_gs2_rot=0/image/',
+    "/home/ubuntu/test_data/image/",
     ]
     gs_id = 1
     # Datasets
