@@ -138,16 +138,16 @@ class DataCollector():
 
 
 if __name__ == "__main__":
-    dc = DataCollector(only_one_shot=True, save_path='/media/mcube/data/shapes_data/siyuan_calib')
+    dc = DataCollector(only_one_shot=True, save_path='/media/mcube/data/shapes_data/raw/test_08-17-2018_gs_id=2/')
 
     #### If single picture uncomment this:
-    # for ite in range(2,20):
-    #     dc.it = ite
-    #     dc.get_data(get_cart=False, get_gs1=False, get_gs2=True, get_wsg=False, iteration=0)
-    #     time.sleep(1)
-    #     a = raw_input("Capture")
+    for ite in range(23,25):
+        dc.it = ite
+        dc.get_data(get_cart=False, get_gs1=False, get_gs2=True, get_wsg=False, iteration=0)
+        time.sleep(1)
+        a = raw_input("Capture")
 
     ### If video uncomment this:
-    dc.it = 3
-    dc.get_data(get_cart=False, get_gs1=True, get_gs2=False, get_wsg=False, iteration=0)
-    time.sleep(9999)
+    #dc.it = 3
+    #dc.get_data(get_cart=False, get_gs1=True, get_gs2=False, get_wsg=False, iteration=0)
+    #time.sleep(9999)

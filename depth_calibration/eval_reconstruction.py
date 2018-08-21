@@ -16,7 +16,8 @@ for img_number in pictures_range:
     # img_path ='/media/mcube/data/shapes_data/height_test/GS2_{}.png'.format(img_number)
     test_image = cv2.imread(img_path)
     output_type = 'height'
-    weights_file = 'depth_calibration/weights/weights.aug.v2.hdf5'
+    weights_file = 'depth_calibration/weights/weights_sphere_08-15-2018_out_type=angle.hdf5'
+    #weights_file = 'depth_calibration/weights/weights.aug.v2.hdf5'
 
 
     '''

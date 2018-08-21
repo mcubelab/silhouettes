@@ -82,31 +82,36 @@ def get_data_paths(paths, gradient, val_fraction=0.2, max_data_points=99999):
 def train(pretrain = False):
     # Params:
     simulator = False
-    output_type =  'angle' #'grad' #'height', 'angle'
-    weights_filepath = "weights/weights_sphere_08-15-2018_out_type=angle.hdf5"
+    output_type =  'grad' #'grad' #'height', 'angle'
+    weights_filepath = "weights/weights_semipyramid_2_08-17-2018_gs_id=1_rot=all_out_type={}.hdf5".format(output_type)
 
     paths = [
     # "/media/mcube/data/shapes_data/processed/ball_D6.35/image/",
     # "/media/mcube/data/shapes_data/processed/ball_D28.5/image/",
     # "/media/mcube/data/shapes_data/processed/hollowcone/image/",
     #"/media/mcube/data/shapes_data/processed/semicone_augmented/image/",
-    "/media/mcube/data/shapes_data/processed/semipyramid_augmented/image/",
-    '/media/mcube/data/shapes_data/processed/sphere_08-15-2018_gs2_rot=0/image/'
+    #"/media/mcube/data/shapes_data/processed/semipyramid_augmented/image/",
+    #'/media/mcube/data/shapes_data/processed/sphere_08-17-2018_gs_id=1_rot=0/image/',
+    #'/media/mcube/data/shapes_data/processed/semicone_2_08-17-2018_gs_id=1_rot=0/image/',
+    '/media/mcube/data/shapes_data/processed/semipyramid_2_08-17-2018_gs_id=1_rot=0/image/',
+    '/media/mcube/data/shapes_data/processed/semipyramid_2_08-17-2018_gs_id=1_rot=1/image/',
+    '/media/mcube/data/shapes_data/processed/semipyramid_2_08-17-2018_gs_id=1_rot=2/image/',
+    '/media/mcube/data/shapes_data/processed/semipyramid_2_08-17-2018_gs_id=1_rot=3/image/'
     ]
-
+    gs_id = 1
     # Datasets
-    inputs_train, labels_train, inputs_val, labels_val = get_data_paths(paths=paths, gradient='x', val_fraction=0.2, max_data_points=10)
+    inputs_train, labels_train, inputs_val, labels_val = get_data_paths(paths=paths, gradient='x', val_fraction=0.2, max_data_points=500)
     print "Train size: " + str(len(inputs_train))
     print "Validation size: " + str(len(inputs_val))
 
     # Input/output shape (change it in resources/params.yaml)
     params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
-    input_shape = params_dict['input_shape_gs2']
+    input_shape = params_dict['input_shape_gs{}'.format(gs_id)]
     if simulator:
         input_shape[2] = 5  # HACK
-
-    input_image_shape = params_dict['input_shape_gs2'][0:2]
-    output_shape = params_dict['output_shape_gs2'][0:2]
+    
+    input_image_shape = params_dict['input_shape_gs{}'.format(gs_id)][0:2]
+    output_shape = params_dict['output_shape_gs{}'.format(gs_id)][0:2]
 
     # Generators
     train_batch_size = 8

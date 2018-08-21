@@ -188,22 +188,24 @@ def poisson_reconstruct(grady, gradx):
 def custom_loss(y_true, y_pred):
     return K.sum(K.square(y_true-y_pred))
 
-def raw_gs_to_depth_map(gs_id=2, test_image=None, ref=None, model_path=None, plot=False, save=False, path='', img_number='', output_type='grad'):
-    start = time.time()
-
+def raw_gs_to_depth_map(gs_id=2, test_image=None, ref=None, model_path=None, plot=False, save=False, path='', img_number='',
+                            output_type='grad', test_depth = None, model = None):
     if ref == None:
         ref = test_image
 
-    mask_color = np.load(SHAPES_ROOT + 'resources/GS2_mask_color.npy')
+
     im_bs, im_wp = calibration(test_image,ref)
+#    mask_color = np.load(SHAPES_ROOT + 'resources/GS2_mask_color.npy')
+    mask_color = np.load(SHAPES_ROOT + 'resources/mask_GS2.npy')
+    mask_color = np.repeat(np.expand_dims(mask_color, axis=2), 3,axis=2)
+    mask_color = cv2.resize(mask_color, dsize=(im_wp.shape[1], im_wp.shape[0]), interpolation=cv2.INTER_LINEAR)
+    
     test_image = im_wp*mask_color
     test_image = test_image[...,[2,1,0]]
 
-    #plt.imshow(test_image)
-    #plt.show()
-
     keras.losses.custom_loss = custom_loss
-    model = load_model(model_path)
+    if model is None:
+        model = load_model(model_path)
 
     params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
     if gs_id == 1:
@@ -220,21 +222,20 @@ def raw_gs_to_depth_map(gs_id=2, test_image=None, ref=None, model_path=None, plo
     test_image = preprocess_image(test_image)
     test_image = np.concatenate((test_image, pos),axis = 2)
     test_image = np.expand_dims(test_image, axis=0)
-
+    start = time.time()
     if output_type != 'height':
         grad = model.predict(test_image)
         grad_x = grad[...,0]
         grad_y = grad[...,1]
-
+        
         grad_x = posprocess_label(grad_x)
         grad_y = posprocess_label(grad_y)
-
+        
         depth_map = poisson_reconstruct(np.squeeze(grad_y), np.squeeze(grad_x))
         if output_type == 'angle':
             depth_map = poisson_reconstruct(np.squeeze(np.tan(grad_y)), np.squeeze(np.tan(grad_x)))
     else:
-        depth_map = model.predict(test_image)[0,:,:,0]
-        # print depth_map.shape
+        depth_map = model.predict(test_image)[0,:,:,0]        
 
     print "Max: " + str(np.amax(depth_map))
 
@@ -243,7 +244,10 @@ def raw_gs_to_depth_map(gs_id=2, test_image=None, ref=None, model_path=None, plo
 
     if plot or save:
         plot_depth_map(depth_map, show=plot, save=save, path=path, img_number=img_number)
-
+    
+    if test_depth is not None:
+        loss = np.sum(np.square(depth_map - test_depth))  #TODO: assumption that this is the custom loss
+        return depth_map, loss
     return depth_map
 
 def grad_to_gs(model_path, gx, gy, gs_id=2):
