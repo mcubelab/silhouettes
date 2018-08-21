@@ -222,9 +222,14 @@ class Labeller():
         dz_dy_mat = mask_pp * dz_dy_mat
 
         h_px = np.amax(poisson_reconstruct(dz_dy_mat, dz_dx_mat))
+
         if h_px < 1e-5 or h_mm < 0.1:
             return None, None
         h_px2mm = h_mm/h_px
+
+        plt.imshow(H)
+
+
         return dz_dx_mat*h_px2mm, dz_dy_mat*h_px2mm
 
     def get_semipyramid_gradient(self, center_px, angle, sides_px, c_mm=15, slope=np.tan(np.radians(15))):
@@ -416,13 +421,13 @@ class Labeller():
 
 if __name__ == "__main__":
     labeller = Labeller2()
-    x, y = labeller.get_gradient_matrices(center_px=(200, 300), radius_px=90, shape='semicone')
-
-    cv2.imshow('gx', x)
-    cv2.imshow('gy', y)
-    cv2.waitKey(0)
-
-    depth_map = poisson_reconstruct(y, x)
+    # x, y = labeller.get_gradient_matrices(center_px=(200, 300), radius_px=90, shape='semicone')
+    #
+    # cv2.imshow('gx', x)
+    # cv2.imshow('gy', y)
+    # cv2.waitKey(0)
+    #
+    # depth_map = poisson_reconstruct(y, x)
 
     def plot(depth_map):
         fig = plt.figure()
@@ -437,4 +442,7 @@ if __name__ == "__main__":
         # plt.savefig(path + "img_" + str(img_number) + "_semicone_obj_weights.png")
         plt.show()
     depth_map = cv2.resize(depth_map, dsize=(50, 83), interpolation=cv2.INTER_LINEAR)
-    plot(depth_map)
+    # plot(depth_map)
+
+    a = labeller.get_semicone_2_gradient(center_px=(200, 300), radius_px=50)
+    plot(a)
