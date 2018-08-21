@@ -18,6 +18,10 @@ try:
     sys.path.append("/home/oleguer/silhouettes/location/")
 except Exception as e:
     pass
+try:
+    sys.path.append("/home/ubuntu/silhouettes/location/")
+except Exception as e:
+    pass
 from world_positioning import *
 
 SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
@@ -413,7 +417,7 @@ class Labeller():
         if 'hollowcone' in shape:
             gx, gy = self.get_semicone_2_gradient(center_px, radius_px, r_mm=hollow_r_mm, R_mm=hollow_R_mm, cone_slope=hollowcone_slope)
             return gx, gy
-        if shape == 'semipyramid':
+        if 'semipyramid' in shape:
             gx, gy = self.get_semipyramid_gradient(center_px, angle, sides_px, c_mm=semipyramid_side, slope=semipyramid_slope)
             return gx, gy
         return None
