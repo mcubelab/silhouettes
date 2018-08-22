@@ -10,12 +10,12 @@ def training_touch(experiment_name = '/media/mcube/data/shapes_data/raw/test', o
     # Enter object main dimensions in [mm]
     length = 40 # distance from the magnetic base to the top
     # Enter area to area to explore uniformly
-    height = 8
-    width = 8
+    height = 14
+    width = 14
     
 
     # Enter these other params
-    cr = ControlRobot(gs_ids=[gs_id], force_list=[20])
+    cr = ControlRobot(gs_ids=[gs_id], force_list=[5])
 
     # IMPORTANT NOTE: Make sure you start at a save position
 
@@ -25,11 +25,11 @@ def training_touch(experiment_name = '/media/mcube/data/shapes_data/raw/test', o
         start_cart = 900-length, 387., 660., 0.01, 0.9999, -0.0102, 0.008
 
     # We generate all the random offsets from the center:
-    rnd_x = np.random.uniform(-width/2, width/2, size=number_of_points-last_touch)
-    rnd_y = np.random.uniform(-height/2, height/2, size=number_of_points-last_touch)
+    rnd_x = np.random.uniform(-width/2, width/2, size=number_of_points-last_touch)*0-width/2
+    rnd_y = np.random.uniform(-height/2, height/2, size=number_of_points-last_touch)*0+height/2
 
     # We compute all the movememts
-    movement_list = [(0, 0, 0)]
+    movement_list = []
     prev_x = 0
     prev_y = 0
     for x, y in zip(rnd_x, rnd_y):

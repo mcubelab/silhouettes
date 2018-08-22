@@ -20,7 +20,6 @@ from matplotlib import cm
 import time
 import glob
 from PIL import Image
-import scipy.optimize as optimize
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 _EPS = 1e-5
@@ -217,8 +216,6 @@ def point_to_line_dist(point, line):
         # if not, then return the minimum distance to the segment endpoints
         return endpoint_dist
 
-global x_rect
-
 def rect_dist(big_rect, x):
     new_rect = ((big_rect[0], big_rect[1]), (big_rect[2], big_rect[3]),big_rect[4])
     #print new_rect
@@ -252,24 +249,6 @@ def rect_dist(big_rect, x):
     #print np.sum(np.array(total_dist) )
     return np.array(total_dist) 
 
-def min_rect_dist(big_rect):
-    #print big_rect
-    new_rect = ((big_rect[0], big_rect[1]), (big_rect[2], big_rect[3]),big_rect[4])
-    box = cv2.boxPoints(new_rect)
-    #print box
-    pointList = []
-    for i in range(box.shape[0]):
-        pointList.append(box[i])
-    poly = Polygon(pointList)
-    #print poly
-    total_dist = []
-    for i in range(x_rect.shape[1]):
-        point = Point(x_rect[:,i])
-        total_dist.append(poly.exterior.distance(point))
-    #print np.sum(total_dist)    
-    return np.sum(total_dist) 
-
-
 if __name__ == "__main__":
     # NOTE: remember we assume GSx_0 is air picture
 
@@ -285,16 +264,13 @@ if __name__ == "__main__":
     # shape = 'test1'
     shape = 'semipyramid'
 
-    gs_ids = [1,2]
+    gs_ids = [2,1]
     shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_1', 'hollowcone_2', 'semipyramid_2'] #, 'stamp']
-    pix_limit = [1650, 2200, 6500, 5800, 4300, 5000 ]
-    
-    #shapes = ['semicone_1', 'semicone_2', 'hollowcone_1', 'hollowcone_2', 'semipyramid_2'] #, 'stamp']
-    #shapes = ['semipyramid_2'] #, 'stamp']
-    date = '08-17-2018'
+    shapes = ['semipyramid_2'] #, 'stamp']
+    date = '08-21-2018'
     rotations = [0]    
     for gs_id in gs_ids:
-        for it_shape, shape in enumerate(shapes):
+        for shape in shapes:
             if 'semipyramid' in shape or 'stamp' in shape:
                 rotations = range(4)
             else:
@@ -349,7 +325,7 @@ if __name__ == "__main__":
                     root, files = get_files(load_path, only_pictures=only_pictures)
 
                     ## Path to save new images and gradients
-                    save_path = "/media/mcube/data/shapes_data/debug_processed_old/"+ folder_data_name
+                    save_path = "/media/mcube/data/shapes_data/processed/"+ folder_data_name
                     # save_path = "sample_data/"
 
                     ## Basic parameters
@@ -391,17 +367,16 @@ if __name__ == "__main__":
 
                     ## Max_rad param:
                     if 'hollowcone' in geometric_shape:
-                        max_rad = 250
+                        max_rad = 200
                     elif geometric_shape == 'semicone_1':
-                        max_rad = 250
+                        max_rad = 80
                     else:
                         max_rad = 250
 
                     ## Go through each raw gelsight image
                     index = 0
                     n = len(files)
-                    num_pixels = []
-                    for i in range(min(n,20)):
+                    for i in range(4):
                         print files[i]
                         if (((gs_id == 1) and ('GS1' in files[i])) or ((gs_id == 2) and ('GS2' in files[i]))):
                             print 'Progress made: ' + str(100.*float(i)/float(n)) + ' %'
@@ -470,8 +445,7 @@ if __name__ == "__main__":
                                 
                             cv2.drawContours(outImage, contours, -1, (0,0,255), 3)
                             ## Detect circles if any exists
-                            if mask_pixels  > pix_limit[it_shape]:  #Smaller one seems on the order of 1800 pixels
-                                num_pixels.append(mask_pixels)
+                            if mask_pixels  > 1000:  #Smaller one seems on the order of 1800 pixels
                                 im2, contours, hierarchy = cv2.findContours(mask_color, 1, 2)
                                 #print mask_pixels
                                 
@@ -502,7 +476,7 @@ if __name__ == "__main__":
                                 if 'semipyramid' not in geometric_shape:
                                     center = (int(x), int(y))
                                     cv2.circle(outImage,center,int(radius),(255,0,0),2)
-                                    #cv2.imshow("Keypoints", outImage)
+                                    cv2.imshow("Keypoints", outImage)
                                     #cv2.waitKey(0)
                                     
                                     ###### IMPROVE CIRCLE FIT ########
@@ -516,10 +490,21 @@ if __name__ == "__main__":
                                     x, y, radius = lsc_out.beta
                                     center = (int(x), int(y))
                                     cv2.circle(outImage,center,int(radius),(0,55,55),2)
-                                    #cv2.imshow("Keypoints", outImage)
-                                    #cv2.waitKey(0)
+                                    cv2.imshow("Keypoints", outImage)
+                                    cv2.waitKey(0)
                                     
-                                    radius = int(radius) 
+                                    
+                                    
+                                    if geometric_shape == 'sphere':
+                                        # center = (int(x)-2, int(y))  # TODO: why are we doing this?
+                                        radius = int(radius*0.8)  # TODO: this numbers seems a bit of a hack
+                                    elif 'semicone' in geometric_shape:
+                                        radius = int(radius*0.9)
+                                    else:
+                                        radius = int(radius)  # TODO: this numbers seems a bit of a hack
+
+                                    #raw_input("Press Enter to continue...")
+
                                     ## Checks if the circle found matches well with contact patch
                                     mask_circle = ((x_mesh-center[0])**2 + (y_mesh-center[1])**2) < (radius)**2
 
@@ -625,8 +610,8 @@ if __name__ == "__main__":
                                                     ## Save the raw image blended with the depth map
                                                     if iii == 0:  #We do not need multiple copies of it..
                                                         cv2.imwrite(save_path + 'image_raw/img_'+str(index)+ '.png',im_temp)
-                                                        cv2.imwrite(save_path + 'image_circled/img_'+str(index)+ ' {}'.format(mask_pixels) + '.png',cv2.cvtColor(im_wp, cv2.COLOR_BGR2RGB))
-                                                        io = Image.open(save_path + 'image_circled/img_'+str(index)+ ' {}'.format(mask_pixels) + '.png').convert("RGB") # image_for_input
+                                                        cv2.imwrite(save_path + 'image_circled/img_'+str(index)+ '.png',cv2.cvtColor(im_wp, cv2.COLOR_BGR2RGB))
+                                                        io = Image.open(save_path + 'image_circled/img_'+str(index)+ '.png').convert("RGB") # image_for_input
                                                         ii = Image.open(save_path + 'heightmap/'+str(index) + '_' + name + '.png').resize(io.size).convert("RGB") #depth map
                                                         result = Image.blend(io, ii, alpha=0.5)
                                                         result.save(save_path + 'heightmap/'+str(index) + '_blend.png')
@@ -638,7 +623,7 @@ if __name__ == "__main__":
                                     box = cv2.boxPoints(biggest_rect)
                                     box = np.int0(box)
                                     cv2.drawContours(outImage, [box], 0, (255,0,0), 3)
-                                    '''            
+
                                     lsc_data  = odr.Data(np.row_stack([biggest_contour[:,0,0], biggest_contour[:,0,1]]), y=1)
                                     lsc_model = odr.Model(rect_dist, implicit=True)
                                     adapt_rect = [biggest_rect[0][0], biggest_rect[0][1], biggest_rect[1][0],biggest_rect[1][1], biggest_rect[2]]
@@ -653,21 +638,6 @@ if __name__ == "__main__":
                                     cv2.drawContours(outImage, [box], 0, (0,55,55), 3)
                                     cv2.imshow("Keypoints", outImage)
                                     cv2.waitKey(0)
-                                    '''
-                                    
-                                    x_rect = np.row_stack([biggest_contour[:,0,0], biggest_contour[:,0,1]])
-                                    adapt_rect = [biggest_rect[0][0], biggest_rect[0][1], biggest_rect[1][0],biggest_rect[1][1], rotation*90/3.0]
-                                    result = optimize.minimize(min_rect_dist, adapt_rect,  method='Nelder-Mead', options={'adaptive': True, 'disp': True})
-                                    if result.success:
-                                        big_rect = result.x
-                                        print(big_rect)
-                                        biggest_rect = ((big_rect[0], big_rect[1]), (big_rect[2], big_rect[3]),big_rect[4])
-                                    
-                                    box = cv2.boxPoints(biggest_rect)
-                                    box = np.int0(box)
-                                    cv2.drawContours(outImage, [box], 0, (0,55,55), 3)
-                                    #cv2.imshow("Keypoints", outImage)
-                                    #cv2.waitKey(0)
                                     
                                     mask_color = mask_color*255
 
@@ -757,19 +727,14 @@ if __name__ == "__main__":
 
                                                 ## Save raw image, raw_image with circle and the gradients
                                                 cv2.imwrite(save_path + 'image/img_'+str(index)+ '.png',cv2.cvtColor(introduce_noise(im_wp_save, noise_coefs, mask=noise_mask), cv2.COLOR_BGR2RGB))
-                                                if iii == 0:
-                                                    cv2.imwrite(save_path + 'image_gray/img_'+str(index)+ '.png',cv2.cvtColor(cv2.cvtColor(introduce_noise(im_wp_save, noise_coefs, mask=noise_mask), cv2.COLOR_BGR2GRAY),cv2.COLOR_GRAY2RGB))
-                                                    cv2.imwrite(save_path + 'image_circled/img_'+str(index)+ ' {}'.format(mask_pixels) + '.png',cv2.cvtColor(introduce_noise(im_wp, noise_coefs, mask=noise_mask), cv2.COLOR_BGR2RGB))
+                                                cv2.imwrite(save_path + 'image_raw/img_'+str(index)+ '.png',cv2.cvtColor(im_temp, cv2.COLOR_BGR2RGB))
+                                                cv2.imwrite(save_path + 'image_gray/img_'+str(index)+ '.png',cv2.cvtColor(cv2.cvtColor(introduce_noise(im_wp_save, noise_coefs, mask=noise_mask), cv2.COLOR_BGR2GRAY),cv2.COLOR_GRAY2RGB))
+                                                cv2.imwrite(save_path + 'image_circled/img_'+str(index)+ '.png',cv2.cvtColor(introduce_noise(im_wp, noise_coefs, mask=noise_mask), cv2.COLOR_BGR2RGB))
                                                 np.save(save_path + 'gradient/gx_'+ str(index) + '.npy', grad_x)
                                                 np.save(save_path + 'gradient/gy_'+ str(index) + '.npy', grad_y)
 
                                                 ## Save the raw image blended with the depth map
-                                                if iii == 0:
-                                                    io = Image.open(save_path + 'image_circled/img_'+str(index)+ ' {}'.format(mask_pixels) + '.png').convert("RGB") # image_for_input
-                                                    ii = Image.open(save_path + 'heightmap/'+str(index) + '_' + name + '.png').resize(io.size).convert("RGB") #depth map
-                                                    result = Image.blend(io, ii, alpha=0.5)
-                                                    result.save(save_path + 'heightmap/'+str(index) + '_blend.png')
-
-
-                    #plt.plot(num_pixels)
-                    #plt.show()
+                                                io = Image.open(save_path + 'image_circled/img_'+str(index)+ '.png').convert("RGB") # image_for_input
+                                                ii = Image.open(save_path + 'heightmap/'+str(index) + '_' + name + '.png').resize(io.size).convert("RGB") #depth map
+                                                result = Image.blend(io, ii, alpha=0.5)
+                                                result.save(save_path + 'heightmap/'+str(index) + '_blend.png')

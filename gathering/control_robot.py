@@ -10,6 +10,7 @@ from cv_bridge import CvBridge, CvBridgeError
 import rospy, math, cv2, os, pickle
 import numpy as np
 import time
+import glob
 
 class ControlRobot():
     def __init__(self, gs_ids=[2], force_list=[1, 10, 20, 40]):
@@ -52,13 +53,13 @@ class ControlRobot():
             print c
 
 
-    def close_gripper_f(self, grasp_speed=50, grasp_force=40):
+    def close_gripper_f(self, grasp_speed=200, grasp_force=40):
         graspinGripper(grasp_speed=grasp_speed, grasp_force=grasp_force)
 
     def open_gripper(self):
-        open(speed=100)
+        open(speed=200)
 
-    def palpate(self, speed=80, force_list=[1, 10, 20, 40], save=False, path='', save_only_picture=False, i=0):
+    def palpate(self, speed=200, force_list=[1, 10, 20, 40], save=False, path='', save_only_picture=False, i=0):
         # 0. We create the directory
         if save is True and not os.path.exists(path): # If the directory does not exist, we create it
             os.makedirs(path)
@@ -79,26 +80,32 @@ class ControlRobot():
             i += 1
 
     def perfrom_experiment(self, experiment_name='test', movement_list=[], save_only_picture=False, last_touch = 0):
-        # 1. We save the background image:
-        dc = DataCollector(only_one_shot=False, automatic=True, save_only_picture=save_only_picture)
-        dc.get_data(get_cart=False, get_gs1=(1 in self.gs_id), get_gs2=(2 in self.gs_id), get_wsg=False, save=True, directory=experiment_name+'/air', iteration=-1)
-        print "Air data gathered"
+        if last_touch == 0:
+            # 1. We save the background image:
+            dc = DataCollector(only_one_shot=False, automatic=True, save_only_picture=save_only_picture)
+            dc.get_data(get_cart=False, get_gs1=(1 in self.gs_id), get_gs2=(2 in self.gs_id), get_wsg=False, save=True, directory=experiment_name+'/air', iteration=-1)
+            print "Air data gathered"
 
         # 2. We perfomr the experiment:
         ini = time.time()
-        i = last_touch
         if not os.path.exists(experiment_name): # If the directory does not exist, we create it
             os.makedirs(experiment_name)
-        for movement in movement_list:
-            if i>0:
-                print "Done: " + str(i) + "/" + str(len(movement_list)) + ", Remaining minutes: " + str(((len(movement_list)-i)*(time.time()-ini)/i)/60.)
+        for i in range(last_touch, len(movement_list)+last_touch):
+            if i>last_touch:
+                print path
+                if len(glob.glob(path+'*')) < 3:
+                    i -= 1
+                    print "Previous collection was bad. Repeating"
+                else:
+                    print "Done: " + str(i) + "/" + str(len(movement_list)) + ", Remaining minutes: " + str(((len(movement_list)-i)*(time.time()-ini)/i)/60.)
             if save_only_picture:
                 path = experiment_name + '/'
                 j = i
             else:
                 path = experiment_name + '/p_' + str(i) + '/'
-                j = 0
-            self.palpate(speed=40, force_list=self.force_list, save=True, path=path, save_only_picture=save_only_picture, i=j)
+                j = i
+            movement = movement_list[i-last_touch]
+            self.palpate(speed=200, force_list=self.force_list, save=True, path=path, save_only_picture=save_only_picture, i=j)
             self.move_cart_mm(movement[0], movement[1], movement[2])
             print "moved"
             i += 1
@@ -108,7 +115,7 @@ class ControlRobot():
         else:
             path = experiment_name + '/p_' + str(i) + '/'
             j = 0
-        self.palpate(speed=40, force_list=self.force_list, save=True, path=path, save_only_picture=save_only_picture, i=j)
+        self.palpate(speed=200, force_list=self.force_list, save=True, path=path, save_only_picture=save_only_picture, i=j)
 
 
 if __name__ == "__main__":

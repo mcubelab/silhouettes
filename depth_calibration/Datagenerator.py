@@ -90,13 +90,12 @@ class DataGenerator(keras.utils.Sequence):
                 grad_x = cv2.resize(grad_x, dsize=(self.dim_out[1], self.dim_out[0]), interpolation=cv2.INTER_LINEAR)
                 grad_y = cv2.resize(grad_y, dsize=(self.dim_out[1], self.dim_out[0]), interpolation=cv2.INTER_LINEAR)
 
-                grad_x = preprocess_label(grad_x)
-                grad_y = preprocess_label(grad_y)
-
                 if self.output_type == 'height':
                     grad = poisson_reconstruct(grad_y, grad_x)
                     grad = np.expand_dims(grad, axis=2)
                 else:
+                    grad_x = preprocess_label(grad_x)
+                    grad_y = preprocess_label(grad_y)
                     grad_x = np.expand_dims(grad_x, axis=2)
                     grad_y = np.expand_dims(grad_y, axis=2)
                     grad = np.concatenate((grad_x, grad_y), axis = 2)
