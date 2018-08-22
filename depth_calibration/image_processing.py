@@ -285,25 +285,26 @@ if __name__ == "__main__":
     # shape = 'test1'
     shape = 'semipyramid'
 
-    gs_ids = [1,2]
+    gs_ids = [2,1]
     shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_1', 'hollowcone_2', 'semipyramid_2'] #, 'stamp']
     pix_limit = [1650, 2200, 6500, 5800, 4300, 5000 ]
     
     #shapes = ['semicone_1', 'semicone_2', 'hollowcone_1', 'hollowcone_2', 'semipyramid_2'] #, 'stamp']
     #shapes = ['semipyramid_2'] #, 'stamp']
-    date = '08-17-2018'
+    date = '08-21-2018'
     rotations = [0]    
+
     for gs_id in gs_ids:
         for it_shape, shape in enumerate(shapes):
             if 'semipyramid' in shape or 'stamp' in shape:
                 rotations = range(4)
             else:
-                rotations = [0]    
+                rotations = [0]
             for rotation in rotations:
                 half_names = ['_{}_gs_id={}_rot={}/'.format(date,gs_id, rotation), '_{}_test_gs_id={}_rot={}/'.format(date,gs_id, rotation)]
                 for i in range(2): #test or not test
                     half_name = half_names[i]
-                    print 'gs_id = ', gs_id 
+                    print 'gs_id = ', gs_id
                     print 'shape: ', shape
                     # IMPORTANT NOTE: MAKE SURE YOU UNCOMMENT THE MESURES OF THE ONE YOU ARE PROCESSING!!!!!!!!!!!!!
                     # Sphere
@@ -349,7 +350,7 @@ if __name__ == "__main__":
                     root, files = get_files(load_path, only_pictures=only_pictures)
 
                     ## Path to save new images and gradients
-                    save_path = "/media/mcube/data/shapes_data/debug_processed_old/"+ folder_data_name
+                    save_path = "/media/mcube/data/shapes_data/debug_processed/"+ folder_data_name
                     # save_path = "sample_data/"
 
                     ## Basic parameters
@@ -401,7 +402,7 @@ if __name__ == "__main__":
                     index = 0
                     n = len(files)
                     num_pixels = []
-                    for i in range(min(n,20)):
+                    for i in range(n):
                         print files[i]
                         if (((gs_id == 1) and ('GS1' in files[i])) or ((gs_id == 2) and ('GS2' in files[i]))):
                             print 'Progress made: ' + str(100.*float(i)/float(n)) + ' %'
@@ -545,7 +546,12 @@ if __name__ == "__main__":
                                         # cv2.imshow('im', im_wp)
                                         # cv2.waitKey(0)
                                         # print "im_wp_save shape: ", im_wp_save.shape
-                                        grad_x, grad_y = labeller.get_gradient_matrices(center, radius, shape=geometric_shape, shape_params=shape_params)
+                                        if 'hollowcone' in shape: # HACK:
+                                            grad_x, grad_y, depth_map = labeller.get_gradient_matrices(center, radius, shape=geometric_shape, shape_params=shape_params)
+                                        else:
+                                            grad_x, grad_y = labeller.get_gradient_matrices(center, radius, shape=geometric_shape, shape_params=shape_params)
+                                            depth_map = None
+
                                         if (grad_x is not None) and (grad_y is not None):
 
                                             ## Uncomment this to check gradients and heightmap
@@ -556,7 +562,8 @@ if __name__ == "__main__":
                                             # cv2.imshow('gx', grad_x)
                                             # cv2.imshow('gy', grad_y)
                                             # cv2.waitKey(0)
-                                            depth_map = poisson_reconstruct(grad_y, grad_x)
+                                            if depth_map == None:
+                                                depth_map = poisson_reconstruct(grad_y, grad_x)
 
                                             # print "Max: " + str(np.amax(depth_map))
 

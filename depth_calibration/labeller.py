@@ -24,7 +24,7 @@ except Exception as e:
     pass
 from world_positioning import *
 
-SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
+SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0].replace("silhouettes", '') + "/silhouettes/"
 
 class Labeller():
     def __init__(self):
@@ -184,6 +184,7 @@ class Labeller():
         # print RR_mm
         # print R_mm
         # print r_mm
+
         if r_mm > R_mm or R_mm > RR_mm:
             return None, None
 
@@ -226,10 +227,21 @@ class Labeller():
         dz_dy_mat = mask_pp * dz_dy_mat
 
         h_px = np.amax(poisson_reconstruct(dz_dy_mat, dz_dx_mat))
+
         if h_px < 1e-5 or h_mm < 0.1:
             return None, None
         h_px2mm = h_mm/h_px
-        return dz_dx_mat*h_px2mm, dz_dy_mat*h_px2mm
+
+        grad_x = dz_dx_mat*h_px2mm
+        grad_y = dz_dy_mat*h_px2mm
+
+        print np.amin(mask1_p)
+        print center_px
+        print mask1_p[center_px[1]][center_px[0]]
+        cv2.imshow("mask1_p", mask1_p)
+        cv2.waitKey(0)
+        depth_map = poisson_reconstruct(grad_y, grad_x)*mask1_p
+        return grad_x, grad_y, depth_map
 
     def get_semipyramid_gradient(self, center_px, angle, sides_px, c_mm=15, slope=np.tan(np.radians(15))):
         s1, s2 = sides_px
@@ -239,8 +251,7 @@ class Labeller():
         C_px = (s1 + s2)/2
         C_mm = C_px*self.px_to_mm_average
 
-
-        # print C_px, C_mm, c_mm
+        print C_px, C_mm, c_mm
         # print s1, s2
         # print angle
         # print center_px
@@ -410,8 +421,8 @@ class Labeller():
             gx, gy = self.__get_semicone_gradient(center_px, radius_px, r_mm=semicone_r_mm, cone_slope=semicone_slope)
             return gx, gy
         if 'hollowcone' in shape:
-            gx, gy = self.get_semicone_2_gradient(center_px, radius_px, r_mm=hollow_r_mm, R_mm=hollow_R_mm, cone_slope=hollowcone_slope)
-            return gx, gy
+            gx, gy, depth_map = self.get_semicone_2_gradient(center_px, radius_px, r_mm=hollow_r_mm, R_mm=hollow_R_mm, cone_slope=hollowcone_slope)
+            return gx, gy, depth_map
         if 'semipyramid' in shape:
             gx, gy = self.get_semipyramid_gradient(center_px, angle, sides_px, c_mm=semipyramid_side, slope=semipyramid_slope)
             return gx, gy
@@ -419,14 +430,14 @@ class Labeller():
 
 
 if __name__ == "__main__":
-    labeller = Labeller2()
-    x, y = labeller.get_gradient_matrices(center_px=(200, 300), radius_px=90, shape='semicone')
-
-    cv2.imshow('gx', x)
-    cv2.imshow('gy', y)
-    cv2.waitKey(0)
-
-    depth_map = poisson_reconstruct(y, x)
+    labeller = Labeller()
+    # x, y = labeller.get_gradient_matrices(center_px=(200, 300), radius_px=90, shape='semicone')
+    #
+    # cv2.imshow('gx', x)
+    # cv2.imshow('gy', y)
+    # cv2.waitKey(0)
+    #
+    # depth_map = poisson_reconstruct(y, x)
 
     def plot(depth_map):
         fig = plt.figure()
@@ -437,8 +448,20 @@ if __name__ == "__main__":
         surf = ax.plot_surface(X, Y, np.transpose(depth_map), rstride=1, cstride=1, cmap=cm.BuPu, linewidth=0, antialiased=False)
         ax.set_zlim(0, 5)
         ax.view_init(elev=90., azim=0)
-        #ax.axes().set_aspect('equal')
+        # ax.axes().set_aspect('equal')
         # plt.savefig(path + "img_" + str(img_number) + "_semicone_obj_weights.png")
         plt.show()
-    depth_map = cv2.resize(depth_map, dsize=(50, 83), interpolation=cv2.INTER_LINEAR)
-    plot(depth_map)
+    # depth_map = cv2.resize(depth_map, dsize=(50, 83), interpolation=cv2.INTER_LINEAR)
+    # plot(depth_map)
+    center = (200, 300)
+    radius = 150
+    angle = 180
+    sides_px = 190, 200
+    # x, y = labeller.get_semipyramid_gradient(center, angle, sides_px)
+    x, y, h = labeller.get_semicone_2_gradient(center_px=center, radius_px=radius)
+    # h = poisson_reconstruct(y, x)
+    print "height at center:"
+    print h[center[0]][center[1]]
+    h = cv2.resize(h, (0,0), fx=0.2, fy=0.2)
+    print h
+    plot(h)
