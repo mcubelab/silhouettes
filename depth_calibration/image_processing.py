@@ -169,22 +169,22 @@ if __name__ == "__main__":
     #shape = 'hollowcone_2'
     # shape = 'test1'
     shape = 'semipyramid'
-    
+
     gs_ids = [2,1]
     shapes = ['sphere', 'semicone_2', 'hollowcone_1', 'hollowcone_2', 'semipyramid_2'] #, 'stamp']
-    
-    rotations = [0]    
+
+    rotations = [0]
     for gs_id in gs_ids:
         for shape in shapes:
             if 'semipyramid' in shape or 'stamp' in shape:
                 rotations = range(4)
             else:
-                rotations = [0]    
+                rotations = [0]
             for rotation in rotations:
                 half_names = ['_08-17-2018_gs_id={}_rot={}/'.format(gs_id, rotation), '_08-17-2018_test_gs_id={}_rot={}/'.format(gs_id, rotation)]
                 for i in range(2): #test or not test
                     half_name = half_names[i]
-                    print 'gs_id = ', gs_id 
+                    print 'gs_id = ', gs_id
                     print 'shape: ', shape
                     # IMPORTANT NOTE: MAKE SURE YOU UNCOMMENT THE MESURES OF THE ONE YOU ARE PROCESSING!!!!!!!!!!!!!
                     # Sphere
@@ -399,7 +399,12 @@ if __name__ == "__main__":
                                         # cv2.imshow('im', im_wp)
                                         # cv2.waitKey(0)
                                         # print "im_wp_save shape: ", im_wp_save.shape
-                                        grad_x, grad_y = labeller.get_gradient_matrices(center, radius, shape=geometric_shape, shape_params=shape_params)
+                                        if 'hollowcone' in shape: # HACK:
+                                            grad_x, grad_y, depth_map = labeller.get_gradient_matrices(center, radius, shape=geometric_shape, shape_params=shape_params)
+                                        else:
+                                            grad_x, grad_y = labeller.get_gradient_matrices(center, radius, shape=geometric_shape, shape_params=shape_params)
+                                            depth_map = None
+
                                         if (grad_x is not None) and (grad_y is not None):
 
                                             ## Uncomment this to check gradients and heightmap
@@ -410,7 +415,8 @@ if __name__ == "__main__":
                                             # cv2.imshow('gx', grad_x)
                                             # cv2.imshow('gy', grad_y)
                                             # cv2.waitKey(0)
-                                            depth_map = poisson_reconstruct(grad_y, grad_x)
+                                            if depth_map == None:
+                                                depth_map = poisson_reconstruct(grad_y, grad_x)
 
                                             # print "Max: " + str(np.amax(depth_map))
 
