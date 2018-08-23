@@ -87,19 +87,18 @@ def train(pretrain = False):
     
     dataset = 'all' #shape name
     date = datetime.datetime.today().strftime('%m-%d-%Y') #''08-21-2018'    
-    num_data = 2000
+    num_data = 2000  # 100, 200, 500, 1000, 2000, 5000 
     gs_id = '2' # '1' , 'all'
     input_type = 'rgb' #'_gray'
     output_type =  'grad' #'grad' #'height', 'angle'
-    num_epochs = 100  
+    num_epochs = 100   #10, 50
     NN_arch = 'basic'
     data_augment = 5
     weights_filepath = "weights/weights_type={}_{}_num={}_gs_id={}_in={}_out={}_epoch={}_NN={}_aug={}.hdf5".format(dataset, date,
                                     num_data,gs_id,input_type,output_type,num_epochs,NN_arch,data_augment)
     
     paths = []
-    root = '/home/ubuntu/'
-    root = '/media/mcube/data/shapes_data/'
+    root = '/home/ubuntu/shapes_data/'
     shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_2', 'semipyramid_3'] 
     date2 = datetime.datetime.today().strftime('%m-%d-%Y') #''08-21-2018'    
     for shape in shapes:
