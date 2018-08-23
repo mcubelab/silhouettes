@@ -6,3 +6,4 @@ pip install Pillow;
 pip install deepdish;
 pip install pyyaml;
 pip install h5py;
+pip install shapely;

@@ -20,6 +20,8 @@ keras.losses.custom_loss = custom_loss
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+
 def createModel(input_shape, simulator=False, output_type = 'grad'):
     print input_shape
     model = Sequential()
@@ -83,7 +85,7 @@ def train(pretrain = False):
     # Params:
     simulator = False
     output_type =  'grad' #'grad' #'height', 'angle'
-    weights_filepath = "weights/weights_semipyramid_2_08-17-2018_gs_id=1_rot=all_out_type={}.hdf5".format(output_type)
+    weights_filepath = "/home/ubuntu/weights/weights_semipyramid_2_08-17-2018_gs_id=1_rot=all_out_type={}.hdf5".format(output_type)
 
     paths = [
     # "/media/mcube/data/shapes_data/processed/ball_D6.35/image/",
@@ -98,11 +100,11 @@ def train(pretrain = False):
     #'/media/mcube/data/shapes_data/processed/semipyramid_2_08-17-2018_gs_id=1_rot=2/image/',
     #'/media/mcube/data/shapes_data/processed/semipyramid_2_08-17-2018_gs_id=1_rot=3/image/',
     #'/media/mcube/data/shapes_data/processed/sphere_08-15-2018_gs2_rot=0/image/',
-    "/home/ubuntu/test_data/image/",
+    "/home/ubuntu/shapes_data/image/",
     ]
     gs_id = 1
     # Datasets
-    inputs_train, labels_train, inputs_val, labels_val = get_data_paths(paths=paths, gradient='x', val_fraction=0.2, max_data_points=500)
+    inputs_train, labels_train, inputs_val, labels_val = get_data_paths(paths=paths, gradient='x', val_fraction=0.2, max_data_points=100)
     print "Train size: " + str(len(inputs_train))
     print "Validation size: " + str(len(inputs_val))
 
