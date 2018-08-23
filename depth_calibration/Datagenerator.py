@@ -74,7 +74,7 @@ class DataGenerator(keras.utils.Sequence):
                 print list_IDs_temp[i]
             im_temp = preprocess_image(im_temp)
 
-            grad_x = np.load(labels_temp[i])
+            grad_x = np.load(labels_temp[i])['arr_0']
             grad_y = np.load(labels_temp[i].replace("gx_","gy_"))
             if self.output_type == 'angle': #In order to consider angle
                 grad_x = np.load(labels_temp[i].replace("gy_","gx_angle_"))

@@ -16,6 +16,7 @@ import math
 import keras.losses
 from depth_helper import custom_loss
 keras.losses.custom_loss = custom_loss
+import datetime
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
@@ -64,6 +65,7 @@ def get_data_paths(paths, gradient, val_fraction=0.2, max_data_points=99999):
         for inp in np.sort(inputs_raw):
             if '.png' in inp and 'img_' in inp:
                 inpu.append(path + inp)
+                #lab.append(path.replace('image/', "gradient/g") + gradient + '_' + inp.replace('.png', '.npy').replace('img_', ''))
                 lab.append(path.replace('image/', "gradient/g") + gradient + '_' + inp.replace('.png', '.npy').replace('img_', ''))
         comb = list(zip(inpu, lab))
         shuffle(comb)
@@ -82,27 +84,34 @@ def get_data_paths(paths, gradient, val_fraction=0.2, max_data_points=99999):
 def train(pretrain = False):
     # Params:
     simulator = False
+    
+    dataset = 'all' #shape name
+    date = datetime.datetime.today().strftime('%m-%d-%Y') #''08-21-2018'    
+    num_data = 2000
+    gs_id = '2' # '1' , 'all'
+    input_type = 'rgb' #'_gray'
     output_type =  'grad' #'grad' #'height', 'angle'
-    weights_filepath = "weights/weights_semipyramid_2_08-17-2018_gs_id=1_rot=all_out_type={}.hdf5".format(output_type)
-
-    paths = [
-    # "/media/mcube/data/shapes_data/processed/ball_D6.35/image/",
-    # "/media/mcube/data/shapes_data/processed/ball_D28.5/image/",
-    # "/media/mcube/data/shapes_data/processed/hollowcone/image/",
-    #"/media/mcube/data/shapes_data/processed/semicone_augmented/image/",
-    #"/media/mcube/data/shapes_data/processed/semipyramid_augmented/image/",
-    #'/media/mcube/data/shapes_data/processed/sphere_08-17-2018_gs_id=1_rot=0/image/',
-    #'/media/mcube/data/shapes_data/processed/semicone_2_08-17-2018_gs_id=1_rot=0/image/',
-    #'/media/mcube/data/shapes_data/processed/semipyramid_2_08-17-2018_gs_id=1_rot=0/image/',
-    #'/media/mcube/data/shapes_data/processed/semipyramid_2_08-17-2018_gs_id=1_rot=1/image/',
-    #'/media/mcube/data/shapes_data/processed/semipyramid_2_08-17-2018_gs_id=1_rot=2/image/',
-    #'/media/mcube/data/shapes_data/processed/semipyramid_2_08-17-2018_gs_id=1_rot=3/image/',
-    #'/media/mcube/data/shapes_data/processed/sphere_08-15-2018_gs2_rot=0/image/',
-    "/home/ubuntu/test_data/image/",
-    ]
-    gs_id = 1
+    num_epochs = 100  
+    NN_arch = 'basic'
+    data_augment = 5
+    weights_filepath = "weights/weights_type={}_{}_num={}_gs_id={}_in={}_out={}_epoch={}_NN={}_aug={}.hdf5".format(dataset, date,
+                                    num_data,gs_id,input_type,output_type,num_epochs,NN_arch,data_augment)
+    
+    paths = []
+    root = '/home/ubuntu/'
+    root = '/media/mcube/data/shapes_data/'
+    shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_2', 'semipyramid_3'] 
+    date2 = datetime.datetime.today().strftime('%m-%d-%Y') #''08-21-2018'    
+    for shape in shapes:
+        if shape != dataset: #TODO: arreglar tema semipyramid less data
+            if input_type == 'gray':
+                paths.append(root + 'processed_{}/{}_{}_gs_id={}_rot=0/image_gray/'.format(date,shape,date2,gs_id))
+            else:
+                paths.append(root + 'processed_{}/{}_{}_gs_id={}_rot=0/image/'.format(date,shape,date2,gs_id))
+    
+    gs_id = 2 
     # Datasets
-    inputs_train, labels_train, inputs_val, labels_val = get_data_paths(paths=paths, gradient='x', val_fraction=0.2, max_data_points=500)
+    inputs_train, labels_train, inputs_val, labels_val = get_data_paths(paths=paths, gradient='x', val_fraction=0.2, max_data_points=num_data)
     print "Train size: " + str(len(inputs_train))
     print "Validation size: " + str(len(inputs_val))
 
@@ -140,7 +149,7 @@ def train(pretrain = False):
 
     print validation_steps
     # Run learning
-    history = model.fit_generator(generator=training_generator, steps_per_epoch=train_steps, epochs=100, validation_data=validation_generator, validation_steps=validation_steps, callbacks=callbacks_list, workers=8, use_multiprocessing=True)
+    history = model.fit_generator(generator=training_generator, steps_per_epoch=train_steps, epochs=num_epochs, validation_data=validation_generator, validation_steps=validation_steps, callbacks=callbacks_list, workers=8, use_multiprocessing=True)
 
     # Save histoy file
     def save_file(filename, var):
