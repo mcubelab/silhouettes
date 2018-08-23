@@ -30,7 +30,7 @@ class Labeller():
     def __init__(self):
         params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
         self.mm2px_param_list = params_dict['params_gs2']
-        self.px_to_mm_average = 1/12.5
+        self.px_to_mm_average = 1/12.856
 
         input_shape = params_dict['input_shape_gs2'][0:2]
         # print input_shape
@@ -117,7 +117,7 @@ class Labeller():
         if h_px < 1e-5 or h_mm < 0.1:
             return None, None
         h_px2mm = h_mm/h_px
-
+        #import pdb; pdb.set_trace()
         return dz_dx_mat*h_px2mm, dz_dy_mat*h_px2mm
 
     def __get_semicone_gradient(self, center_px, radius_px, r_mm=5., cone_slope=np.tan(np.radians(20))):
@@ -125,7 +125,7 @@ class Labeller():
         # r_mm = 10./2 # Smaller radius object
         # cone_slope=np.tan(np.radians(20))
         R_mm = self.__radius_px_to_mm(center_px, radius_px) # Detected radius # NOTE: center_px and radius_px need to come from warped image
-
+        
         if R_mm <= r_mm:
             return None, None
 
@@ -174,7 +174,6 @@ class Labeller():
         if h_px < 1e-5 or h_mm < 0.1:
             return None, None
         h_px2mm = h_mm/h_px
-
         return dz_dx_mat*h_px2mm, dz_dy_mat*h_px2mm
 
     def get_semicone_2_gradient(self, center_px, radius_px, r_mm=5., R_mm=9.2, cone_slope=np.tan(np.radians(10))):
@@ -260,8 +259,8 @@ class Labeller():
         if c_mm > C_mm:
             return None, None
 
-        H_mm = C_mm*np.tan(slope)/2
-        h_mm = c_mm*np.tan(slope)/2
+        H_mm = C_mm*slope/2
+        h_mm = c_mm*slope/2
 
         xx = (self.x_pixel - center_px[0]).astype(np.float32)
         yy = (self.y_pixel - center_px[1]).astype(np.float32)
@@ -295,6 +294,7 @@ class Labeller():
         gy, gx = np.gradient(z)
         # print "z shape: ", z.shape
         # print "gx shape: ",gx.shape
+        #import pdb; pdb.set_trace()
 
         return gx, gy
 

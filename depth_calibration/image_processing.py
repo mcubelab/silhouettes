@@ -17,7 +17,7 @@ import h5py
 import deepdish as dd
 import matplotlib.pyplot as plt
 from matplotlib import cm
-import time
+import time, datetime
 import glob
 from PIL import Image
 import scipy.optimize as optimize
@@ -292,7 +292,7 @@ if __name__ == "__main__":
     
     #shapes = ['semicone_1', 'semicone_2', 'hollowcone_1', 'hollowcone_2', 'semipyramid_2'] #, 'stamp']
     #shapes = ['semipyramid_2'] #, 'stamp']
-    date = '08-21-2018'
+    date = datetime.datetime.today().strftime('%m-%d-%Y') #''08-21-2018'
     rotations = [0]    
 
     for gs_id in gs_ids:
@@ -309,7 +309,7 @@ if __name__ == "__main__":
                     print 'shape: ', shape
                     # IMPORTANT NOTE: MAKE SURE YOU UNCOMMENT THE MESURES OF THE ONE YOU ARE PROCESSING!!!!!!!!!!!!!
                     # Sphere
-                    sphere_R_mm = 28.5/2  # Only used if geometric_shape == 'sphere'
+                    sphere_R_mm = 28/2  # Only used if geometric_shape == 'sphere'
 
 
                     if shape == 'hollowcone_1':
@@ -323,7 +323,7 @@ if __name__ == "__main__":
                         hollowcone_slope = 20
 
                     if shape == 'semicone_1':
-                        semicone_r_mm = 10.2/2
+                        semicone_r_mm = 11.3/2
                         semicone_slope = 30
                     else:
                         # # semicone 2
@@ -335,7 +335,7 @@ if __name__ == "__main__":
                         semipyramid_slope = 10
                     elif shape == "semipyramid_2":
                         # # semipyramid 2
-                        semipyramid_side = 15
+                        semipyramid_side = 15.5
                         semipyramid_slope = 30
                     else:
                         # # semipyramid 2
@@ -355,7 +355,7 @@ if __name__ == "__main__":
                     root, files = get_files(load_path, only_pictures=only_pictures)
 
                     ## Path to save new images and gradients
-                    save_path = "/media/mcube/data/shapes_data/debug_processed_oleguer/"+ folder_data_name
+                    save_path = "/media/mcube/data/shapes_data/processed_{}/".format(date)+ folder_data_name
                     # save_path = "sample_data/"
 
                     ## Basic parameters
@@ -526,33 +526,13 @@ if __name__ == "__main__":
                                     #cv2.waitKey(0)
                                     
                                     radius = int(radius) 
-                                    ## Checks if the circle found matches well with contact patch
-                                    mask_circle = ((x_mesh-center[0])**2 + (y_mesh-center[1])**2) < (radius)**2
 
-                                    contact = contact_detection(rgb2gray(im_wp).astype(np.float32), rgb2gray(ref_warp).astype(np.float32),20,50)
-                                    contact_mask = contact[:, :, 2]*mask_circle
-                                    # cv2.imshow('contact_mask', contact_mask)
-                                    # cv2.waitKey(0)
-                                    if np.sum(contact_mask)/255 < 50 and len(contours) > 1:
-                                        (x, y), radius = cv2.minEnclosingCircle(contours[1])
-                                        center = (int(x)-2, int(y))
-                                        radius = int(radius*0.71)
-                                        mask_circle = ((x_mesh-center[0])**2 + (y_mesh-center[1])**2) < (radius)**2
-                                        contact = contact_detection(rgb2gray(im_wp).astype(np.float32), rgb2gray(ref_warp).astype(np.float32), 20, 50)
-                                        contact_mask = contact[:, :, 2]*mask_circle
-
-                                    center_ok = center[0] > 100 or center[1] > 100
-                                    if center_ok and radius > 30 and radius < max_rad and check_center(center, radius, col, row) and np.sum(contact_mask)/255 > 50:
-                                        contact = contact_detection(rgb2gray(im_wp).astype(np.float32), rgb2gray(ref_warp).astype(np.float32), 20, 40)
-                                        contact_mask = contact[:, :, 2]*mask_circle
+                                    center_ok = center[0] > 100 or center[1] > 100  #Like it?
+                                    if center_ok and radius > 30 and radius < max_rad and check_center(center, radius, col, row):
                                         cv2.circle(im_wp, center, radius, (0, 0, 255), 1)
-                                        # print 'get gradient params: ', center, radius
-                                        ## Compute gradients given center and radius
-                                        # cv2.imshow('im', im_wp)
-                                        # cv2.waitKey(0)
-                                        # print "im_wp_save shape: ", im_wp_save.shape
-                                        
-		                        grad_x, grad_y = labeller.get_gradient_matrices(center, radius, shape=geometric_shape, shape_params=shape_params)
+                                        if geometric_shape == 'sphere':
+                                            radius -= 5
+                                        grad_x, grad_y = labeller.get_gradient_matrices(center, radius, shape=geometric_shape, shape_params=shape_params)
 
                                         if (grad_x is not None) and (grad_y is not None):
 
