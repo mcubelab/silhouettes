@@ -287,7 +287,8 @@ if __name__ == "__main__":
 
     gs_ids = [2,1]
     shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_1', 'hollowcone_2', 'semipyramid_2'] #, 'stamp']
-    pix_limit = [1650, 2200, 6500, 5800, 4300, 5000 ]
+    shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_1', 'hollowcone_2', 'semipyramid_3'] #, 'stamp']
+    pix_limit = [1650, 2200, 6500, 5800, 4300, 2200 ]
     
     #shapes = ['semicone_1', 'semicone_2', 'hollowcone_1', 'hollowcone_2', 'semipyramid_2'] #, 'stamp']
     #shapes = ['semipyramid_2'] #, 'stamp']
@@ -332,9 +333,13 @@ if __name__ == "__main__":
                     if shape == "semipyramid_1":
                         semipyramid_side = 15
                         semipyramid_slope = 10
-                    else:
+                    elif shape == "semipyramid_2":
                         # # semipyramid 2
                         semipyramid_side = 15
+                        semipyramid_slope = 30
+                    else:
+                        # # semipyramid 2
+                        semipyramid_side = 8
                         semipyramid_slope = 30
 
 
@@ -350,7 +355,7 @@ if __name__ == "__main__":
                     root, files = get_files(load_path, only_pictures=only_pictures)
 
                     ## Path to save new images and gradients
-                    save_path = "/media/mcube/data/shapes_data/debug_processed/"+ folder_data_name
+                    save_path = "/media/mcube/data/shapes_data/debug_processed_oleguer/"+ folder_data_name
                     # save_path = "sample_data/"
 
                     ## Basic parameters
@@ -546,11 +551,8 @@ if __name__ == "__main__":
                                         # cv2.imshow('im', im_wp)
                                         # cv2.waitKey(0)
                                         # print "im_wp_save shape: ", im_wp_save.shape
-                                        if 'hollowcone' in shape: # HACK:
-                                            grad_x, grad_y, depth_map = labeller.get_gradient_matrices(center, radius, shape=geometric_shape, shape_params=shape_params)
-                                        else:
-                                            grad_x, grad_y = labeller.get_gradient_matrices(center, radius, shape=geometric_shape, shape_params=shape_params)
-                                            depth_map = None
+                                        
+		                        grad_x, grad_y = labeller.get_gradient_matrices(center, radius, shape=geometric_shape, shape_params=shape_params)
 
                                         if (grad_x is not None) and (grad_y is not None):
 
@@ -562,8 +564,7 @@ if __name__ == "__main__":
                                             # cv2.imshow('gx', grad_x)
                                             # cv2.imshow('gy', grad_y)
                                             # cv2.waitKey(0)
-                                            if depth_map == None:
-                                                depth_map = poisson_reconstruct(grad_y, grad_x)
+                                            depth_map = poisson_reconstruct(grad_y, grad_x)
 
                                             # print "Max: " + str(np.amax(depth_map))
 
@@ -619,7 +620,6 @@ if __name__ == "__main__":
                                                     ## Save the depth map with the maximum height in the name
                                                     depth_map = poisson_reconstruct(grad_y, grad_x)
                                                     name = str(np.amax(depth_map))
-                                                    cv2.imwrite(save_path + 'heightmap/'+str(index) + '_' + name + '.png', depth_map*1000)
 
                                                     ## Save raw image, raw_image with circle and the gradients
                                                     cv2.imwrite(save_path + 'image/img_'+str(index)+ '.png',cv2.cvtColor(introduce_noise(im_wp_save, noise_coefs, mask=noise_mask), cv2.COLOR_BGR2RGB))
@@ -631,6 +631,7 @@ if __name__ == "__main__":
 
                                                     ## Save the raw image blended with the depth map
                                                     if iii == 0:  #We do not need multiple copies of it..
+                                                        cv2.imwrite(save_path + 'heightmap/'+str(index) + '_' + name + '.png', depth_map*1000)
                                                         cv2.imwrite(save_path + 'image_raw/img_'+str(index)+ '.png',im_temp)
                                                         cv2.imwrite(save_path + 'image_circled/img_'+str(index)+ ' {}'.format(mask_pixels) + '.png',cv2.cvtColor(im_wp, cv2.COLOR_BGR2RGB))
                                                         io = Image.open(save_path + 'image_circled/img_'+str(index)+ ' {}'.format(mask_pixels) + '.png').convert("RGB") # image_for_input
@@ -760,7 +761,7 @@ if __name__ == "__main__":
                                                 # print "im_wp: ", im_wp.shape
                                                 # a = raw_input('aa')
                                                 name = str(np.amax(depth_map))
-                                                cv2.imwrite(save_path + 'heightmap/'+str(index) + '_' + name + '.png', depth_map*1000)
+                                                
 
                                                 ## Save raw image, raw_image with circle and the gradients
                                                 cv2.imwrite(save_path + 'image/img_'+str(index)+ '.png',cv2.cvtColor(introduce_noise(im_wp_save, noise_coefs, mask=noise_mask), cv2.COLOR_BGR2RGB))
@@ -772,6 +773,7 @@ if __name__ == "__main__":
 
                                                 ## Save the raw image blended with the depth map
                                                 if iii == 0:
+                                                    cv2.imwrite(save_path + 'heightmap/'+str(index) + '_' + name + '.png', depth_map*1000)
                                                     io = Image.open(save_path + 'image_circled/img_'+str(index)+ ' {}'.format(mask_pixels) + '.png').convert("RGB") # image_for_input
                                                     ii = Image.open(save_path + 'heightmap/'+str(index) + '_' + name + '.png').resize(io.size).convert("RGB") #depth map
                                                     result = Image.blend(io, ii, alpha=0.5)

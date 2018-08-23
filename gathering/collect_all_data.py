@@ -7,11 +7,10 @@ from training_touch import training_touch
 import os
 from data_collector import DataCollector
 import datetime
+import gripper
 if __name__ == "__main__":
     
-    #shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_1', 'hollowcone_2', 'semipyramid', 'stamp']
-    shapes = ['stamp', 'semicone_2', 'sphere', 'semicone_1', 'hollowcone_1', 'hollowcone_2', 'semipyramid_2', 'stamp']
-    
+    shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_2', 'semipyramid_3', 'stamp']
     
     gs_ids = [2,1]
     original_num_data = 500
@@ -45,15 +44,17 @@ if __name__ == "__main__":
               try:
                 training_touch(experiment_name = data_type, object_angle = rotation, number_of_points = num_data, gs_id = gs_id, last_touch = collected_data)
                 
-              except: pass
+              except: gripper.open(speed=200)
               collected_data = sum(os.path.isdir(data_type + i) for i in os.listdir(data_type))-1
               print 'col2 ',collected_data
+              gripper.open(speed=200)
             while num_test_data >= collected_test_data:
               try:
                 training_touch(experiment_name = data_test_type, object_angle = rotation, number_of_points = num_test_data, 
                       gs_id = gs_id, last_touch = collected_test_data)
-              except: pass
+              except: gripper.open(speed=200)
               collected_test_data = sum(os.path.isdir(data_test_type + i) for i in os.listdir(data_test_type))-1
+              gripper.open(speed=200)
       now_test = False
       print 'All the automatic data is collected. Now collect the test images (keys, bolts, also all shapes again). '
       dc = DataCollector(only_one_shot=True, save_path='/media/mcube/data/shapes_data/raw/test_{}_gs_id={}/'.format(date,gs_id))

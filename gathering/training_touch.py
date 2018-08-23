@@ -10,7 +10,7 @@ def training_touch(experiment_name = '/media/mcube/data/shapes_data/raw/test', o
     # Enter object main dimensions in [mm]
     length = 40 # distance from the magnetic base to the top
     # Enter area to area to explore uniformly
-    height = 14
+    height = 18
     width = 14
     
 
@@ -25,9 +25,11 @@ def training_touch(experiment_name = '/media/mcube/data/shapes_data/raw/test', o
         start_cart = 900-length, 387., 660., 0.01, 0.9999, -0.0102, 0.008
 
     # We generate all the random offsets from the center:
-    rnd_x = np.random.uniform(-width/2, width/2, size=number_of_points-last_touch)*0-width/2
-    rnd_y = np.random.uniform(-height/2, height/2, size=number_of_points-last_touch)*0+height/2
-
+    rnd_x = np.random.uniform(-width/2.0, width/2.0, size=number_of_points-last_touch)
+    rnd_y = np.random.uniform(-height/2.0, height/2.0, size=number_of_points-last_touch)
+    print 'dx : ', rnd_x
+    print 'dy : ', rnd_y
+    
     # We compute all the movememts
     movement_list = []
     prev_x = 0
@@ -51,7 +53,9 @@ def training_touch(experiment_name = '/media/mcube/data/shapes_data/raw/test', o
         experiment_name=experiment_name,
         movement_list=movement_list,
         save_only_picture=False,
-        last_touch = last_touch
+        last_touch = last_touch,
+        original_x = rnd_x,
+        original_y = rnd_y
     )
 
 

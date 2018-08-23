@@ -238,10 +238,10 @@ class Labeller():
         print np.amin(mask1_p)
         print center_px
         print mask1_p[center_px[1]][center_px[0]]
-        cv2.imshow("mask1_p", mask1_p)
-        cv2.waitKey(0)
+#        cv2.imshow("mask1_p", mask1_p)
+#        cv2.waitKey(0)
         depth_map = poisson_reconstruct(grad_y, grad_x)*mask1_p
-        return grad_x, grad_y, depth_map
+        return grad_x, grad_y
 
     def get_semipyramid_gradient(self, center_px, angle, sides_px, c_mm=15, slope=np.tan(np.radians(15))):
         s1, s2 = sides_px
@@ -418,13 +418,13 @@ class Labeller():
             gx, gy = self.__get_sphere_gradient(center_px, radius_px, R_mm=sphere_R_mm)
             return gx, gy
         if 'semicone' in shape:
-            gx, gy = self.__get_semicone_gradient(center_px, radius_px, r_mm=semicone_r_mm, cone_slope=semicone_slope)
+            gx, gy = self.__get_semicone_gradient(center_px, radius_px, r_mm=semicone_r_mm, cone_slope=np.tan(np.radians(semicone_slope)))
             return gx, gy
         if 'hollowcone' in shape:
-            gx, gy, depth_map = self.get_semicone_2_gradient(center_px, radius_px, r_mm=hollow_r_mm, R_mm=hollow_R_mm, cone_slope=hollowcone_slope)
-            return gx, gy, depth_map
+            gx, gy = self.get_semicone_2_gradient(center_px, radius_px, r_mm=hollow_r_mm, R_mm=hollow_R_mm, cone_slope=np.tan(np.radians(hollowcone_slope)))
+            return gx, gy#, depth_map
         if 'semipyramid' in shape:
-            gx, gy = self.get_semipyramid_gradient(center_px, angle, sides_px, c_mm=semipyramid_side, slope=semipyramid_slope)
+            gx, gy = self.get_semipyramid_gradient(center_px, angle, sides_px, c_mm=semipyramid_side, slope=np.tan(np.radians(semipyramid_slope)))
             return gx, gy
         return None
 

@@ -74,12 +74,14 @@ class ControlRobot():
         for force in force_list:
             self.close_gripper_f(grasp_speed=speed, grasp_force=force)
             print "Applying: " + str(force)
-            time.sleep(0.5)
+            time.sleep(1)
             dc.get_data(get_cart=False, get_gs1=(1 in self.gs_id), get_gs2=(2 in self.gs_id), get_wsg=True, save=save, directory=path, iteration=i)
+            time.sleep(0.5)
             self.open_gripper()
             i += 1
 
-    def perfrom_experiment(self, experiment_name='test', movement_list=[], save_only_picture=False, last_touch = 0):
+    def perfrom_experiment(self, experiment_name='test', movement_list=[], save_only_picture=False, last_touch = 0, original_x = None,
+        original_y = None):
         if last_touch == 0:
             # 1. We save the background image:
             dc = DataCollector(only_one_shot=False, automatic=True, save_only_picture=save_only_picture)
@@ -108,6 +110,9 @@ class ControlRobot():
             self.palpate(speed=200, force_list=self.force_list, save=True, path=path, save_only_picture=save_only_picture, i=j)
             self.move_cart_mm(movement[0], movement[1], movement[2])
             print "moved"
+            print 'movement: ', movement
+            if original_x is not None:
+                print ('Motion in gelsight: ' , original_x[i-last_touch], original_y[i-last_touch])
             i += 1
         if save_only_picture:
             path = experiment_name + '/'

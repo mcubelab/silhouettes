@@ -38,11 +38,14 @@ class DataCollector():
         # print self.it
 
         if self.topic_dict[key]['msg_format'] == Image:
-            try:
-                cv2_img = self.bridge.imgmsg_to_cv2(data, 'rgb8')
-            except CvBridgeError, e:
-                print(e)
-            self.data_recorded[key] = cv2_img
+            cv2_img = None
+            while cv2_img is None:
+                try:
+                    cv2_img = self.bridge.imgmsg_to_cv2(data, 'rgb8')
+                except CvBridgeError, e:
+                    print(e)
+                self.data_recorded[key] = cv2_img
+                
         elif key == 'wsg_driver':
             ws50message = data
             data_dict = {}
