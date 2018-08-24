@@ -5,7 +5,6 @@ from keras.models import model_from_json
 from keras import optimizers
 from keras.callbacks import ModelCheckpoint
 from keras.models import load_model
-from sklearn.model_selection import train_test_split
 from Datagenerator import DataGenerator
 from random import shuffle
 import numpy as np
@@ -17,6 +16,8 @@ import keras.losses
 from depth_helper import custom_loss
 keras.losses.custom_loss = custom_loss
 import datetime
+
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
@@ -57,7 +58,9 @@ def createModel(input_shape, simulator=False, output_type = 'grad'):
 
 def get_data_paths(paths, gradient, val_fraction=0.2, max_data_points=99999):
     combined = []
-
+    
+    print paths
+    
     def get_pictures_from_path(path, max):
         inpu = []
         lab = []
@@ -66,7 +69,7 @@ def get_data_paths(paths, gradient, val_fraction=0.2, max_data_points=99999):
             if '.png' in inp and 'img_' in inp:
                 inpu.append(path + inp)
                 #lab.append(path.replace('image/', "gradient/g") + gradient + '_' + inp.replace('.png', '.npy').replace('img_', ''))
-                lab.append(path.replace('image/', "gradient/g") + gradient + '_' + inp.replace('.png', '.npy').replace('img_', ''))
+                lab.append(path.replace('image/', "gradient/g").replace('image_gray/', "gradient/g") + gradient + '_' + inp.replace('.png', '.npy').replace('img_', ''))
         comb = list(zip(inpu, lab))
         shuffle(comb)
         return comb[:max]
@@ -84,23 +87,31 @@ def get_data_paths(paths, gradient, val_fraction=0.2, max_data_points=99999):
 def train(pretrain = False):
     # Params:
     simulator = False
+
     
-    dataset = 'all' #shape name
-    date = datetime.datetime.today().strftime('%m-%d-%Y') #''08-21-2018'    
+    #### PARAMS:
     num_data = 2000  # 100, 200, 500, 1000, 2000, 5000 
-    gs_id = '2' # '1' , 'all'
     input_type = 'rgb' #'_gray'
     output_type =  'grad' #'grad' #'height', 'angle'
     num_epochs = 100   #10, 50
+    dataset = 'all' #shape name
+    
+    
+    
+    # date = datetime.datetime.today().strftime('%m-%d-%Y') #''08-21-2018'
+    date = '08-23-2018'
+    gs_id = '2' # '1' , 'all'
     NN_arch = 'basic'
     data_augment = 5
-    weights_filepath = "weights/weights_type={}_{}_num={}_gs_id={}_in={}_out={}_epoch={}_NN={}_aug={}.hdf5".format(dataset, date,
+    
+    weights_filepath = "/home/ubuntu/weights/weights_type={}_{}_num={}_gs_id={}_in={}_out={}_epoch={}_NN={}_aug={}.hdf5".format(dataset, date,
                                     num_data,gs_id,input_type,output_type,num_epochs,NN_arch,data_augment)
     
     paths = []
     root = '/home/ubuntu/shapes_data/'
     shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_2', 'semipyramid_3'] 
-    date2 = datetime.datetime.today().strftime('%m-%d-%Y') #''08-21-2018'    
+    #date2 = datetime.datetime.today().strftime('%m-%d-%Y') #''08-21-2018'
+    date2 = '08-23-2018'
     for shape in shapes:
         if shape != dataset: #TODO: arreglar tema semipyramid less data
             if input_type == 'gray':
@@ -124,8 +135,8 @@ def train(pretrain = False):
     output_shape = params_dict['output_shape_gs{}'.format(gs_id)][0:2]
 
     # Generators
-    train_batch_size = 8
-    val_batch_size = 8
+    train_batch_size = 16
+    val_batch_size = 16
 
     training_generator = DataGenerator(inputs_train, labels_train, batch_size=train_batch_size, dim_in=input_image_shape, dim_out=output_shape, simulator=simulator, output_type = output_type)
     validation_generator = DataGenerator(inputs_val, labels_val, batch_size=val_batch_size, dim_in=input_shape, dim_out=output_shape, simulator=simulator, output_type = output_type)
