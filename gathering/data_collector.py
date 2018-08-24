@@ -43,6 +43,7 @@ class DataCollector():
                 try:
                     cv2_img = self.bridge.imgmsg_to_cv2(data, 'rgb8')
                 except CvBridgeError, e:
+                    print 'Could not get gelsight image'
                     print(e)
                 self.data_recorded[key] = cv2_img
                 

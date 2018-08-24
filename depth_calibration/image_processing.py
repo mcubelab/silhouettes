@@ -58,7 +58,7 @@ def calibration(img,background, gs_id=2, mask_bd=None):
         imgw = cv2.warpPerspective(img, M, (cols, rows))
         imgw = apply_mask_bd(imgw)
         imgwc = imgw[10:, 65:572]
-        # print "New gs1 shpae: " + str(imgwc.shape)
+        # print "New gs1 shape: " + str(imgwc.shape)
 
         bg_imgw = cv2.warpPerspective(background, M, (cols, rows))
         bg_imgw = apply_mask_bd(bg_imgw)
@@ -286,13 +286,9 @@ if __name__ == "__main__":
     shape = 'semipyramid'
 
     gs_ids = [2,1]
-    shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_1', 'hollowcone_2', 'semipyramid_2'] #, 'stamp']
+    #shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_1', 'hollowcone_2', 'semipyramid_2'] #, 'stamp']
     shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_2', 'semipyramid_3'] #, 'stamp']
-    #pix_limit = [1650, 2200, 6500, 4300, 2000 ]
     pix_limit = [1650, 2200, 6500, 4300, 2000 ]
-    shapes = [ 'semipyramid_3'] #, 'stamp']
-    #pix_limit = [1650, 2200, 6500, 4300, 2000 ]
-    pix_limit = [2000 ]
     
     date = datetime.datetime.today().strftime('%m-%d-%Y') #''08-21-2018'
     rotations = [0]    
@@ -316,11 +312,16 @@ if __name__ == "__main__":
                     hollow_r_mm = 9.8/2
                     hollow_R_mm = 16.5/2
                     hollowcone_slope = 10
-                else:
+                elif shape == 'hollowcone_2':
                     # # hollowcone 2
                     hollow_r_mm = 9.8/2
                     hollow_R_mm = 16.5/2
                     hollowcone_slope = 20
+                else:
+                    # # hollowcone 3
+                    hollow_r_mm = 8/2
+                    hollow_R_mm = 16.5/2
+                    hollowcone_slope = 30
 
                 if shape == 'semicone_1':
                     semicone_r_mm = 11.3/2
@@ -359,7 +360,7 @@ if __name__ == "__main__":
                     aux_files.sort(key=os.path.getmtime)
                     files = files + aux_files
                 ## Path to save new images and gradients
-                save_path = "/media/mcube/data/shapes_data/processed_{}/".format(date)+ folder_data_name
+                save_path = "/media/mcube/data/shapes_data/processed_{}_test/".format(date)+ folder_data_name
                 # save_path = "sample_data/"
 
                 ## Basic parameters
@@ -382,17 +383,10 @@ if __name__ == "__main__":
                     ref = cv2.imread(load_path + 'GS' + str(gs_id) + '_0.png')
                 else:
                     ref = cv2.imread(load_path + '/air/GS' + str(gs_id) + '.png')
-                # if geometric_shape == 'hollowcone':
-                #     ref = cv2.imread(load_path+'GS' + str(gs_id) + '_0.png')
-                # else:
-                #     ref = cv2.imread(root+'/'+'GS' + str(gs_id) + '_1.png')
 
                 # Load a different mask for each gelsight
-                if gs_id == 1:
-                    mask_bd = np.load(SHAPES_ROOT + 'resources/mask_GS1.npy')
-                elif gs_id == 2:
-                    mask_bd = np.load(SHAPES_ROOT + 'resources/mask_GS2.npy')
-
+                mask_bd = np.load(SHAPES_ROOT + 'resources/mask_GS{}.npy'.format(gs_id))
+                
                 ref_bs, ref_warp = calibration(ref, ref, gs_id, mask_bd)
 
                 ## Create x_mesh and y_mesh
@@ -609,13 +603,13 @@ if __name__ == "__main__":
                                                 ## Save raw image, raw_image with circle and the gradients
                                                 cv2.imwrite(save_path + 'image/img_'+str(index)+ '.png',cv2.cvtColor(introduce_noise(im_wp_save, noise_coefs, mask=noise_mask), cv2.COLOR_BGR2RGB))
                                                 cv2.imwrite(save_path + 'image_gray/img_'+str(index)+ '.png',cv2.cvtColor(cv2.cvtColor(introduce_noise(im_wp_save, noise_coefs, mask=noise_mask), cv2.COLOR_BGR2GRAY), cv2.COLOR_GRAY2RGB))
-                                                np.save(save_path + 'gradient/gx_'+ str(index) + '.npy', grad_x)
-                                                np.save(save_path + 'gradient/gy_'+ str(index) + '.npy', grad_y)
-                                                np.save(save_path + 'gradient/gx_angle_'+ str(index) + '.npy', np.arctan(grad_x))
-                                                np.save(save_path + 'gradient/gy_angle_'+ str(index) + '.npy', np.arctan(grad_y))
-
-                                                ## Save the raw image blended with the depth map
                                                 if iii == 0:  #We do not need multiple copies of it..
+                                                    np.save(save_path + 'gradient/gx_'+ str(index) + '.npy', grad_x)
+                                                    np.save(save_path + 'gradient/gy_'+ str(index) + '.npy', grad_y)
+                                                    np.save(save_path + 'gradient/gx_angle_'+ str(index) + '.npy', np.arctan(grad_x))
+                                                    np.save(save_path + 'gradient/gy_angle_'+ str(index) + '.npy', np.arctan(grad_y))
+
+                                                    ## Save the raw image blended with the depth map
                                                     cv2.imwrite(save_path + 'heightmap/'+str(index) + '_' + name + '.png', depth_map*1000)
                                                     cv2.imwrite(save_path + 'image_raw/img_'+str(index)+ '.png',im_temp)
                                                     cv2.imwrite(save_path + 'image_circled/img_'+str(index)+ ' {}'.format(mask_pixels) + '.png',cv2.cvtColor(im_wp, cv2.COLOR_BGR2RGB))
@@ -760,13 +754,13 @@ if __name__ == "__main__":
                                             if iii == 0:
                                                 cv2.imwrite(save_path + 'image_gray/img_'+str(index)+ '.png',cv2.cvtColor(cv2.cvtColor(introduce_noise(im_wp_save, noise_coefs, mask=noise_mask), cv2.COLOR_BGR2GRAY),cv2.COLOR_GRAY2RGB))
                                                 cv2.imwrite(save_path + 'image_circled/img_'+str(index)+ ' {}'.format(mask_pixels) + '.png',cv2.cvtColor(introduce_noise(im_wp, noise_coefs, mask=noise_mask), cv2.COLOR_BGR2RGB))
-                                            np.save(save_path + 'gradient/gx_'+ str(index) + '.npy', grad_x)
-                                            np.save(save_path + 'gradient/gy_'+ str(index) + '.npy', grad_y)
-                                            np.save(save_path + 'gradient/gx_angle_'+ str(index) + '.npy', np.arctan(grad_x))
-                                            np.save(save_path + 'gradient/gy_angle_'+ str(index) + '.npy', np.arctan(grad_y))
 
                                             ## Save the raw image blended with the depth map
                                             if iii == 0:
+                                                np.save(save_path + 'gradient/gx_'+ str(index) + '.npy', grad_x)
+                                                np.save(save_path + 'gradient/gy_'+ str(index) + '.npy', grad_y)
+                                                np.save(save_path + 'gradient/gx_angle_'+ str(index) + '.npy', np.arctan(grad_x))
+                                                np.save(save_path + 'gradient/gy_angle_'+ str(index) + '.npy', np.arctan(grad_y))
                                                 cv2.imwrite(save_path + 'heightmap/'+str(index) + '_' + name + '.png', depth_map*1000)
                                                 io = Image.open(save_path + 'image_circled/img_'+str(index)+ ' {}'.format(mask_pixels) + '.png').convert("RGB") # image_for_input
                                                 ii = Image.open(save_path + 'heightmap/'+str(index) + '_' + name + '.png').resize(io.size).convert("RGB") #depth map

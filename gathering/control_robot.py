@@ -11,6 +11,81 @@ import rospy, math, cv2, os, pickle
 import numpy as np
 import time
 import glob
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
+
+
+
+
+def rgb2gray(rgb):
+    return np.dot(rgb[...,:3], [0.299, 0.587, 0.114])
+
+def make_kernal(n):
+    kernal = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(n,n))
+    return kernal
+
+def calibration(img,background, gs_id=2, mask_bd=None):
+    # print "len: " + str(len(img[0, 0, :]))
+    def apply_mask_bd(im):
+        if (mask_bd is not None):
+            if (len(im[0, 0, :]) > 0):
+                for i in range(len(im[0, 0, :])):
+                    im[:, :, i] = im[:, :, i]*mask_bd
+            else:
+                im = im*mask_bd
+        return im
+
+    if gs_id == 1:
+        M = np.load(SHAPES_ROOT + 'resources/M_GS1.npy')
+        rows, cols, cha = img.shape
+        imgw = cv2.warpPerspective(img, M, (cols, rows))
+        imgw = apply_mask_bd(imgw)
+        imgwc = imgw[10:, 65:572]
+        # print "New gs1 shpae: " + str(imgwc.shape)
+
+        bg_imgw = cv2.warpPerspective(background, M, (cols, rows))
+        bg_imgw = apply_mask_bd(bg_imgw)
+        bg_imgwc = bg_imgw[10:, 65:572]
+        img_blur = cv2.GaussianBlur(bg_imgwc.astype(np.float32), (25, 25), 30)
+        img_bs = imgwc.astype(np.int32) - img_blur.astype(np.int32) + np.mean(img_blur)
+
+    elif gs_id == 2:
+        M = np.load(SHAPES_ROOT + 'resources/M_GS1.npy')
+        rows, cols, cha = img.shape
+        imgw = cv2.warpPerspective(img, M, (cols, rows))
+        imgw = apply_mask_bd(imgw)
+        # print "GS2 after warp shpae: " + str(imgw.shape)
+        imgwc = imgw[10:, 65:572]
+        # print "New gs2 shpae: " + str(imgwc.shape)
+
+        bg_imgw = cv2.warpPerspective(background, M, (cols, rows))
+        bg_imgw = apply_mask_bd(bg_imgw)
+        bg_imgwc = bg_imgw[10:, 65:572]
+        img_blur = cv2.GaussianBlur(bg_imgwc.astype(np.float32), (25, 25), 30)
+        img_bs = imgwc.astype(np.int32) - img_blur.astype(np.int32) + np.mean(img_blur)
+    return img_bs.astype(np.uint8), imgwc
+
+
+def contact_detection(im,im_ref,low_bar,high_bar):
+    im_sub = im/(im_ref+1e-6)*70
+    im_gray = im_sub.astype(np.uint8)
+    im_canny = cv2.Canny(im_gray, low_bar, high_bar)
+
+    kernal1 = make_kernal(10)
+    kernal2 = make_kernal(10)
+    kernal3 = make_kernal(30)
+    kernal4 = make_kernal(20)
+    img_d = cv2.dilate(im_canny, kernal1, iterations=1)
+    img_e = cv2.erode(img_d, kernal1, iterations=1)
+    img_ee = cv2.erode(img_e, kernal2, iterations=1)
+    
+    img_dd = cv2.dilate(img_ee, kernal3, iterations=1)
+    img_eee = cv2.erode(img_dd, kernal4, iterations=1)
+    img_label = np.stack((np.zeros(img_dd.shape),np.zeros(img_dd.shape),img_eee),axis = 2).astype(np.uint8)
+    return img_label
+
+
 
 class ControlRobot():
     def __init__(self, gs_ids=[2], force_list=[1, 10, 20, 40]):
@@ -80,6 +155,35 @@ class ControlRobot():
             self.open_gripper()
             i += 1
 
+
+    def check_patch_enough(self, path_img, path_ref):
+        ref = cv2.imread(path_ref + 'GS{}'.format(self.gs_id[0]) + '.png')
+        mask_bd = np.load(SHAPES_ROOT + 'resources/mask_GS{}.npy'.format(self.gs_id[0]))
+        ref_bs, ref_warp = calibration(ref, ref, self.gs_id[0], mask_bd)
+        im_temp = cv2.imread(path_img)
+        im_bs, im_wp = calibration(im_temp, ref, self.gs_id[0], mask_bd)
+        ## Remove background to the iamge and place its minimum to zero
+        im_diff = im_wp.astype(np.int32) - ref_warp.astype(np.int32)
+        im_diff_show = ((im_diff - np.min(im_diff))).astype(np.uint8)
+        im_diff = im_diff - np.min(im_diff)
+        ## Take into account different channels and create masks for the contact patch
+        mask1 = (im_diff[:, :, 0]-im_diff[:, :, 1]) > 15
+        mask2 = (im_diff[:, :, 1]-im_diff[:, :, 0]) > 15
+        mask = ((mask1 + mask2)*255).astype(np.uint8)
+        mask = rgb2gray(contact_detection(rgb2gray(im_wp).astype(np.float32), rgb2gray(ref_warp).astype(np.float32),20,50))
+        ## Apply eroding to the image and dilatation
+        kernal1 = make_kernal(30)
+        kernal2 = make_kernal(10)
+        mask = cv2.erode(mask, kernal2, iterations=1)
+        mask = cv2.dilate(mask, kernal2, iterations=1)
+        mask = cv2.dilate(mask, make_kernal(35), iterations=1)
+        mask_color = cv2.erode(mask, kernal1, iterations=1).astype(np.uint8)   
+        mask_pixels = np.sum(mask_color)/255
+        print 'Number pixels: {}'.format(mask_pixels)
+        return mask_pixels > 1000
+    
+    
+    
     def perfrom_experiment(self, experiment_name='test', movement_list=[], save_only_picture=False, last_touch = 0, original_x = None,
         original_y = None):
         if last_touch == 0:
@@ -92,14 +196,12 @@ class ControlRobot():
         ini = time.time()
         if not os.path.exists(experiment_name): # If the directory does not exist, we create it
             os.makedirs(experiment_name)
+        print 'last ', last_touch
+        print 'left ', len(movement_list)
         for i in range(last_touch, len(movement_list)+last_touch):
             if i>last_touch:
                 print path
-                if len(glob.glob(path+'*')) < 3:
-                    i -= 1
-                    print "Previous collection was bad. Repeating"
-                else:
-                    print "Done: " + str(i) + "/" + str(len(movement_list)) + ", Remaining minutes: " + str(((len(movement_list)-i)*(time.time()-ini)/i)/60.)
+                print "Done: " + str(i) + "/" + str(len(movement_list)) + ", Remaining minutes: " + str(((len(movement_list)-i)*(time.time()-ini)/i)/60.)
             if save_only_picture:
                 path = experiment_name + '/'
                 j = i
@@ -107,7 +209,14 @@ class ControlRobot():
                 path = experiment_name + '/p_' + str(i) + '/'
                 j = i
             movement = movement_list[i-last_touch]
-            self.palpate(speed=200, force_list=self.force_list, save=True, path=path, save_only_picture=save_only_picture, i=j)
+            is_good = False
+            while not is_good:
+                print 'hi'
+                self.palpate(speed=200, force_list=self.force_list, save=True, path=path, save_only_picture=save_only_picture, i=j)
+                print 'hi2'
+                is_good = self.check_patch_enough(path_img = path + '/GS{}_{}'.format(self.gs_id[0],j)+ '.png', path_ref = experiment_name+'/air/')
+                print 'hi3'
+                if not is_good: print 'Not enough pixels in the mask'
             self.move_cart_mm(movement[0], movement[1], movement[2])
             print "moved"
             print 'movement: ', movement
@@ -120,8 +229,11 @@ class ControlRobot():
         else:
             path = experiment_name + '/p_' + str(i) + '/'
             j = 0
-        self.palpate(speed=200, force_list=self.force_list, save=True, path=path, save_only_picture=save_only_picture, i=j)
-
+        is_good = False
+        while not is_good:
+            self.palpate(speed=200, force_list=self.force_list, save=True, path=path, save_only_picture=save_only_picture, i=j)
+            is_good = check_patch_enough(path_img = path  + '/GS{}_{}'.format(self.gs_id[0],j) + '.png', path_ref = experiment_name+'/air/')
+            if not is_good: print 'Not enough pixels in the mask'
 
 if __name__ == "__main__":
     cr = ControlRobot()
