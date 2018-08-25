@@ -14,7 +14,7 @@ SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, list_IDs, labels, batch_size, dim_in, dim_out, n_channels=5, shuffle=True, simulator=False, output_type='grad'):
+    def __init__(self, list_IDs, labels, batch_size, dim_in, dim_out, n_channels=5, shuffle=True, simulator=False, output_type='grad', num_aug = 5):
         'Initialization'
         self.dim = dim_in
         self.batch_size = batch_size
@@ -73,9 +73,16 @@ class DataGenerator(keras.utils.Sequence):
             if im_temp is None:
                 print list_IDs_temp[i]
             im_temp = preprocess_image(im_temp)
-
+	    '''
+            ss = labels_temp[i][-10:-4].replace('_', ' ').split()
+            item = int(ss[-1])
+            aux_item =item - np.mod(item-1, num_aug)
+            aux_label = labels_temp[i][-10:].replace(str(item), str(aux_item))
+            labels_temp[i] = labels_temp[i][:-10] + aux_label
+            '''
             grad_x = np.load(labels_temp[i])
             grad_y = np.load(labels_temp[i].replace("gx_","gy_"))
+            
             if self.output_type == 'angle': #In order to consider angle
                 grad_x = np.load(labels_temp[i].replace("gy_","gx_angle_"))
                 grad_y = np.load(labels_temp[i].replace("gx_","gy_"))

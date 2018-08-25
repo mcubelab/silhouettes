@@ -10,8 +10,8 @@ import datetime
 import gripper
 if __name__ == "__main__":
     
-    shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_2', 'semipyramid_3', 'stamp']
-    
+    shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_3', 'semipyramid_3', 'stamp']
+    shapes = ['hollowcone_2']
     gs_ids = [2,1]
     original_num_data = 500
     original_num_test_data = 100
@@ -27,8 +27,8 @@ if __name__ == "__main__":
             num_data = original_num_data
             num_test_data = original_num_test_data
         for j, rotation in enumerate(rotations):
-            data_type = '/media/mcube/data/shapes_data/raw/' + shape + '_{}_gs_id={}_rot={}/'.format(date,gs_id, j)
-            data_test_type = '/media/mcube/data/shapes_data/raw/' +shape + '_{}_test_gs_id={}_rot={}/'.format(date,gs_id, j)
+            data_type = '/media/mcube/data/shapes_data/raw_test/' + shape + '_{}_gs_id={}_rot={}/'.format(date,gs_id, j)
+            data_test_type = '/media/mcube/data/shapes_data/raw_test/' +shape + '_{}_test_gs_id={}_rot={}/'.format(date,gs_id, j)
             start_again = False
             while start_again != 'y':
               start_again = raw_input('Collecting data for: '+ data_type +'. Ready?')
@@ -41,13 +41,14 @@ if __name__ == "__main__":
             while num_data >= collected_data:
               print 'col1 ', collected_data
               print 'num data ', num_data
-              try:
-                training_touch(experiment_name = data_type, object_angle = rotation, number_of_points = num_data, gs_id = gs_id, last_touch = collected_data)
-                
-              except: gripper.open(speed=200)
+              #try:
+              training_touch(experiment_name = data_type, object_angle = rotation, number_of_points = num_data, gs_id = gs_id, last_touch = collected_data)
+              
+              #except: gripper.open(speed=200)
               collected_data = sum(os.path.isdir(data_type + i) for i in os.listdir(data_type))-1
               print 'col2 ',collected_data
               gripper.open(speed=200)
+            print 'STARTING TEST! '
             while num_test_data >= collected_test_data:
               try:
                 training_touch(experiment_name = data_test_type, object_angle = rotation, number_of_points = num_test_data, 

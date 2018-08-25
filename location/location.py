@@ -210,7 +210,8 @@ class Location():
             cart = new_cart
 
         if gs_id == 1:
-            pass # TODO: GET height_map
+            params_gs = self.params_gs1
+            size = self.params_dict['input_shape_gs1'][0:2]
         elif gs_id == 2:
             params_gs = self.params_gs2
             size = self.params_dict['input_shape_gs2'][0:2]
@@ -230,6 +231,7 @@ class Location():
             #     print np.mean(test_image[:,:,it])
 
             height_map = raw_gs_to_depth_map(
+                gs_id=gs_id,
                 test_image=test_image,
                 ref=None,
                 model_path=SHAPES_ROOT + 'depth_calibration/weights/weights.aug.v1.hdf5',
@@ -246,7 +248,7 @@ class Location():
             height_map = (height_map > 0.1)*height_map*10  # NOTE: We are multiplying the height by 10 for visualization porpuses!!!!!
             height_map = (height_map > a)*height_map
             #height_map = height_map+0.05
-            height_map = cv2.resize(height_map, dsize=(size[1], size[0]), interpolation=cv2.INTER_LINEAR) #TODOM: why?
+            # height_map = cv2.resize(height_map, dsize=(size[1], size[0]), interpolation=cv2.INTER_LINEAR) #TODO: why?
             # cv2.imshow('a', height_map)
             # cv2.waitKey()
 
