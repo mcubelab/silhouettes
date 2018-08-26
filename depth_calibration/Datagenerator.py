@@ -73,7 +73,7 @@ class DataGenerator(keras.utils.Sequence):
             if im_temp is None:
                 print list_IDs_temp[i]
             im_temp = preprocess_image(im_temp)
-	    '''
+            '''
             ss = labels_temp[i][-10:-4].replace('_', ' ').split()
             item = int(ss[-1])
             aux_item =item - np.mod(item-1, num_aug)

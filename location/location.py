@@ -205,10 +205,11 @@ class Location():
 
     def get_local_pointcloud(self, gs_id, directory='', num=-1, new_cart=None):
         # 1. We convert the raw image to height_map data
+        #import pdb; pdb.set_trace()
         cart, gs1_list, gs2_list, wsg_list, force_list, gs1_back, gs2_back = self.get_contact_info(directory, num) #TODOM: why so many info?
         if new_cart is not None:
             cart = new_cart
-
+        print cart
         if gs_id == 1:
             params_gs = self.params_gs1
             size = self.params_dict['input_shape_gs1'][0:2]
@@ -229,6 +230,7 @@ class Location():
             #     print np.mean(test_image2[:,:,it])
             #     test_image[:,:,it] = test_image[:,:,it]/np.mean(test_image[:,:,it])*np.mean(test_image2[:,:,it])
             #     print np.mean(test_image[:,:,it])
+<<<<<<< HEAD
 
             height_map = raw_gs_to_depth_map(
                 gs_id=gs_id,
@@ -238,6 +240,15 @@ class Location():
                 plot=False,
                 save=False,
                 path='')
+=======
+            weights_file = '/home/mcube/weights_server_last/weights_type=all_08-23-2018_num=2000_gs_id=2_in=rgb_out=height_epoch=100_NN=basic_aug=5.hdf5'
+            if 'grad' in weights_file: output_type = 'grad'
+            elif 'angle' in weights_file: output_type = 'angle'
+            else: output_type = 'height'
+            if 'gray' in weights_file: input_type = 'gray'
+            else: input_type = 'rgb'
+            height_map = raw_gs_to_depth_map(test_image=test_image, ref=None, model_path= weights_file, plot=False, save=False, path='', output_type=output_type, input_type=input_type)
+>>>>>>> 7cd667187c63adfa183f3016452cb6ba0c0f0434
 
             # cv2.imshow('hm', height_map)
             # cv2.waitKey(0)
@@ -245,7 +256,7 @@ class Location():
             mean = np.mean(height_map)
             dev = np.std(height_map)
             a = mean - dev
-            height_map = (height_map > 0.1)*height_map*10  # NOTE: We are multiplying the height by 10 for visualization porpuses!!!!!
+            height_map = (height_map > 0.01)*height_map  # NOTE: We are multiplying the height by 10 for visualization porpuses!!!!!
             height_map = (height_map > a)*height_map
             #height_map = height_map+0.05
             # height_map = cv2.resize(height_map, dsize=(size[1], size[0]), interpolation=cv2.INTER_LINEAR) #TODO: why?
@@ -262,7 +273,7 @@ class Location():
         pointcloud = []
         for i in range(height_map.shape[0]):
             for j in range(height_map.shape[1]):
-                if(height_map[i][j] >= 0.10):
+                if(height_map[i][j] >= 0.10): # TODO: HACK MARIA
                     world_point = pxb_2_wb_3d(
                         point_3d=(i, j, height_map[i][j]),
                         gs_id=gs_id,
@@ -271,7 +282,9 @@ class Location():
                     )
                     a = np.asarray(world_point)
                     pointcloud.append(a)
-
+        print 'Mean pointcloud: ', np.mean(np.array(pointcloud), axis = 0)
+        print 'Gripper opening: ', gripper_state['Dx']
+        print pointcloud[0]
         return pointcloud
 
     def simple_pointcloud_merge(self, pointcloud1, pointcloud2):
@@ -358,11 +371,8 @@ class Location():
             exp = str(i)
             print "Processing img " + exp + "..."
             try:
-                local_pointcloud = loc.get_local_pointcloud(
-                    gs_id=gs_id,
-                    directory=directory,
-                    num=i)
-
+                local_pointcloud = loc.get_local_pointcloud(gs_id=gs_id, directory=directory, num=i)
+                
                 if global_pointcloud is None:
                     global_pointcloud = local_pointcloud
                 else:
@@ -392,40 +402,39 @@ class Location():
 
 if __name__ == "__main__":
     name = 'only_front.npy'
-    name = 'rectangle.npy'
+    name = 'big_semicone_l=40_h=20_d=10_rot=0.npy'
     loc = Location()
+    '''
 
-    touch_list = range(0, 10)
+    touch_list = range(0, 61)
 
     touch_list_aux = copy.deepcopy(touch_list)
     #touch_list = range(3, 7)
     #touch_list += range(7, 13)
     # touch_list = [0, 5, 23]
+    directory = '/media/mcube/data/shapes_data/object_exploration/big_semicone_l=40_h=20_d=10_rot=0/'
+    gs_id = 2
+    #touch_list = [0,1,4,5,8,9]  #7,8, 12,13,17,18]0,1,2,3,4,
+    global_pointcloud = None
+    for i in touch_list:
+        
+        global_pointcloud = loc.get_global_pointcloud(gs_id=gs_id, directory=directory, touches=[i], global_pointcloud = global_pointcloud)
 
-    global_pointcloud = loc.get_global_pointcloud(
-         gs_id=2,
-         directory='/media/mcube/data/shapes_data/object_exploration/test_rectangle_1',
-         touches=touch_list,
-         global_pointcloud = None
-     )
-
-
-    global_pointcloud = loc.get_global_pointcloud(
-         gs_id=2,
-         directory='/media/mcube/data/shapes_data/object_exploration/test_rectangle_2',
-         touches=touch_list,
-         global_pointcloud = global_pointcloud
-     )
-
-    loc.old_visualize_pointcloud(global_pointcloud)
+        #loc.visualize_pointcloud(np.array(global_pointcloud))
 
     global_pointcloud = np.array(global_pointcloud)
     np.save('/media/mcube/data/shapes_data/pointclouds/' + name, global_pointcloud)
-
-    # global_pointcloud = np.load('/media/mcube/data/shapes_data/pointclouds/' + name)
-
-    # loc.visualize_pointcloud(global_pointcloud)
-
+    loc.visualize_pointcloud(global_pointcloud)
+    '''
+    global_pointcloud = np.load('/media/mcube/data/shapes_data/pointclouds/' + name)
+    import pdb; pdb.set_trace()
+    final_global_pointcloud = copy.deepcopy(global_pointcloud)
+    for i in np.linspace(-np.pi, np.pi, 5):
+        aux_global_pointcloud = copy.deepcopy(global_pointcloud)
+        aux_global_pointcloud[:,1] = np.cos(i)*global_pointcloud[:,1] + np.sin(i)*global_pointcloud[:,2] 
+        aux_global_pointcloud[:,2] = np.cos(i)*global_pointcloud[:,2] - np.sin(i)*global_pointcloud[:,1] 
+        final_global_pointcloud = np.concatenate([final_global_pointcloud, aux_global_pointcloud], axis=0)
+    loc.visualize_pointcloud(final_global_pointcloud)
     # missing = loc.get_local_pointcloud(
     #     gs_id=2,
     #     directory='/media/mcube/data/shapes_data/pos_calib/bar_front/',
@@ -487,3 +496,4 @@ if __name__ == "__main__":
 
     #np.save('/media/mcube/data/shapes_data/pointclouds/' + name, global_pointcloud)
     #loc.visualize2_pointclouds([global_pointcloud, missing])
+#'''

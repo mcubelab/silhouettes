@@ -287,11 +287,19 @@ if __name__ == "__main__":
 
     gs_ids = [2,1]
     #shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_1', 'hollowcone_2', 'semipyramid_2'] #, 'stamp']
+<<<<<<< HEAD
     shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_2', 'semipyramid_3'] #, 'stamp']
     pix_limit = [1650, 2200, 6500, 4300, 2000 ]
 
     date = datetime.datetime.today().strftime('%m-%d-%Y') #''08-21-2018'
     rotations = [0]
+=======
+    shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_3', 'hollowcone_2', 'semipyramid_3'] #, 'stamp']
+    pix_limit = [1650, 2200, 6500, 3500, 4300, 2000 ]
+    
+    dates = ['08-24-2018'] #datetime.datetime.today().strftime('%m-%d-%Y') #'
+    rotations = [0]    
+>>>>>>> 7cd667187c63adfa183f3016452cb6ba0c0f0434
 
     for gs_id in gs_ids:
         for it_shape, shape in enumerate(shapes):
@@ -313,7 +321,6 @@ if __name__ == "__main__":
                     hollow_R_mm = 16.5/2
                     hollowcone_slope = 10
                 elif shape == 'hollowcone_2':
-                    # # hollowcone 2
                     hollow_r_mm = 9.8/2
                     hollow_R_mm = 16.5/2
                     hollowcone_slope = 20
@@ -349,18 +356,28 @@ if __name__ == "__main__":
                 shape_params = (sphere_R_mm, hollow_r_mm, hollow_R_mm, semicone_r_mm, hollowcone_slope, semicone_slope, semipyramid_side, semipyramid_slope)
                 files = []
                 for rotation in rotations:
-                    half_names = ['_{}_gs_id={}_rot={}/'.format(date,gs_id, rotation), '_{}_test_gs_id={}_rot={}/'.format(date,gs_id, rotation)]
-                    half_name = half_names[i]
-                    ## Paths to obtain Gelsight raw images
-                    folder_data_name = shape + half_name
-                    load_path = "/media/mcube/data/shapes_data/raw/" + folder_data_name
-                    # load_path = "sample_data/"
-                    only_pictures = False  # If in the load_path there are only the pictures and not folders with each cartesian info
-                    root, aux_files = get_files(load_path, only_pictures=only_pictures)
-                    aux_files.sort(key=os.path.getmtime)
-                    files = files + aux_files
+                    for date in dates:
+                        half_names = ['_{}_gs_id={}_rot={}/'.format(date,gs_id, rotation), '_{}_test_gs_id={}_rot={}/'.format(date,gs_id, rotation)]
+                        half_name = half_names[i]
+                        ## Paths to obtain Gelsight raw images
+                        folder_data_name = shape + half_name
+                        load_path = "/media/mcube/data/shapes_data/raw/" + folder_data_name
+                        # load_path = "sample_data/"
+                        only_pictures = False  # If in the load_path there are only the pictures and not folders with each cartesian info
+                        if not os.path.exists(load_path): 
+                            print 'There is no path: ', load_path
+                            continue
+                        root, aux_files = get_files(load_path, only_pictures=only_pictures)
+                        aux_files.sort(key=os.path.getmtime)
+                        files = files + aux_files
                 ## Path to save new images and gradients
-                save_path = "/media/mcube/data/shapes_data/processed_{}_test/".format(date)+ folder_data_name
+                if len(dates) == 1:
+                    save_path = "/media/mcube/data/shapes_data/processed_{}_test/".format(dates[0])+ folder_data_name
+                else:
+                    save_path = "/media/mcube/data/shapes_data/processed"
+                    for date in dates:
+                        save_path += "_{}".format(date)
+                    save_path += "/"+ folder_data_name
                 # save_path = "sample_data/"
 
                 ## Basic parameters
@@ -762,12 +779,13 @@ if __name__ == "__main__":
                                                 np.save(save_path + 'gradient/gx_angle_'+ str(index) + '.npy', np.arctan(grad_x))
                                                 np.save(save_path + 'gradient/gy_angle_'+ str(index) + '.npy', np.arctan(grad_y))
                                                 cv2.imwrite(save_path + 'heightmap/'+str(index) + '_' + name + '.png', depth_map*1000)
+                                                cv2.imwrite(save_path + 'image_raw/img_'+str(index)+ '.png',im_temp)
                                                 io = Image.open(save_path + 'image_circled/img_'+str(index)+ ' {}'.format(mask_pixels) + '.png').convert("RGB") # image_for_input
                                                 ii = Image.open(save_path + 'heightmap/'+str(index) + '_' + name + '.png').resize(io.size).convert("RGB") #depth map
                                                 result = Image.blend(io, ii, alpha=0.5)
                                                 result.save(save_path + 'heightmap/'+str(index) + '_blend.png')
 
 
-                plt.plot(num_pixels)
-                plt.show()
-                import pdb; pdb.set_trace()
+                #plt.plot(num_pixels)
+                #plt.show()
+                #import pdb; pdb.set_trace()
