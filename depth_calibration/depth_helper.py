@@ -189,7 +189,7 @@ def custom_loss(y_true, y_pred):
     return K.sum(K.square(y_true-y_pred))
 
 def raw_gs_to_depth_map(gs_id=2, test_image=None, ref=None, model_path=None, plot=False, save=False, path='', img_number='',
-                            output_type='grad', test_depth = None, model = None):
+                            output_type='grad', test_depth = None, model = None, input_type='rgb'):
     if ref == None:
         ref = test_image
 
@@ -215,6 +215,8 @@ def raw_gs_to_depth_map(gs_id=2, test_image=None, ref=None, model_path=None, plo
         dim = params_dict['input_shape_gs2'][0:2]
 
     test_image = cv2.resize(test_image, dsize=(dim[1], dim[0]), interpolation=cv2.INTER_LINEAR)
+    if input_type == 'gray':
+        test_image = cv2.cvtColor(cv2.cvtColor(test_image, cv2.COLOR_BGR2GRAY), cv2.COLOR_GRAY2RGB)
     xvalues = np.array(range(dim[0])).astype('float32')/float(dim[0]) - 0.5 # Normalized
     yvalues = np.array(range(dim[1])).astype('float32')/float(dim[1]) - 0.5 # Normalized
     pos = np.stack((np.meshgrid(yvalues, xvalues)), axis = 2)

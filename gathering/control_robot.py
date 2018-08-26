@@ -97,6 +97,11 @@ class ControlRobot():
 
     def move_cart_mm(self, dx=0, dy=0, dz=0):
         #Define ros services
+        setAcc = rospy.ServiceProxy('/robot1_SetAcc', robot_SetAcc)
+        setSpeed = rospy.ServiceProxy('/robot1_SetSpeed', robot_SetSpeed)
+        rospy.sleep(0.2)
+        setAcc(acc=1, deacc=1)
+        setSpeed(100, 30)
         getCartRos = rospy.ServiceProxy('/robot1_GetCartesian', robot_GetCartesian)
         setCartRos = rospy.ServiceProxy('/robot1_SetCartesian', robot_SetCartesian)
         #read current robot pose
@@ -106,7 +111,12 @@ class ControlRobot():
 
     def set_cart_mm(self, cart):
         x, y, z, q0, qx, qy, qz = cart
+        setAcc = rospy.ServiceProxy('/robot1_SetAcc', robot_SetAcc)
+        setSpeed = rospy.ServiceProxy('/robot1_SetSpeed', robot_SetSpeed)
         setCartRos = rospy.ServiceProxy('/robot1_SetCartesian', robot_SetCartesian)
+        rospy.sleep(0.2)
+        setAcc(acc=1, deacc=1)
+        setSpeed(100, 30)
         setCartRos(x, y, z, q0, qx, qy, qz)
 
     def move_joint(self, dj1=0, dj2=0, dj3=0, dj4=0, dj5=0, dj6=0, print_cart=False):
@@ -142,6 +152,7 @@ class ControlRobot():
         # 1. We get and save the cartesian coord.
         dc = DataCollector(only_one_shot=False, automatic=True, save_only_picture=save_only_picture)
         cart = dc.getCart()
+        print cart
         if save and not save_only_picture:
             np.save(path + '/cart.npy', cart)
 
@@ -149,14 +160,14 @@ class ControlRobot():
         for force in force_list:
             self.close_gripper_f(grasp_speed=speed, grasp_force=force)
             print "Applying: " + str(force)
-            time.sleep(1)
+            time.sleep(0.5)
             dc.get_data(get_cart=False, get_gs1=(1 in self.gs_id), get_gs2=(2 in self.gs_id), get_wsg=True, save=save, directory=path, iteration=i)
             time.sleep(0.5)
             self.open_gripper()
             i += 1
 
 
-    def check_patch_enough(self, path_img, path_ref):
+    def check_patch_enough(self, path_img, path_ref, pix_threshold = 1000):
         ref = cv2.imread(path_ref + 'GS{}'.format(self.gs_id[0]) + '.png')
         mask_bd = np.load(SHAPES_ROOT + 'resources/mask_GS{}.npy'.format(self.gs_id[0]))
         ref_bs, ref_warp = calibration(ref, ref, self.gs_id[0], mask_bd)
@@ -180,12 +191,12 @@ class ControlRobot():
         mask_color = cv2.erode(mask, kernal1, iterations=1).astype(np.uint8)   
         mask_pixels = np.sum(mask_color)/255
         print 'Number pixels: {}'.format(mask_pixels)
-        return mask_pixels > 1000
+        return mask_pixels >= pix_threshold
     
     
     
     def perfrom_experiment(self, experiment_name='test', movement_list=[], save_only_picture=False, last_touch = 0, original_x = None,
-        original_y = None):
+        original_y = None, pix_threshold = 1000):
         if last_touch == 0:
             # 1. We save the background image:
             dc = DataCollector(only_one_shot=False, automatic=True, save_only_picture=save_only_picture)
@@ -210,30 +221,33 @@ class ControlRobot():
                 j = i
             movement = movement_list[i-last_touch]
             is_good = False
-            while not is_good:
-                print 'hi'
+            it_count = 0
+            while not is_good and it_count < 5:
                 self.palpate(speed=200, force_list=self.force_list, save=True, path=path, save_only_picture=save_only_picture, i=j)
-                print 'hi2'
-                is_good = self.check_patch_enough(path_img = path + '/GS{}_{}'.format(self.gs_id[0],j)+ '.png', path_ref = experiment_name+'/air/')
-                print 'hi3'
+                is_good = self.check_patch_enough(path_img = path + '/GS{}_{}'.format(self.gs_id[0],j)+ '.png', path_ref = experiment_name+'/air/', pix_threshold = pix_threshold)
                 if not is_good: print 'Not enough pixels in the mask'
+                it_count += 1
+            
             self.move_cart_mm(movement[0], movement[1], movement[2])
-            print "moved"
+            rospy.sleep(1)
+            
             print 'movement: ', movement
             if original_x is not None:
                 print ('Motion in gelsight: ' , original_x[i-last_touch], original_y[i-last_touch])
-            i += 1
+        i += 1
         if save_only_picture:
             path = experiment_name + '/'
             j = i
         else:
             path = experiment_name + '/p_' + str(i) + '/'
-            j = 0
+            j = i
         is_good = False
-        while not is_good:
+        it_count = 0
+        while not is_good and it_count < 5:
             self.palpate(speed=200, force_list=self.force_list, save=True, path=path, save_only_picture=save_only_picture, i=j)
-            is_good = check_patch_enough(path_img = path  + '/GS{}_{}'.format(self.gs_id[0],j) + '.png', path_ref = experiment_name+'/air/')
+            is_good = self.check_patch_enough(path_img = path  + '/GS{}_{}'.format(self.gs_id[0],j) + '.png', path_ref = experiment_name+'/air/', pix_threshold = pix_threshold)
             if not is_good: print 'Not enough pixels in the mask'
+            it_count += 1
 
 if __name__ == "__main__":
     cr = ControlRobot()
