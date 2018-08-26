@@ -230,17 +230,7 @@ class Location():
             #     print np.mean(test_image2[:,:,it])
             #     test_image[:,:,it] = test_image[:,:,it]/np.mean(test_image[:,:,it])*np.mean(test_image2[:,:,it])
             #     print np.mean(test_image[:,:,it])
-<<<<<<< HEAD
 
-            height_map = raw_gs_to_depth_map(
-                gs_id=gs_id,
-                test_image=test_image,
-                ref=None,
-                model_path=SHAPES_ROOT + 'depth_calibration/weights/weights.aug.v1.hdf5',
-                plot=False,
-                save=False,
-                path='')
-=======
             weights_file = '/home/mcube/weights_server_last/weights_type=all_08-23-2018_num=2000_gs_id=2_in=rgb_out=height_epoch=100_NN=basic_aug=5.hdf5'
             if 'grad' in weights_file: output_type = 'grad'
             elif 'angle' in weights_file: output_type = 'angle'
@@ -248,7 +238,6 @@ class Location():
             if 'gray' in weights_file: input_type = 'gray'
             else: input_type = 'rgb'
             height_map = raw_gs_to_depth_map(test_image=test_image, ref=None, model_path= weights_file, plot=False, save=False, path='', output_type=output_type, input_type=input_type)
->>>>>>> 7cd667187c63adfa183f3016452cb6ba0c0f0434
 
             # cv2.imshow('hm', height_map)
             # cv2.waitKey(0)
@@ -372,7 +361,7 @@ class Location():
             print "Processing img " + exp + "..."
             try:
                 local_pointcloud = loc.get_local_pointcloud(gs_id=gs_id, directory=directory, num=i)
-                
+
                 if global_pointcloud is None:
                     global_pointcloud = local_pointcloud
                 else:
@@ -417,7 +406,7 @@ if __name__ == "__main__":
     #touch_list = [0,1,4,5,8,9]  #7,8, 12,13,17,18]0,1,2,3,4,
     global_pointcloud = None
     for i in touch_list:
-        
+
         global_pointcloud = loc.get_global_pointcloud(gs_id=gs_id, directory=directory, touches=[i], global_pointcloud = global_pointcloud)
 
         #loc.visualize_pointcloud(np.array(global_pointcloud))
@@ -431,8 +420,8 @@ if __name__ == "__main__":
     final_global_pointcloud = copy.deepcopy(global_pointcloud)
     for i in np.linspace(-np.pi, np.pi, 5):
         aux_global_pointcloud = copy.deepcopy(global_pointcloud)
-        aux_global_pointcloud[:,1] = np.cos(i)*global_pointcloud[:,1] + np.sin(i)*global_pointcloud[:,2] 
-        aux_global_pointcloud[:,2] = np.cos(i)*global_pointcloud[:,2] - np.sin(i)*global_pointcloud[:,1] 
+        aux_global_pointcloud[:,1] = np.cos(i)*global_pointcloud[:,1] + np.sin(i)*global_pointcloud[:,2]
+        aux_global_pointcloud[:,2] = np.cos(i)*global_pointcloud[:,2] - np.sin(i)*global_pointcloud[:,1]
         final_global_pointcloud = np.concatenate([final_global_pointcloud, aux_global_pointcloud], axis=0)
     loc.visualize_pointcloud(final_global_pointcloud)
     # missing = loc.get_local_pointcloud(

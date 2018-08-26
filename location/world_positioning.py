@@ -127,12 +127,7 @@ def pxb_2_wb_3d(point_3d, gs_id, gripper_state, fitting_params):
     k1, k2, k3,  l1, l2, l3,  dx, dy, dz = fitting_params
 
     p1 = (x, y - half_y, z)
-<<<<<<< HEAD
     p2 = (p1[0]*k1 + p1[1]*k2 + k3*p1[0]*p1[1],   p1[1]*l1 + p1[0]*l2 + l3*p1[1]*p1[0],   p1[2])
-=======
-    #p2 = (p1[0]*k1 + p1[1]*k2, p1[1]*l1 + p1[0]*l2, p1[2])
-    p2 = (p1[0]*k1 + p1[1]*k2 + k3*p1[0]*p1[1],   p1[1]*l1 + p1[0]*l2 + l3*p1[1]*p1[0], p1[2])
->>>>>>> 7cd667187c63adfa183f3016452cb6ba0c0f0434
     p3 = (normal*(Dx + dx + p2[2]), p2[1] + dy, Dz + dz + p2[0])
     p4 = grb2wb(point=p3, gripper_pos=pos, quaternion=quaternion)
     return p4
