@@ -155,10 +155,12 @@ class Location():
         pcd = self.check_pointcloud_type(pointcloud)
         if color is not None:
             pcd.paint_uniform_color(color)
-        
+
         mesh = open3d.read_triangle_mesh("stitching_big_semicone.ply")
         mesh.compute_vertex_normals()
-        open3d.draw_geometries([pcd, mesh])
+        # open3d.draw_geometries([pcd, mesh])
+        open3d.draw_geometries([pcd])
+
 
     def visualize2_pointclouds(self, pc_list, color_list):
         for i, pc in enumerate(pc_list):
@@ -413,16 +415,16 @@ class Location():
         features2 = model.predict(x2).flatten()
         return scipy.spatial.distance.cosine(features, features2)
 
-    
+
 if __name__ == "__main__":
     name = 'only_front.npy'
     name = 'big_semicone_l=40_h=20_d=10_rot=0_only10.npy'
     loc = Location()
-    
+
     x_off = 843
     y_off = 374.8
     z_off = 283.65
-    
+
     touch_list = range(51, 52)
 
     touch_list_aux = copy.deepcopy(touch_list)
@@ -438,14 +440,14 @@ if __name__ == "__main__":
     global_pointcloud = None
     keras.losses.custom_loss = custom_loss
     model = load_model(model_path)
-    
+
     for i in touch_list:
         global_pointcloud = loc.get_global_pointcloud(gs_id=gs_id, directory=directory, touches=[i], global_pointcloud = global_pointcloud, model_path=model_path, model=model)
 
         #loc.visualize_pointcloud(np.array(global_pointcloud))
 
     global_pointcloud = np.array(global_pointcloud)
-    
+
     '''
     rotation = int(directory[directory.find('rot=')+4])
     aux_global_pointcloud = copy.deepcopy(global_pointcloud)
@@ -454,7 +456,7 @@ if __name__ == "__main__":
     golab_pointcloud = aux_global_pointcloud
     np.save('/media/mcube/data/shapes_data/pointclouds/' + name, global_pointcloud)
     #loc.visualize_pointcloud(global_pointcloud)
-    
+
     global_pointcloud = np.load('/media/mcube/data/shapes_data/pointclouds/' + name)
     '''
     #import pdb; pdb.set_trace()
@@ -475,9 +477,9 @@ if __name__ == "__main__":
     afinal_global_pointcloud[:,1] = final_global_pointcloud[:,1]
     afinal_global_pointcloud[:,2] = -final_global_pointcloud[:,0]
     loc.visualize_pointcloud(afinal_global_pointcloud)
-    
-    
-    
+
+
+
     # missing = loc.get_local_pointcloud(
     #     gs_id=2,
     #     directory='/media/mcube/data/shapes_data/pos_calib/bar_front/',

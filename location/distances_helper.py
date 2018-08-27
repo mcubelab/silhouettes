@@ -1,6 +1,8 @@
 import numpy as np
 from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
+from location import Location
+import copy
 
 def get_distance_to_axis(point, axis_origin, axis_vector):
     p = np.array(axis_origin)
@@ -52,7 +54,7 @@ def get_semicone_metrics(pointcloud, semicone_origin, semicone_axis_vector, visu
     model.fit(np.array(plane_dist).reshape(-1, 1), np.array(ax_dist))
 
     if visualize:
-        xfit = np.linspace(0, 4, 1000)
+        xfit = np.linspace(np.amin(plane_dist), np.amax(plane_dist), 1000)
         yfit = model.predict(xfit[:, np.newaxis])
         plt.scatter(plane_dist, ax_dist)
         plt.plot(xfit, yfit)
@@ -61,21 +63,58 @@ def get_semicone_metrics(pointcloud, semicone_origin, semicone_axis_vector, visu
 
     # We return the radius at the beginning and the slope of the line
     r = model.predict(0)[0]
-    slope = (model.predict(10)[0] - r)/10.
+    slope = 180*np.arctan((model.predict(10)[0] - r)/10.)/np.pi
     return r, slope
 
 
 if __name__=="__main__":
-    point = (0, 0, 0)
-    pointcloud = [(1, 1, 0), (1, 2, 0), (2, 1, 0)]
+    # Standard testing
+    # point = (0, 0, 0)
+    # pointcloud = [(1, 1, 0), (1, 2, 0), (2, 1, 0)]
+    # origin = (0, 0, 0)
+    # vector = (1, 0, 0)
+    #
+    # print get_distance_to_axis(point, origin, vector)
+    # print get_distance_to_plane(point, origin, vector)
+    #
+    # print "####"
+    #
+    # print get_cilinder_radius(pointcloud, origin, vector)
+    # print get_rectangle_side(pointcloud, origin, vector)
+    # print get_semicone_metrics(pointcloud, origin, vector, visualize=False)
+
+
+    name = 'big_semicone_l=40_h=20_d=10_rot=0_only10.npy'
+    name = "cilinder_l=50_h=20_dx=5_dy=5_rot=0_test.npy"
+    # name = "cilinder_l=50_h=20_dx=5_dy=5_rot=0_testjust_one_source.npy"
+    path = "/home/oleguer/shapes_data/" + name
+
+    global_pointcloud = np.load(path)
+    x_off = 860.42
+    y_off = 376.8
+    z_off = 291
+
     origin = (0, 0, 0)
-    vector = (1, 0, 0)
+    vector = (-1, 0, 0)
 
-    print get_distance_to_axis(point, origin, vector)
-    print get_distance_to_plane(point, origin, vector)
+    final_global_pointcloud = global_pointcloud
+    final_global_pointcloud[:, 0] -= x_off
+    final_global_pointcloud[:, 1] -= y_off
+    final_global_pointcloud[:, 2] -= z_off
 
-    print "####"
 
-    print get_cilinder_radius(pointcloud, origin, vector)
-    print get_rectangle_side(pointcloud, origin, vector)
-    print get_semicone_metrics(pointcloud, origin, vector, visualize=False)
+    afinal_global_pointcloud = copy.deepcopy(final_global_pointcloud)
+    # afinal_global_pointcloud[:,0] = final_global_pointcloud[:,2]
+    # afinal_global_pointcloud[:,1] = final_global_pointcloud[:,1]
+    # afinal_global_pointcloud[:,2] = -final_global_pointcloud[:,0]
+
+    print get_cilinder_radius(final_global_pointcloud, origin, vector)
+    print get_semicone_metrics(final_global_pointcloud, origin, vector, visualize=True)
+
+    ax = []
+    for i in range(100):
+        ax.append((-i, 0, 0))
+
+    afinal_global_pointcloud = np.concatenate([afinal_global_pointcloud, ax])
+    loc = Location()
+    loc.visualize_pointcloud(afinal_global_pointcloud)
