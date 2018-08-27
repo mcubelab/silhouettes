@@ -171,7 +171,7 @@ def point_to_line_dist(point, line):
     To calculate the closest distance to a line segment, we first need to check
     if the point projects onto the line segment.  If it does, then we calculate
     the orthogonal distance from the point to the line.
-    If the point does not project to the line segment, we calculate the 
+    If the point does not project to the line segment, we calculate the
     distance to both endpoints and take the shortest distance.
 
     :param point: Numpy array of form [x,y], describing the point.
@@ -192,7 +192,7 @@ def point_to_line_dist(point, line):
     )
 
     diff = (
-        (norm_unit_line[0] * (point[0] - line[0][0])) + 
+        (norm_unit_line[0] * (point[0] - line[0][0])) +
         (norm_unit_line[1] * (point[1] - line[0][1]))
     )
 
@@ -238,7 +238,7 @@ def rect_dist(big_rect, x):
     for i in range(x.shape[1]):
         point = Point(x[:,i])
         min_dist = 100000
-        
+
         for j in range(4):
             min_dist = min(min_dist, point_to_line_dist(x[:,i], [box[j], box[j+1]]))
         total_dist.append(poly.exterior.distance(point))
@@ -250,7 +250,7 @@ def rect_dist(big_rect, x):
     print total_dist2[123]
     #import pdb; pdb.set_trace()
     #print np.sum(np.array(total_dist) )
-    return np.array(total_dist) 
+    return np.array(total_dist)
 
 def min_rect_dist(big_rect):
     #print big_rect
@@ -266,8 +266,8 @@ def min_rect_dist(big_rect):
     for i in range(x_rect.shape[1]):
         point = Point(x_rect[:,i])
         total_dist.append(poly.exterior.distance(point))
-    #print np.sum(total_dist)    
-    return np.sum(total_dist) 
+    #print np.sum(total_dist)
+    return np.sum(total_dist)
 
 
 if __name__ == "__main__":
@@ -287,11 +287,19 @@ if __name__ == "__main__":
 
     gs_ids = [2,1]
     #shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_1', 'hollowcone_2', 'semipyramid_2'] #, 'stamp']
+<<<<<<< HEAD
+    shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_2', 'semipyramid_3'] #, 'stamp']
+    pix_limit = [1650, 2200, 6500, 4300, 2000 ]
+
+    date = datetime.datetime.today().strftime('%m-%d-%Y') #''08-21-2018'
+    rotations = [0]
+=======
     shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_3', 'hollowcone_2', 'semipyramid_3'] #, 'stamp']
     pix_limit = [1650, 2200, 6500, 3500, 4300, 2000 ]
     
     dates = ['08-24-2018'] #datetime.datetime.today().strftime('%m-%d-%Y') #'
     rotations = [0]    
+>>>>>>> 7cd667187c63adfa183f3016452cb6ba0c0f0434
 
     for gs_id in gs_ids:
         for it_shape, shape in enumerate(shapes):
@@ -395,7 +403,7 @@ if __name__ == "__main__":
 
                 # Load a different mask for each gelsight
                 mask_bd = np.load(SHAPES_ROOT + 'resources/mask_GS{}.npy'.format(gs_id))
-                
+
                 ref_bs, ref_warp = calibration(ref, ref, gs_id, mask_bd)
 
                 ## Create x_mesh and y_mesh
@@ -432,7 +440,7 @@ if __name__ == "__main__":
                         # cv2.imshow("im_bs", im_bs)
                         #cv2.imshow("im_wp", im_wp)
                         #cv2.waitKey(0)
-                        
+
                         im_wp_save = im_wp.copy()
 
                         ## Remove background to the iamge and place its minimum to zero
@@ -464,7 +472,7 @@ if __name__ == "__main__":
                         #cv2.imshow('maskA', mask)
                         #outImage = cv2.add(cv2.cvtColor(mask.astype(np.uint8),cv2.COLOR_GRAY2RGB),im_wp)
                         #cv2.imshow( "MaskA Blend", outImage);
-                        
+
                         # cv2.waitKey(0)
 
                         ## Apply eroding to the image and dilatation
@@ -476,23 +484,23 @@ if __name__ == "__main__":
                         mask_color = cv2.erode(mask, kernal1, iterations=1).astype(np.uint8)
                         #cv2.imshow('mask_color', mask_color)
                         outImage = cv2.add(cv2.cvtColor(mask_color,cv2.COLOR_GRAY2RGB),im_wp)
-                        
+
                         mask_pixels = np.sum(mask_color)/255
                         print 'PIXELS: ', mask_pixels
                         #cv2.imshow( "Blend with {} pixels".format(mask_pixels), outImage);
                         im2, contours, hierarchy = cv2.findContours(mask_color, 1, 2)
-                            
+
                         cv2.drawContours(outImage, contours, -1, (0,0,255), 3)
                         ## Detect circles if any exists
                         num_pixels.append(mask_pixels)
                         if mask_pixels  > pix_limit[it_shape]:  #Smaller one seems on the order of 1800 pixels
                             im2, contours, hierarchy = cv2.findContours(mask_color, 1, 2)
                             #print mask_pixels
-                            
+
                             #cv2.drawContours(outImage, contours, -1, (0,0,255), 3)
                             #cv2.imshow("Keypoints", outImage)
                             #cv2.waitKey(0)
-                            
+
                             # Select the circle/square with biggest area
                             (x, y), radius = (0, 0), 0
                             biggest_area = 0
@@ -511,14 +519,14 @@ if __name__ == "__main__":
                                     if radius_ > radius:
                                         (x, y), radius = (x_, y_), radius_
                                         biggest_contour = c
-                            
+
                             # print (x, y), radius
                             if 'semipyramid' not in geometric_shape:
                                 center = (int(x), int(y))
                                 cv2.circle(outImage,center,int(radius),(255,0,0),2)
                                 #cv2.imshow("Keypoints", outImage)
                                 #cv2.waitKey(0)
-                                
+
                                 ###### IMPROVE CIRCLE FIT ########
                                 # initial guess for parameters
                                 beta0 = [x, y, radius]
@@ -532,8 +540,8 @@ if __name__ == "__main__":
                                 cv2.circle(outImage,center,int(radius),(0,55,55),2)
                                 #cv2.imshow("Keypoints", outImage)
                                 #cv2.waitKey(0)
-                                
-                                radius = int(radius) 
+
+                                radius = int(radius)
 
                                 center_ok = center[0] > 100 or center[1] > 100  #Like it?
                                 if center_ok and radius > 30 and radius < max_rad and check_center(center, radius, col, row):
@@ -634,14 +642,14 @@ if __name__ == "__main__":
                                 box = cv2.boxPoints(biggest_rect)
                                 box = np.int0(box)
                                 cv2.drawContours(outImage, [box], 0, (255,0,0), 3)
-                                '''            
+                                '''
                                 lsc_data  = odr.Data(np.row_stack([biggest_contour[:,0,0], biggest_contour[:,0,1]]), y=1)
                                 lsc_model = odr.Model(rect_dist, implicit=True)
                                 adapt_rect = [biggest_rect[0][0], biggest_rect[0][1], biggest_rect[1][0],biggest_rect[1][1], biggest_rect[2]]
                                 lsc_odr = odr.ODR(lsc_data, lsc_model, adapt_rect)
                                 lsc_out = lsc_odr.run()
                                 big_rect = lsc_out.beta
-                                
+
                                 biggest_rect = ((big_rect[0], big_rect[1]), (big_rect[2], big_rect[3]),big_rect[4])
                                 print biggest_rect
                                 box = cv2.boxPoints(biggest_rect)
@@ -650,7 +658,7 @@ if __name__ == "__main__":
                                 cv2.imshow("Keypoints", outImage)
                                 cv2.waitKey(0)
                                 '''
-                                
+
                                 x_rect = np.row_stack([biggest_contour[:,0,0], biggest_contour[:,0,1]])
                                 if 'rot=3' in files[i]:
                                     adapt_rect = [biggest_rect[0][0], biggest_rect[0][1], biggest_rect[1][0],biggest_rect[1][1], 3*90/3.0]
@@ -665,13 +673,13 @@ if __name__ == "__main__":
                                     big_rect = result.x
                                     print(big_rect)
                                     biggest_rect = ((big_rect[0], big_rect[1]), (big_rect[2], big_rect[3]),big_rect[4])
-                                
+
                                 box = cv2.boxPoints(biggest_rect)
                                 box = np.int0(box)
                                 cv2.drawContours(outImage, [box], 0, (0,55,55), 3)
                                 #cv2.imshow("Keypoints", outImage)
                                 #cv2.waitKey(0)
-                                
+
                                 mask_color = mask_color*255
 
                                 center_px = biggest_rect[0]
@@ -756,7 +764,7 @@ if __name__ == "__main__":
                                             # print "im_wp: ", im_wp.shape
                                             # a = raw_input('aa')
                                             name = str(np.amax(depth_map))
-                                            
+
 
                                             ## Save raw image, raw_image with circle and the gradients
                                             cv2.imwrite(save_path + 'image/img_'+str(index)+ '.png',cv2.cvtColor(introduce_noise(im_wp_save, noise_coefs, mask=noise_mask), cv2.COLOR_BGR2RGB))

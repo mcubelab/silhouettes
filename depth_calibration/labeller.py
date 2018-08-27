@@ -37,6 +37,18 @@ class Labeller():
         # print type(input_shape)
         self.__compute_xy_px(input_shape)
 
+    def get_px2_mm_average(self):
+        conv = []
+        for i in range(500):
+            x_px, y_px = np.random.uniform(0, 470, 2)
+            x_px2, y_px2 = np.random.uniform(0, 470, 2)
+            px_dist = self.__distance((x_px, y_px), (x_px2, y_px2))
+            p_mm = self.__pos_px_to_mm((x_px, y_px))
+            p_mm2 = self.__pos_px_to_mm((x_px2, y_px2))
+            mm_dist = self.__distance(p_mm, p_mm2)
+            conv.append(px_dist/mm_dist)
+        return sum(conv)/float(len(conv))
+
     def __compute_xy_px(self, size):
         # We precompute x_pixel, y_pixel matrices (faster later)
         xvalues = np.array(range(size[0]))  # x is from left-top to left-bottom of the image
@@ -237,8 +249,9 @@ class Labeller():
         print np.amin(mask1_p)
         print center_px
         print mask1_p[center_px[1]][center_px[0]]
-#        cv2.imshow("mask1_p", mask1_p)
-#        cv2.waitKey(0)
+
+        # cv2.imshow("mask1_p", mask1_p)
+
         depth_map = poisson_reconstruct(grad_y, grad_x)*mask1_p
         return grad_x, grad_y
 
@@ -250,7 +263,7 @@ class Labeller():
         C_px = (s1 + s2)/2
         C_mm = C_px*self.px_to_mm_average
 
-        print C_px, C_mm, c_mm
+        # print C_px, C_mm, c_mm
         # print s1, s2
         # print angle
         # print center_px
@@ -431,37 +444,31 @@ class Labeller():
 
 if __name__ == "__main__":
     labeller = Labeller()
-    # x, y = labeller.get_gradient_matrices(center_px=(200, 300), radius_px=90, shape='semicone')
-    #
-    # cv2.imshow('gx', x)
-    # cv2.imshow('gy', y)
-    # cv2.waitKey(0)
-    #
-    # depth_map = poisson_reconstruct(y, x)
-
-    def plot(depth_map):
-        fig = plt.figure()
-        ax = fig.gca(projection='3d')
-        X = np.arange(depth_map.shape[0], step=1)
-        Y = np.arange(depth_map.shape[1], step=1)
-        X, Y = np.meshgrid(X, Y)
-        surf = ax.plot_surface(X, Y, np.transpose(depth_map), rstride=1, cstride=1, cmap=cm.BuPu, linewidth=0, antialiased=False)
-        ax.set_zlim(0, 5)
-        ax.view_init(elev=90., azim=0)
-        # ax.axes().set_aspect('equal')
-        # plt.savefig(path + "img_" + str(img_number) + "_semicone_obj_weights.png")
-        plt.show()
-    # depth_map = cv2.resize(depth_map, dsize=(50, 83), interpolation=cv2.INTER_LINEAR)
-    # plot(depth_map)
-    center = (200, 300)
-    radius = 150
-    angle = 180
-    sides_px = 190, 200
-    # x, y = labeller.get_semipyramid_gradient(center, angle, sides_px)
-    x, y, h = labeller.get_semicone_2_gradient(center_px=center, radius_px=radius)
-    # h = poisson_reconstruct(y, x)
-    print "height at center:"
-    print h[center[0]][center[1]]
-    h = cv2.resize(h, (0,0), fx=0.2, fy=0.2)
-    print h
-    plot(h)
+    a = labeller.get_px2_mm_average()
+    print a
+    # def plot(depth_map):
+    #     fig = plt.figure()
+    #     ax = fig.gca(projection='3d')
+    #     X = np.arange(depth_map.shape[0], step=1)
+    #     Y = np.arange(depth_map.shape[1], step=1)
+    #     X, Y = np.meshgrid(X, Y)
+    #     surf = ax.plot_surface(X, Y, np.transpose(depth_map), rstride=1, cstride=1, cmap=cm.BuPu, linewidth=0, antialiased=False)
+    #     ax.set_zlim(0, 5)
+    #     ax.view_init(elev=90., azim=0)
+    #     # ax.axes().set_aspect('equal')
+    #     # plt.savefig(path + "img_" + str(img_number) + "_semicone_obj_weights.png")
+    #     plt.show()
+    # # depth_map = cv2.resize(depth_map, dsize=(50, 83), interpolation=cv2.INTER_LINEAR)
+    # # plot(depth_map)
+    # center = (200, 300)
+    # radius = 150
+    # angle = 180
+    # sides_px = 190, 200
+    # # x, y = labeller.get_semipyramid_gradient(center, angle, sides_px)
+    # x, y, h = labeller.get_semicone_2_gradient(center_px=center, radius_px=radius)
+    # # h = poisson_reconstruct(y, x)
+    # print "height at center:"
+    # print h[center[0]][center[1]]
+    # h = cv2.resize(h, (0,0), fx=0.2, fy=0.2)
+    # print h
+    # plot(h)
