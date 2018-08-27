@@ -167,8 +167,6 @@ class Location():
                 pc.paint_uniform_color(color_list[i])
         open3d.draw_geometries(pc_list)
 
-    def
-
     def get_contact_info(self, directory, num, only_cart=False):
         def get_cart(path):
             cart = np.load(path)
@@ -225,7 +223,7 @@ class Location():
 
         return cart, gs1_list, gs2_list, wsg_list, force_list, gs1_back, gs2_back
 
-    def get_local_pointcloud(self, gs_id, directory='', num=-1, new_cart=None, model_path=model_path, model=model):
+    def get_local_pointcloud(self, gs_id, directory='', num=-1, new_cart=None, model_path=None, model=None):
         # 1. We convert the raw image to height_map data
         #import pdb; pdb.set_trace()
         cart, gs1_list, gs2_list, wsg_list, force_list, gs1_back, gs2_back = self.get_contact_info(directory, num) #TODOM: why so many info?
@@ -299,7 +297,7 @@ class Location():
         print 'Gripper opening: ', gripper_state['Dx']
         print pointcloud[0]
 
-        print "Time used by forloops: " + str(forloops_time_start)
+        print "Time used by forloops: " + str(time.time() - forloops_time_start)
         return pointcloud
 
     def simple_pointcloud_merge(self, pointcloud1, pointcloud2):
@@ -415,7 +413,7 @@ class Location():
         features2 = model.predict(x2).flatten()
         return scipy.spatial.distance.cosine(features, features2)
 
-    def
+    
 if __name__ == "__main__":
     name = 'only_front.npy'
     name = 'big_semicone_l=40_h=20_d=10_rot=0_only10.npy'
@@ -424,8 +422,8 @@ if __name__ == "__main__":
     x_off = 843
     y_off = 374.8
     z_off = 283.65
-    '''
-    touch_list = range(51, 61)
+    
+    touch_list = range(51, 52)
 
     touch_list_aux = copy.deepcopy(touch_list)
     #touch_list = range(3, 7)
@@ -440,14 +438,15 @@ if __name__ == "__main__":
     global_pointcloud = None
     keras.losses.custom_loss = custom_loss
     model = load_model(model_path)
+    
     for i in touch_list:
-
         global_pointcloud = loc.get_global_pointcloud(gs_id=gs_id, directory=directory, touches=[i], global_pointcloud = global_pointcloud, model_path=model_path, model=model)
 
         #loc.visualize_pointcloud(np.array(global_pointcloud))
 
     global_pointcloud = np.array(global_pointcloud)
     
+    '''
     rotation = int(directory[directory.find('rot=')+4])
     aux_global_pointcloud = copy.deepcopy(global_pointcloud)
     aux_global_pointcloud[:,1] = np.cos(rotation)*(global_pointcloud[:,1]-y_off) + np.sin(rotation)*(global_pointcloud[:,2]-z_off) + y_off
@@ -455,15 +454,16 @@ if __name__ == "__main__":
     golab_pointcloud = aux_global_pointcloud
     np.save('/media/mcube/data/shapes_data/pointclouds/' + name, global_pointcloud)
     #loc.visualize_pointcloud(global_pointcloud)
-    '''
+    
     global_pointcloud = np.load('/media/mcube/data/shapes_data/pointclouds/' + name)
+    '''
     #import pdb; pdb.set_trace()
     final_global_pointcloud = copy.deepcopy(global_pointcloud)
     final_global_pointcloud[:,0] -= x_off
     final_global_pointcloud[:,1] -= y_off
     final_global_pointcloud[:,2] -= z_off
 
-    for i in np.linspace(-np.pi, np.pi, 10):
+    for i in np.linspace(-np.pi, np.pi, 3):
         aux_global_pointcloud = copy.deepcopy(global_pointcloud)
 
         aux_global_pointcloud[:,1] = np.cos(i)*global_pointcloud[:,1] + np.sin(i)*global_pointcloud[:,2]

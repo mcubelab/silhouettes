@@ -287,19 +287,12 @@ if __name__ == "__main__":
 
     gs_ids = [2,1]
     #shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_1', 'hollowcone_2', 'semipyramid_2'] #, 'stamp']
-<<<<<<< HEAD
-    shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_2', 'semipyramid_3'] #, 'stamp']
-    pix_limit = [1650, 2200, 6500, 4300, 2000 ]
-
-    date = datetime.datetime.today().strftime('%m-%d-%Y') #''08-21-2018'
-    rotations = [0]
-=======
+    
     shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_3', 'hollowcone_2', 'semipyramid_3'] #, 'stamp']
     pix_limit = [1650, 2200, 6500, 3500, 4300, 2000 ]
     
     dates = ['08-24-2018'] #datetime.datetime.today().strftime('%m-%d-%Y') #'
     rotations = [0]    
->>>>>>> 7cd667187c63adfa183f3016452cb6ba0c0f0434
 
     for gs_id in gs_ids:
         for it_shape, shape in enumerate(shapes):
