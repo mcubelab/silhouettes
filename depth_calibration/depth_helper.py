@@ -33,7 +33,13 @@ import scipy, scipy.fftpack
 import yaml
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
+params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
+
+maskGS1 = np.load(SHAPES_ROOT + 'resources/mask_GS1.npy')
+maskGS2 = np.load(SHAPES_ROOT + 'resources/mask_GS2.npy')
+
 label_mult_factor = 1.0
+
 
 def preprocess_image(img):
     img = img.astype('float32')
@@ -190,32 +196,30 @@ def custom_loss(y_true, y_pred):
 
 def raw_gs_to_depth_map(gs_id=2, test_image=None, ref=None, model_path=None, plot=False, save=False, path='', img_number='',
                             output_type='grad', test_depth = None, model = None, input_type='rgb'):
+
+    preprocessing_time_start = time.time()
     if ref == None:
         ref = test_image
 
-
-    params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
+    # Set image mask and dims
     if gs_id == 1:
-        mask_color = np.load(SHAPES_ROOT + 'resources/mask_GS1.npy')
+        mask_color = maskGS1
         dim = params_dict['input_shape_gs1'][0:2]
     else:
-        mask_color = np.load(SHAPES_ROOT + 'resources/mask_GS2.npy')
+        mask_color = maskGS2
         dim = params_dict['input_shape_gs2'][0:2]
 
+    # Run calibration and preprocess it on the image
     im_bs, im_wp = calibration(test_image,ref)
     mask_color = np.repeat(np.expand_dims(mask_color, axis=2), 3,axis=2)
     mask_color = cv2.resize(mask_color, dsize=(im_wp.shape[1], im_wp.shape[0]), interpolation=cv2.INTER_LINEAR)
-
     test_image = im_wp*mask_color
     test_image = test_image[...,[2,1,0]]
-
-    keras.losses.custom_loss = custom_loss
-    if model is None:
-        model = load_model(model_path)
 
     test_image = cv2.resize(test_image, dsize=(dim[1], dim[0]), interpolation=cv2.INTER_LINEAR)
     if input_type == 'gray':
         test_image = cv2.cvtColor(cv2.cvtColor(test_image, cv2.COLOR_BGR2GRAY), cv2.COLOR_GRAY2RGB)
+
     xvalues = np.array(range(dim[0])).astype('float32')/float(dim[0]) - 0.5 # Normalized
     yvalues = np.array(range(dim[1])).astype('float32')/float(dim[1]) - 0.5 # Normalized
     pos = np.stack((np.meshgrid(yvalues, xvalues)), axis = 2)
@@ -223,11 +227,18 @@ def raw_gs_to_depth_map(gs_id=2, test_image=None, ref=None, model_path=None, plo
     test_image = preprocess_image(test_image)
     test_image = np.concatenate((test_image, pos),axis = 2)
     test_image = np.expand_dims(test_image, axis=0)
-    start = time.time()
+
+    print "Time used by preprocessing: " + str(time.time() - preprocessing_time_start)
+
+    # We start doing model stuff
+    model_time_start = time.time()
+    keras.losses.custom_loss = custom_loss
+    if model is None:
+        model = load_model(model_path)
     if output_type != 'height':
         grad = model.predict(test_image)
-        grad_x = grad[...,0]
-        grad_y = grad[...,1]
+        grad_x = grad[..., 0]
+        grad_y = grad[..., 1]
 
         grad_x = posprocess_label(grad_x)
         grad_y = posprocess_label(grad_y)
@@ -239,15 +250,13 @@ def raw_gs_to_depth_map(gs_id=2, test_image=None, ref=None, model_path=None, plo
         depth_map = model.predict(test_image)[0,:,:,0]
 
     print "Max: " + str(np.amax(depth_map))
-
-    print "Time used:"
-    print time.time() - start
+    print "Time used by model: " + str(time.time() - model_time_start)
 
     if plot or save:
         plot_depth_map(depth_map, show=plot, save=save, path=path, img_number=img_number)
 
     if test_depth is not None:
-        loss = np.sum(np.square(depth_map - test_depth))  #TODO: assumption that this is the custom loss
+        loss = np.sum(np.square(depth_map - test_depth))  # TODO: assumption that this is the custom loss
         return depth_map, loss
     return depth_map
 
@@ -273,10 +282,10 @@ def plot_model_history(filename):
     # filename = "weights/weights.color.xy.hdf5".replace("hdf5", "hist")
     history_list = [dd.io.load(filename+'.h5')]
     for i, model_history in enumerate(history_list):
-        axs[0].plot(range(1,len(model_history['acc'])+1),model_history['acc'])
+        axs[0].plot(range(1, len(model_history['acc'])+1),model_history['acc'])
         # legend_list.append('Train:' + self.program_list[i].name)
         legend_list.append('Train:' + 'color xy')
-        axs[0].plot(range(1,len(model_history['val_acc'])+1),model_history['val_acc'], '--')
+        axs[0].plot(range(1, len(model_history['val_acc'])+1),model_history['val_acc'], '--')
         # legend_list.append('Val:' + self.program_list[i].name)
         legend_list.append('Val:' + 'color xy')
 

@@ -7,13 +7,30 @@ import math, cv2, os, pickle
 import yaml
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
-from keras.applications.resnet50 import ResNet50
-from keras.preprocessing import image
-from keras.applications.resnet50 import preprocess_input, decode_predictions
+import time
+
+try:
+    from keras.models import Sequential
+    from keras.layers import *
+    from keras.models import model_from_json
+    from keras import optimizers
+    from keras.callbacks import ModelCheckpoint
+    import keras.losses
+    from keras.models import load_model
+    from keras.utils import to_categorical
+    from sklearn.model_selection import train_test_split
+    from keras import backend as K
+    from keras.applications.resnet50 import ResNet50
+    from keras.preprocessing import image
+    from keras.applications.resnet50 import preprocess_input, decode_predictions
+except Exception as e:
+    print "Not importing keras"
+
 from world_positioning import pxb_2_wb_3d
 from depth_calibration.depth_helper import *
 import scipy
 import open3d
+import time
 
 def draw_registration_result(source, target, transformation):
     source_temp = copy.deepcopy(source)
@@ -147,6 +164,8 @@ class Location():
                 pc.paint_uniform_color(color_list[i])
         open3d.draw_geometries(pc_list)
 
+    def
+
     def get_contact_info(self, directory, num, only_cart=False):
         def get_cart(path):
             cart = np.load(path)
@@ -203,7 +222,7 @@ class Location():
 
         return cart, gs1_list, gs2_list, wsg_list, force_list, gs1_back, gs2_back
 
-    def get_local_pointcloud(self, gs_id, directory='', num=-1, new_cart=None):
+    def get_local_pointcloud(self, gs_id, directory='', num=-1, new_cart=None, model_path=model_path, model=model):
         # 1. We convert the raw image to height_map data
         #import pdb; pdb.set_trace()
         cart, gs1_list, gs2_list, wsg_list, force_list, gs1_back, gs2_back = self.get_contact_info(directory, num) #TODOM: why so many info?
@@ -231,13 +250,13 @@ class Location():
             #     test_image[:,:,it] = test_image[:,:,it]/np.mean(test_image[:,:,it])*np.mean(test_image2[:,:,it])
             #     print np.mean(test_image[:,:,it])
 
-            weights_file = '/home/mcube/weights_server_last/weights_type=all_08-23-2018_num=2000_gs_id=2_in=rgb_out=height_epoch=100_NN=basic_aug=5.hdf5'
+            weights_file = model_path
             if 'grad' in weights_file: output_type = 'grad'
             elif 'angle' in weights_file: output_type = 'angle'
             else: output_type = 'height'
             if 'gray' in weights_file: input_type = 'gray'
             else: input_type = 'rgb'
-            height_map = raw_gs_to_depth_map(test_image=test_image, ref=None, model_path= weights_file, plot=False, save=False, path='', output_type=output_type, input_type=input_type)
+            height_map = raw_gs_to_depth_map(test_image=test_image, ref=None, model_path=weights_file, plot=False, save=False, path='', output_type=output_type, model=model, input_type=input_type)
 
             # cv2.imshow('hm', height_map)
             # cv2.waitKey(0)
@@ -251,6 +270,8 @@ class Location():
             # height_map = cv2.resize(height_map, dsize=(size[1], size[0]), interpolation=cv2.INTER_LINEAR) #TODO: why?
             # cv2.imshow('a', height_map)
             # cv2.waitKey()
+
+        forloops_time_start = time.time()
 
         # 2. We convert height_map data into world position
         gripper_state = {}
@@ -274,6 +295,8 @@ class Location():
         print 'Mean pointcloud: ', np.mean(np.array(pointcloud), axis = 0)
         print 'Gripper opening: ', gripper_state['Dx']
         print pointcloud[0]
+
+        print "Time used by forloops: " + str(forloops_time_start)
         return pointcloud
 
     def simple_pointcloud_merge(self, pointcloud1, pointcloud2):
@@ -355,12 +378,12 @@ class Location():
             new_pc.append(new_elem)
         return new_pc
 
-    def get_global_pointcloud(self, gs_id, directory, touches, global_pointcloud):
+    def get_global_pointcloud(self, gs_id, directory, touches, global_pointcloud, model_path=None, model=None):
         for i in touches:
             exp = str(i)
             print "Processing img " + exp + "..."
             try:
-                local_pointcloud = loc.get_local_pointcloud(gs_id=gs_id, directory=directory, num=i)
+                local_pointcloud = loc.get_local_pointcloud(gs_id=gs_id, directory=directory, num=i, model_path=model_path, model=model)
 
                 if global_pointcloud is None:
                     global_pointcloud = local_pointcloud
@@ -389,6 +412,7 @@ class Location():
         features2 = model.predict(x2).flatten()
         return scipy.spatial.distance.cosine(features, features2)
 
+    def
 if __name__ == "__main__":
     name = 'only_front.npy'
     name = 'big_semicone_l=40_h=20_d=10_rot=0.npy'
@@ -404,10 +428,15 @@ if __name__ == "__main__":
     directory = '/media/mcube/data/shapes_data/object_exploration/big_semicone_l=40_h=20_d=10_rot=0/'
     gs_id = 2
     #touch_list = [0,1,4,5,8,9]  #7,8, 12,13,17,18]0,1,2,3,4,
+
+    model_path = '/home/mcube/weights_server_last/weights_type=all_08-23-2018_num=2000_gs_id=2_in=rgb_out=height_epoch=100_NN=basic_aug=5.hdf5'
+
     global_pointcloud = None
+    keras.losses.custom_loss = custom_loss
+    model = load_model(model_path)
     for i in touch_list:
 
-        global_pointcloud = loc.get_global_pointcloud(gs_id=gs_id, directory=directory, touches=[i], global_pointcloud = global_pointcloud)
+        global_pointcloud = loc.get_global_pointcloud(gs_id=gs_id, directory=directory, touches=[i], global_pointcloud = global_pointcloud, model_path=model_path, model=model)
 
         #loc.visualize_pointcloud(np.array(global_pointcloud))
 
