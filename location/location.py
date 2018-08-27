@@ -138,7 +138,10 @@ class Location():
         pcd = self.check_pointcloud_type(pointcloud)
         if color is not None:
             pcd.paint_uniform_color(color)
-        open3d.draw_geometries([pcd])
+        
+        mesh = open3d.read_triangle_mesh("stitching_big_semicone.ply")
+        mesh.compute_vertex_normals()
+        open3d.draw_geometries([pcd, mesh])
 
     def visualize2_pointclouds(self, pc_list, color_list):
         for i, pc in enumerate(pc_list):
@@ -389,11 +392,14 @@ class Location():
 
 if __name__ == "__main__":
     name = 'only_front.npy'
-    name = 'big_semicone_l=40_h=20_d=10_rot=0.npy'
+    name = 'big_semicone_l=40_h=20_d=10_rot=0_only10.npy'
     loc = Location()
+    
+    x_off = 843
+    y_off = 374.8
+    z_off = 283.65
     '''
-
-    touch_list = range(0, 61)
+    touch_list = range(51, 61)
 
     touch_list_aux = copy.deepcopy(touch_list)
     #touch_list = range(3, 7)
@@ -410,18 +416,36 @@ if __name__ == "__main__":
         #loc.visualize_pointcloud(np.array(global_pointcloud))
 
     global_pointcloud = np.array(global_pointcloud)
+    
+    rotation = int(directory[directory.find('rot=')+4])
+    aux_global_pointcloud = copy.deepcopy(global_pointcloud)
+    aux_global_pointcloud[:,1] = np.cos(rotation)*(global_pointcloud[:,1]-y_off) + np.sin(rotation)*(global_pointcloud[:,2]-z_off) + y_off
+    aux_global_pointcloud[:,2] = np.cos(rotation)*(global_pointcloud[:,2]-z_off) - np.sin(rotation)*(global_pointcloud[:,1]-y_off) + z_off
+    golab_pointcloud = aux_global_pointcloud
     np.save('/media/mcube/data/shapes_data/pointclouds/' + name, global_pointcloud)
-    loc.visualize_pointcloud(global_pointcloud)
+    #loc.visualize_pointcloud(global_pointcloud)
     '''
     global_pointcloud = np.load('/media/mcube/data/shapes_data/pointclouds/' + name)
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     final_global_pointcloud = copy.deepcopy(global_pointcloud)
-    for i in np.linspace(-np.pi, np.pi, 5):
+    final_global_pointcloud[:,0] -= x_off
+    final_global_pointcloud[:,1] -= y_off
+    final_global_pointcloud[:,2] -= z_off
+
+    for i in np.linspace(-np.pi, np.pi, 10):
         aux_global_pointcloud = copy.deepcopy(global_pointcloud)
-        aux_global_pointcloud[:,1] = np.cos(i)*global_pointcloud[:,1] + np.sin(i)*global_pointcloud[:,2] 
-        aux_global_pointcloud[:,2] = np.cos(i)*global_pointcloud[:,2] - np.sin(i)*global_pointcloud[:,1] 
+        aux_global_pointcloud[:,1] = np.cos(i)*(global_pointcloud[:,1]-y_off) + np.sin(i)*(global_pointcloud[:,2]-z_off) #+ y_off
+        aux_global_pointcloud[:,2] = np.cos(i)*(global_pointcloud[:,2]-z_off) - np.sin(i)*(global_pointcloud[:,1]-y_off) #+ z_off
+        aux_global_pointcloud[:,0] -= x_off
         final_global_pointcloud = np.concatenate([final_global_pointcloud, aux_global_pointcloud], axis=0)
-    loc.visualize_pointcloud(final_global_pointcloud)
+    afinal_global_pointcloud = copy.deepcopy(final_global_pointcloud)
+    afinal_global_pointcloud[:,0] = final_global_pointcloud[:,2]
+    afinal_global_pointcloud[:,1] = final_global_pointcloud[:,1]
+    afinal_global_pointcloud[:,2] = -final_global_pointcloud[:,0]
+    loc.visualize_pointcloud(afinal_global_pointcloud)
+    
+    
+    
     # missing = loc.get_local_pointcloud(
     #     gs_id=2,
     #     directory='/media/mcube/data/shapes_data/pos_calib/bar_front/',

@@ -5,7 +5,7 @@ import copy
 if __name__ == "__main__":
 
   print("Testing mesh in open3d ...")
-  mesh = read_triangle_mesh("sync2.ply")
+  mesh = read_triangle_mesh("stitching_big_semicone.ply")
   print(mesh)
   print(np.asarray(mesh.vertices))
   print(np.asarray(mesh.triangles))
