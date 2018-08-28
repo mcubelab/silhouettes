@@ -39,6 +39,7 @@ def draw_registration_result(source, target, transformation):
     target_temp.paint_uniform_color([0, 0.651, 0.929])
     source_temp.transform(transformation)
     open3d.draw_geometries([source_temp, target_temp])
+    
 
 
 class Location():
@@ -151,14 +152,23 @@ class Location():
             pointcloud = pcd
         return pointcloud
 
-    def visualize_pointcloud(self, pointcloud, color = None):
+    def visualize_pointcloud(self, pointcloud, color = None, shape = None):
         pcd = self.check_pointcloud_type(pointcloud)
         if color is not None:
             pcd.paint_uniform_color(color)
-        
-        mesh = open3d.read_triangle_mesh("stitching_big_semicone.ply")
-        mesh.compute_vertex_normals()
-        open3d.draw_geometries([pcd, mesh])
+        mesh = None
+        if shape is not None:
+            if 'semicone' in shape:
+                mesh = open3d.read_triangle_mesh("stitching_big_semicone.ply")
+            elif 'line' in shape:
+                mesh = open3d.read_triangle_mesh("big_line.ply")
+            elif 'cilinder' in shape:
+                mesh = open3d.read_triangle_mesh("cil.ply")
+            if mesh is not None:
+                mesh.compute_vertex_normals()
+                #import pdb; pdb.set_trace()
+                open3d.draw_geometries([pcd, mesh])
+        open3d.draw_geometries([pcd])
 
     def visualize2_pointclouds(self, pc_list, color_list):
         for i, pc in enumerate(pc_list):
@@ -199,10 +209,11 @@ class Location():
             gs2_back = cv2.imread(directory + '/air/GS2.png')
         except:
             print 'GS2 backgorund not found'
-
+        
         directory += '/p_' + str(num)
         file_list = os.listdir(directory)
 
+        
         cart = get_cart(directory + '/cart.npy')
         gs1_list = []
         gs2_list = []
@@ -213,7 +224,7 @@ class Location():
             if 'GS1' in elem:
                 gs1_list.append(cv2.imread(path))
             elif 'GS2' in elem:
-                gs2_list.append(cv2.imread(path))
+                gs2_list.append(cv2.imread(path)) #.replace(str(num),'5')))
             elif 'wsg' in elem:
                 wsg_list.append(load_obj(path))
 
@@ -223,7 +234,7 @@ class Location():
 
         return cart, gs1_list, gs2_list, wsg_list, force_list, gs1_back, gs2_back
 
-    def get_local_pointcloud(self, gs_id, directory='', num=-1, new_cart=None, model_path=None, model=None):
+    def get_local_pointcloud(self, gs_id, directory='', num=-1, new_cart=None, model_path=None, model=None, threshold=0.1):
         # 1. We convert the raw image to height_map data
         #import pdb; pdb.set_trace()
         cart, gs1_list, gs2_list, wsg_list, force_list, gs1_back, gs2_back = self.get_contact_info(directory, num) #TODOM: why so many info?
@@ -268,7 +279,7 @@ class Location():
             height_map = (height_map > 0.01)*height_map  # NOTE: We are multiplying the height by 10 for visualization porpuses!!!!!
             height_map = (height_map > a)*height_map
             #height_map = height_map+0.05
-            # height_map = cv2.resize(height_map, dsize=(size[1], size[0]), interpolation=cv2.INTER_LINEAR) #TODO: why?
+            #height_map = cv2.resize(height_map, dsize=(size[1], size[0]), interpolation=cv2.INTER_LINEAR) #TODO: why? TODO WE NEED THIS?
             # cv2.imshow('a', height_map)
             # cv2.waitKey()
 
@@ -276,15 +287,17 @@ class Location():
 
         # 2. We convert height_map data into world position
         gripper_state = {}
-        gripper_state['pos'] = cart[0:3]
+        gripper_state['pos'] =  cart[0:3]
+        print cart[0:3]
         gripper_state['quaternion'] = cart[-4:]
         gripper_state['Dx'] = wsg_list[0]['width']/2.0
         gripper_state['Dz'] = 139.8 + 72.5 + 160  # Base + wsg + finger
-
+        print gripper_state
         pointcloud = []
         for i in range(height_map.shape[0]):
             for j in range(height_map.shape[1]):
-                if(height_map[i][j] >= 0.10): # TODO: HACK MARIA
+                #print 'shape: ', height_map.shape[1]
+                if(height_map[i][j] >= threshold) : # TODO: HACK MARIA
                     world_point = pxb_2_wb_3d(
                         point_3d=(i, j, height_map[i][j]),
                         gs_id=gs_id,
@@ -336,7 +349,9 @@ class Location():
         print("")
         if with_plot:
             draw_registration_result(source, target, reg_p2p.transformation)
-
+        source.transform(reg_p2p.transformation)
+        return np.concatenate([np.array(source.points), np.array(target.points)], axis=0)
+        
     def stitch_pointclouds(self, fixed, moved):
         print 'stitching'
         fixed = np.asarray(fixed)
@@ -379,12 +394,12 @@ class Location():
             new_pc.append(new_elem)
         return new_pc
 
-    def get_global_pointcloud(self, gs_id, directory, touches, global_pointcloud, model_path=None, model=None):
+    def get_global_pointcloud(self, gs_id, directory, touches, global_pointcloud, model_path=None, model=None, threshold = 0.1):
         for i in touches:
             exp = str(i)
             print "Processing img " + exp + "..."
             try:
-                local_pointcloud = loc.get_local_pointcloud(gs_id=gs_id, directory=directory, num=i, model_path=model_path, model=model)
+                local_pointcloud = loc.get_local_pointcloud(gs_id=gs_id, directory=directory, num=i, model_path=model_path, model=model, threshold = threshold)
 
                 if global_pointcloud is None:
                     global_pointcloud = local_pointcloud
@@ -415,128 +430,135 @@ class Location():
 
     
 if __name__ == "__main__":
-    name = 'only_front.npy'
-    name = 'big_semicone_l=40_h=20_d=10_rot=0_only10.npy'
+    
+    
+    
+    for i in range(3,4):
+        name_id = 'flashlight_l=70_h=20_dx=10_dy=10_rot={}_debug'.format(i) #'big_semicone_l=40_h=20_d=5_rot=0_more_empty' #'cilinder_thick_l=50_h=20_dx=10_dy=10_rot=0_test' #  #'cilinder_l=50_h=20_dx=5_dy=5_rot=0_test' # 'big_semicone_l=40_h=20_d=5_rot=0_empty'#
+        name_id = 'flashlight_l=100_h=20_dx=2_dy=10_rot={}_debug'.format(i) #'big_semicone_l=40_h=20_d=5_rot=0_more_empty' #'cilinder_thick_l=50_h=20_dx=10_dy=10_rot=0_test' #  #'cilinder_l=50_h=20_dx=5_dy=5_rot=0_test' # 'big_semicone_l=40_h=20_d=5_rot=0_empty'#
+        name = name_id +'.npy'
+        loc = Location()
+        
+        x_off = 836
+        
+        y_off = 376.2#376.8 #371.13 
+        
+        z_off = 286.5 #291#293.65 #284.22
+        if 'semicone' in name: 
+            x_off = 833.5
+            y_off = 376.4#376.8 #371.13 
+            z_off = 286 #291#293.65 #284.22
+        #z_off = 284.22
+        
+        
+        touch_list = range(0,30)#range(16, 32)#range(24,28) + range(48,52) #range(240) #[0,12,13,14,24,25,26] #range(12,2)#[5,6]#range(0,20)
+
+        touch_list_aux = copy.deepcopy(touch_list)
+        #touch_list = range(3, 7)
+        #touch_list += range(7, 13)
+        # touch_list = [0, 5, 23]
+        directory = '/media/mcube/data/shapes_data/object_exploration/' + name_id + '/'
+        gs_id = 2
+        #touch_list = [0,1,4,5,8,9]  #7,8, 12,13,17,18]0,1,2,3,4,
+
+        model_path = '/home/mcube/weights_server_last/weights_type=all_08-23-2018_num=2000_gs_id=2_in=rgb_out=height_epoch=100_NN=basic_aug=5.hdf5'
+
+        global_pointcloud = None
+        keras.losses.custom_loss = custom_loss
+        model = load_model(model_path)
+        
+        for i in touch_list:
+            global_pointcloud = loc.get_global_pointcloud(gs_id=gs_id, directory=directory, touches=[i], 
+                global_pointcloud = global_pointcloud, model_path=model_path, model=model, threshold = 0.05)
+
+            #loc.visualize_pointcloud(np.array(global_pointcloud))
+
+        global_pointcloud = np.array(global_pointcloud)
+        #loc.old_visualize_pointcloud(global_pointcloud)
+        #loc.visualize_pointcloud(global_pointcloud)
+        #
+        rotation = int(directory[directory.find('rot=')+4])
+        aux_global_pointcloud = copy.deepcopy(global_pointcloud)
+        aux_global_pointcloud[:,1] = np.cos(rotation)*(global_pointcloud[:,1]-y_off) + np.sin(rotation)*(global_pointcloud[:,2]-z_off) + y_off
+        aux_global_pointcloud[:,2] = np.cos(rotation)*(global_pointcloud[:,2]-z_off) - np.sin(rotation)*(global_pointcloud[:,1]-y_off) + z_off
+        golab_pointcloud = aux_global_pointcloud
+        np.save('/media/mcube/data/shapes_data/pointclouds/' + name, global_pointcloud)
+    
+        loc.visualize_pointcloud(global_pointcloud)
+        #
+        
+    #'''
+    name_id = 'flashlight_l=100_h=20_dx=2_dy=10_rot=0_debug' #'big_semicone_l=40_h=20_d=5_rot=0_more_empty' #'cilinder_thick_l=50_h=20_dx=10_dy=10_rot=0_test' #  #'cilinder_l=50_h=20_dx=5_dy=5_rot=0_test' # 'big_semicone_l=40_h=20_d=5_rot=0_empty'#
+    #name_id = 'cilinder_l=50_h=20_dx=10_dy=10_rot=0_debug'.format(0)
+    name = name_id +'.npy'
     loc = Location()
     
-    x_off = 843
-    y_off = 374.8
-    z_off = 283.65
+    x_off = 837.5
     
-    touch_list = range(51, 52)
-
-    touch_list_aux = copy.deepcopy(touch_list)
-    #touch_list = range(3, 7)
-    #touch_list += range(7, 13)
-    # touch_list = [0, 5, 23]
-    directory = '/media/mcube/data/shapes_data/object_exploration/big_semicone_l=40_h=20_d=10_rot=0/'
-    gs_id = 2
-    #touch_list = [0,1,4,5,8,9]  #7,8, 12,13,17,18]0,1,2,3,4,
-
-    model_path = '/home/mcube/weights_server_last/weights_type=all_08-23-2018_num=2000_gs_id=2_in=rgb_out=height_epoch=100_NN=basic_aug=5.hdf5'
-
-    global_pointcloud = None
-    keras.losses.custom_loss = custom_loss
-    model = load_model(model_path)
+    y_off = 376#376.2#376.8 #371.13 
     
-    for i in touch_list:
-        global_pointcloud = loc.get_global_pointcloud(gs_id=gs_id, directory=directory, touches=[i], global_pointcloud = global_pointcloud, model_path=model_path, model=model)
-
-        #loc.visualize_pointcloud(np.array(global_pointcloud))
-
-    global_pointcloud = np.array(global_pointcloud)
+    z_off = 299.5#286.5 #291#293.65 #284.22
+    if 'semicone' in name: 
+        x_off = 833.5
+        y_off = 375.5#376.8 #371.13 
+        z_off = 299.5 #291#293.65 #284.22
+    #z_off = 284.22
+    if 'flash' in name: 
+        x_off = 833.5
+        y_off = 370#376.8 #371.13 
+        z_off = 295 #291#293.65 #284.22
+    #z_off = 284.22
     
-    '''
-    rotation = int(directory[directory.find('rot=')+4])
-    aux_global_pointcloud = copy.deepcopy(global_pointcloud)
-    aux_global_pointcloud[:,1] = np.cos(rotation)*(global_pointcloud[:,1]-y_off) + np.sin(rotation)*(global_pointcloud[:,2]-z_off) + y_off
-    aux_global_pointcloud[:,2] = np.cos(rotation)*(global_pointcloud[:,2]-z_off) - np.sin(rotation)*(global_pointcloud[:,1]-y_off) + z_off
-    golab_pointcloud = aux_global_pointcloud
-    np.save('/media/mcube/data/shapes_data/pointclouds/' + name, global_pointcloud)
-    #loc.visualize_pointcloud(global_pointcloud)
-    
-    global_pointcloud = np.load('/media/mcube/data/shapes_data/pointclouds/' + name)
-    '''
+    rotations = range(4)
+    for i in rotations:
+        if i == 0:
+            global_pointcloud = np.load('/media/mcube/data/shapes_data/pointclouds/' + name)
+        else:
+            global_pointcloud_2 = np.load('/media/mcube/data/shapes_data/pointclouds/' + name.replace('rot=0', 'rot={}'.format(i)))
+            rotation = i*np.pi/8
+            aux_global_pointcloud = copy.deepcopy(global_pointcloud_2)
+            aux_global_pointcloud[:,1] = np.cos(rotation)*(global_pointcloud_2[:,1]-y_off) + np.sin(rotation)*(global_pointcloud_2[:,2]-z_off) + y_off
+            aux_global_pointcloud[:,2] = np.cos(rotation)*(global_pointcloud_2[:,2]-z_off) - np.sin(rotation)*(global_pointcloud_2[:,1]-y_off) + z_off
+            #global_pointcloud = loc.stitch_pointclouds_open3D(global_pointcloud, aux_global_pointcloud, threshold = 10, max_iteration = 2000, with_plot = True) 
+            global_pointcloud = np.concatenate([global_pointcloud, aux_global_pointcloud], axis=0)
+    #loc.visualize_pointcloud(global_pointcloud, shape = name_id)
     #import pdb; pdb.set_trace()
+    
+    #np.save('/media/mcube/data/shapes_data/pointclouds/' + name + '_rotated', global_pointcloud)
+    
     final_global_pointcloud = copy.deepcopy(global_pointcloud)
     final_global_pointcloud[:,0] -= x_off
     final_global_pointcloud[:,1] -= y_off
     final_global_pointcloud[:,2] -= z_off
-
-    for i in np.linspace(-np.pi, np.pi, 3):
+    
+    for i in np.linspace(-np.pi, np.pi, 0):
         aux_global_pointcloud = copy.deepcopy(global_pointcloud)
-
-        aux_global_pointcloud[:,1] = np.cos(i)*global_pointcloud[:,1] + np.sin(i)*global_pointcloud[:,2]
-        aux_global_pointcloud[:,2] = np.cos(i)*global_pointcloud[:,2] - np.sin(i)*global_pointcloud[:,1]
-
+        aux_global_pointcloud[:,1] = np.cos(i)*(global_pointcloud[:,1]-y_off) + np.sin(i)*(global_pointcloud[:,2]-z_off) # - y_off
+        aux_global_pointcloud[:,2] = np.cos(i)*(global_pointcloud[:,2]-z_off) - np.sin(i)*(global_pointcloud[:,1]-y_off) #- z_off
+        aux_global_pointcloud[:,0] -= x_off
         final_global_pointcloud = np.concatenate([final_global_pointcloud, aux_global_pointcloud], axis=0)
+    
+    #import pdb; pdb.set_trace()
     afinal_global_pointcloud = copy.deepcopy(final_global_pointcloud)
-    afinal_global_pointcloud[:,0] = final_global_pointcloud[:,2]
-    afinal_global_pointcloud[:,1] = final_global_pointcloud[:,1]
-    afinal_global_pointcloud[:,2] = -final_global_pointcloud[:,0]
-    loc.visualize_pointcloud(afinal_global_pointcloud)
+    if 'line' in name_id:
+        afinal_global_pointcloud[:,0] = final_global_pointcloud[:,1]
+        afinal_global_pointcloud[:,1] = -final_global_pointcloud[:,0]
+        afinal_global_pointcloud[:,2] = final_global_pointcloud[:,2]
+    else:
+        afinal_global_pointcloud[:,0] = final_global_pointcloud[:,2]
+        afinal_global_pointcloud[:,1] = final_global_pointcloud[:,1]
+        afinal_global_pointcloud[:,2] = -final_global_pointcloud[:,0] # +np.mean(final_global_pointcloud[:,0])-33.99#-final_global_pointcloud[:,0]
+    print np.mean(afinal_global_pointcloud, axis=0)
+    loc.visualize_pointcloud(afinal_global_pointcloud, shape = name_id)
+    #loc.visualize_pointcloud(afinal_global_pointcloud)
     
     
+    '''
+    global_pointcloud_0 = np.load('/media/mcube/data/shapes_data/pointclouds/flashlight_l=70_h=20_dx=10_dy=10_rot=0_debug_angle_0_rotated.npy')
+    global_pointcloud_1 = np.load('/media/mcube/data/shapes_data/pointclouds/flashlight_l=70_h=20_dx=10_dy=10_rot=0_debug_angle_20_rotated.npy')
+    global_pointcloud_2 = np.load('/media/mcube/data/shapes_data/pointclouds/flashlight_l=70_h=20_dx=10_dy=10_rot=0_debug_angle_-20_rotated.npy')
     
-    # missing = loc.get_local_pointcloud(
-    #     gs_id=2,
-    #     directory='/media/mcube/data/shapes_data/pos_calib/bar_front/',
-    #     num=16
-    # )
-    # loc.visualize_pointcloud(missing)
-    # from skimage.measure import compare_ssim as ssim
-    # imageA = cv2.imread('/media/mcube/data/shapes_data/pos_calib/full_bar_v2_front/p_20/GS2_0.png')
-    # #touch_list = touch_list_aux
-    # touch_list = range(16, 21)
-    # touch_list += range(21, 50)
-    # for num in touch_list[1:10]:
-    #     directory = '/media/mcube/data/shapes_data/pos_calib/bar_front/'
-    #     cart = loc.get_contact_info(directory, num, only_cart=True)
-    #     print cart
-    #     missing = loc.get_local_pointcloud(
-    #         gs_id=2,
-    #         directory=directory,
-    #         num=6,
-    #         new_cart=cart
-    #     )
-        #np.save('/media/mcube/data/shapes_data/pointclouds/' + 'pcd_6_front_bar.npy', global_pointcloud)
-        # missing = np.array(missing)
-        # loc.visualize_pointcloud(global_pointcloud)
-        #
-        # #new_pointcloud = loc.stitch_pointclouds(global_pointcloud, missing)
-        # trans_init = np.eye(4)
-        # trans_init[0,-1] = 105
-        # trans_init[1,-1] = 0
-        # new_pointcloud = loc.stitch_pointclouds_open3D(global_pointcloud, missing, trans_init = trans_init, threshold = 0.5)
-        # print 'num: ', num
-        # imageB = cv2.imread('/media/mcube/data/shapes_data/pos_calib/full_bar_front/p_{}/GS2_0.png'.format(num))
-        # print 'ssim: ', ssim(imageA, imageB, multichannel=True)
-        # print 'cosine distance', loc.get_distance_images(imageA, imageB)
-        # imageB = cv2.imread('/media/mcube/data/shapes_data/pos_calib/full_bar_v2_front/p_{}/GS2_0.png'.format(num))
-        # #print 'ssim: ', ssim(imageA, imageB, multichannel=True)
-        # print 'cosine distance v2 ', loc.get_distance_images(imageA, imageB)
-        # imageB = cv2.imread('/media/mcube/data/shapes_data/pos_calib/full_bar_f=20_v1_front/p_{}/GS2_0.png'.format(num))
-        # #print 'ssim: ', ssim(imageA, imageB, multichannel=True)
-        # print 'cosine distance f=20 ', loc.get_distance_images(imageA, imageB)
-        #
-        # loc.visualize2_pointclouds([new_pointcloud, missing])
-
-    # touch_list = range(1, 17)
-    # global_pointcloud = loc.get_global_pointcloud(
-    #     gs_id=2,
-    #     directory='/media/mcube/data/shapes_data/pos_calib/bar_side/',
-    #     touches=touch_list,
-    #     global_pointcloud = global_pointcloud
-    # )
-    #
-    # touch_list = range(1, 50)
-    # global_pointcloud = loc.get_global_pointcloud(
-    #     gs_id=2,
-    #     directory='/media/mcube/data/shapes_data/pos_calib/bar_back/',
-    #     touches=touch_list,
-    #     global_pointcloud = global_pointcloud
-    # )
-
-    #np.save('/media/mcube/data/shapes_data/pointclouds/' + name, global_pointcloud)
-    #loc.visualize2_pointclouds([global_pointcloud, missing])
-#'''
+    global_pointcloud = loc.stitch_pointclouds_open3D(global_pointcloud_0, global_pointcloud_1, threshold = 10, max_iteration = 2000, with_plot = True) 
+    global_pointcloud = loc.stitch_pointclouds_open3D(global_pointcloud, global_pointcloud_2, threshold = 10, max_iteration = 2000, with_plot = True) 
+    loc.visualize_pointcloud(global_pointcloud, shape = name_id)
+   # '''
