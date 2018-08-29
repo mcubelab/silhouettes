@@ -242,6 +242,7 @@ class Location():
         pcd = self.check_pointcloud_type(pointcloud)
         if color is not None:
             pcd.paint_uniform_color(color)
+
         mesh = None
         if shape is not None:
             if 'semicone' in shape:
@@ -514,41 +515,34 @@ class Location():
         features2 = model.predict(x2).flatten()
         return scipy.spatial.distance.cosine(features, features2)
 
-    
+
 if __name__ == "__main__":
-    
-    
-    
-    for i in range(0,1):
-        name_id = 'cilinder_thick_l=50_h=20_dx=10_dy=10_rot={}_test'.format(0)
-        name = name_id +'.npy'
-        loc = Location()
-        
-        x_off = 836
-        y_off = 376.2#376.8 #371.13 
-        z_off = 286.5 #291#293.65 #284.22
-        
-        if 'semicone' in name: 
-            x_off = 833.5
-            y_off = 376.4#376.8 #371.13 
-            z_off = 286 #291#293.65 #284.22
-        #z_off = 284.22
-        
-        touch_list = range(6) + range(7,20) #[0,1,2,7,8,9]
-        directory = '/media/mcube/data/shapes_data/object_exploration/' + name_id + '/'
-        gs_id = 2
 
-        model_path = '/home/mcube/weights_server_last/weights_type=all_08-23-2018_num=2000_gs_id=2_in=rgb_out=height_epoch=100_NN=basic_aug=5.hdf5'
+    name_id = 'flashlight_l=70_h=20_dx=10_dy=10_rot=0_debug'
 
-        global_pointcloud = None
-        keras.losses.custom_loss = custom_loss
-        model = load_model(model_path)
-        
-#         for i in touch_list:
-        global_pointcloud = loc.get_global_pointcloud(gs_id=gs_id, directory=directory, touches=touch_list, 
+    loc = Location()
+
+    x_off = 843
+    y_off = 374.8
+    z_off = 283.65
+
+    
+    directory = '/media/mcube/data/shapes_data/object_exploration/' + name_id + '/'
+    gs_id = 2
+    
+
+    model_path = '/home/mcube/weights_server_last/weights_type=all_08-23-2018_num=2000_gs_id=2_in=rgb_out=height_epoch=100_NN=basic_aug=5.hdf5'
+
+    global_pointcloud = None
+    keras.losses.custom_loss = custom_loss
+    model = load_model(model_path)
+
+    touch_list = range(0, 13)
+    #touch_list = [0,1,4,5,8,9]  #7,8, 12,13,17,18]0,1,2,3,4,
+    global_pointcloud = loc.get_global_pointcloud(gs_id=gs_id, directory=directory, touches=touch_list, 
                 global_pointcloud = global_pointcloud, model_path=model_path, model=model, threshold = 0.05)
     
-        global_pointcloud_1 = np.array(copy.deepcopy(global_pointcloud))
+    global_pointcloud_1 = np.array(copy.deepcopy(global_pointcloud))
         
         
 #         touch_list = range(13,25)
@@ -565,8 +559,8 @@ if __name__ == "__main__":
         
 #         loc.old_visualize3_pointclouds([list(global_pointcloud_1), list(global_pointcloud_2), list(global_pointcloud_3)])
         
-        global_pointcloud_1[:,0] -= x_off
-        loc.old_visualize_pointcloud(global_pointcloud_1)
+
+    loc.visualize_pointcloud(global_pointcloud_1)
         
         
         
@@ -623,6 +617,7 @@ if __name__ == "__main__":
             #global_pointcloud = loc.stitch_pointclouds_open3D(global_pointcloud, aux_global_pointcloud, threshold = 10, max_iteration = 2000, with_plot = True) 
             global_pointcloud = np.concatenate([global_pointcloud, aux_global_pointcloud], axis=0)
     #loc.visualize_pointcloud(global_pointcloud, shape = name_id)
+
     #import pdb; pdb.set_trace()
     
     #np.save('/media/mcube/data/shapes_data/pointclouds/' + name + '_rotated', global_pointcloud)
@@ -665,3 +660,68 @@ if __name__ == "__main__":
     global_pointcloud = loc.stitch_pointclouds_open3D(global_pointcloud, global_pointcloud_2, threshold = 10, max_iteration = 2000, with_plot = True) 
     loc.visualize_pointcloud(global_pointcloud, shape = name_id)
    # '''
+
+
+
+    # missing = loc.get_local_pointcloud(
+    #     gs_id=2,
+    #     directory='/media/mcube/data/shapes_data/pos_calib/bar_front/',
+    #     num=16
+    # )
+    # loc.visualize_pointcloud(missing)
+    # from skimage.measure import compare_ssim as ssim
+    # imageA = cv2.imread('/media/mcube/data/shapes_data/pos_calib/full_bar_v2_front/p_20/GS2_0.png')
+    # #touch_list = touch_list_aux
+    # touch_list = range(16, 21)
+    # touch_list += range(21, 50)
+    # for num in touch_list[1:10]:
+    #     directory = '/media/mcube/data/shapes_data/pos_calib/bar_front/'
+    #     cart = loc.get_contact_info(directory, num, only_cart=True)
+    #     print cart
+    #     missing = loc.get_local_pointcloud(
+    #         gs_id=2,
+    #         directory=directory,
+    #         num=6,
+    #         new_cart=cart
+    #     )
+        #np.save('/media/mcube/data/shapes_data/pointclouds/' + 'pcd_6_front_bar.npy', global_pointcloud)
+        # missing = np.array(missing)
+        # loc.visualize_pointcloud(global_pointcloud)
+        #
+        # #new_pointcloud = loc.stitch_pointclouds(global_pointcloud, missing)
+        # trans_init = np.eye(4)
+        # trans_init[0,-1] = 105
+        # trans_init[1,-1] = 0
+        # new_pointcloud = loc.stitch_pointclouds_open3D(global_pointcloud, missing, trans_init = trans_init, threshold = 0.5)
+        # print 'num: ', num
+        # imageB = cv2.imread('/media/mcube/data/shapes_data/pos_calib/full_bar_front/p_{}/GS2_0.png'.format(num))
+        # print 'ssim: ', ssim(imageA, imageB, multichannel=True)
+        # print 'cosine distance', loc.get_distance_images(imageA, imageB)
+        # imageB = cv2.imread('/media/mcube/data/shapes_data/pos_calib/full_bar_v2_front/p_{}/GS2_0.png'.format(num))
+        # #print 'ssim: ', ssim(imageA, imageB, multichannel=True)
+        # print 'cosine distance v2 ', loc.get_distance_images(imageA, imageB)
+        # imageB = cv2.imread('/media/mcube/data/shapes_data/pos_calib/full_bar_f=20_v1_front/p_{}/GS2_0.png'.format(num))
+        # #print 'ssim: ', ssim(imageA, imageB, multichannel=True)
+        # print 'cosine distance f=20 ', loc.get_distance_images(imageA, imageB)
+        #
+        # loc.visualize2_pointclouds([new_pointcloud, missing])
+
+    # touch_list = range(1, 17)
+    # global_pointcloud = loc.get_global_pointcloud(
+    #     gs_id=2,
+    #     directory='/media/mcube/data/shapes_data/pos_calib/bar_side/',
+    #     touches=touch_list,
+    #     global_pointcloud = global_pointcloud
+    # )
+    #
+    # touch_list = range(1, 50)
+    # global_pointcloud = loc.get_global_pointcloud(
+    #     gs_id=2,
+    #     directory='/media/mcube/data/shapes_data/pos_calib/bar_back/',
+    #     touches=touch_list,
+    #     global_pointcloud = global_pointcloud
+    # )
+
+    #np.save('/media/mcube/data/shapes_data/pointclouds/' + name, global_pointcloud)
+    #loc.visualize2_pointclouds([global_pointcloud, missing])
+#'''
