@@ -534,7 +534,7 @@ if __name__ == "__main__":
             z_off = 286 #291#293.65 #284.22
         #z_off = 284.22
         
-        touch_list = [6]
+        touch_list = range(6) + range(7,20) #[0,1,2,7,8,9]
         directory = '/media/mcube/data/shapes_data/object_exploration/' + name_id + '/'
         gs_id = 2
 
