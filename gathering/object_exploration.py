@@ -8,7 +8,7 @@ if __name__ == "__main__":
     # Enter object main dimensions in [mm]
     length = 100
     height = 20
-    starting_angle = 4
+    starting_angle = 5
     # Enter minimum step distance (d) in [mm]
     dx = 2
     dz = 10

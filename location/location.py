@@ -52,7 +52,7 @@ class Location():
 
         pointcloud = {'x': [], 'y': [], 'z': []}
         a = np.random.permutation(len(np_pointcloud))
-        max_points = 5000
+        max_points = 1000
         a = np.sort(a[0:min(max_points, len(np_pointcloud))])
         for i in a:
             pointcloud['x'].append(np_pointcloud[i][0])
@@ -84,12 +84,95 @@ class Location():
         axisEqual3D(ax)
         plt.show()
 
+    def old_visualize3_pointclouds(self, pcs):
+        pc1 = pcs[0]
+        pc2 = pcs[1]
+        pc3 = pcs[2]
+        
+        pointcloud = {'x': [], 'y': [], 'z': []}
+        a = np.random.permutation(len(pc1))
+        max_points = 400
+        a = np.sort(a[0:min(max_points, len(pc1))])
+        for i in a:
+            pointcloud['x'].append(pc1[i][0])
+            pointcloud['y'].append(pc1[i][1])
+            pointcloud['z'].append(pc1[i][2])
+        mean_y = np.mean(pointcloud['y'])
+        std_y = np.std(pointcloud['y'])
+        vmin = mean_y - 4*std_y
+        vmax = mean_y + 4*std_y
+        
+        ax = plt.axes(projection='3d')
+        ax.scatter3D(pointcloud['x'], pointcloud['y'], pointcloud['z'],
+            c=pointcloud['y'], cmap='Blues', s=3, vmin = vmin, vmax=vmax)
+        
+        #surf = ax.plot_trisurf(pointcloud['x'], pointcloud['y'], pointcloud['z'], cmap='Blues', linewidth=0)
+        pointcloud = {'x': [], 'y': [], 'z': []}
+        a = np.random.permutation(len(pc2))
+        max_points = 400
+        a = np.sort(a[0:min(max_points, len(pc2))])
+        for i in a:
+            pointcloud['x'].append(pc2[i][0])
+            pointcloud['y'].append(pc2[i][1])
+            pointcloud['z'].append(pc2[i][2])
+        mean_y = np.mean(pointcloud['y'])
+        std_y = np.std(pointcloud['y'])
+        vmin = mean_y - 4*std_y
+        vmax = mean_y + 2*std_y
+        ax.scatter3D(pointcloud['x'], pointcloud['y'], pointcloud['z'],
+            c=pointcloud['y'], cmap='Reds', s=6, vmin = vmin, vmax=vmax)
+        
+        
+        pointcloud = {'x': [], 'y': [], 'z': []}
+        a = np.random.permutation(len(pc3))
+        max_points = 400
+        a = np.sort(a[0:min(max_points, len(pc3))])
+        for i in a:
+            pointcloud['x'].append(pc3[i][0])
+            pointcloud['y'].append(pc3[i][1])
+            pointcloud['z'].append(pc3[i][2])
+        mean_y = np.mean(pointcloud['y'])
+        std_y = np.std(pointcloud['y'])
+        vmin = mean_y - 4*std_y
+        vmax = mean_y + 4*std_y
+        
+        ax.scatter3D(pointcloud['x'], pointcloud['y'], pointcloud['z'],
+            c=pointcloud['y'], cmap='Greens', s=3, vmin = vmin, vmax=vmax)
+
+        #surf = ax.plot_trisurf(pointcloud['x'], pointcloud['y'], pointcloud['z'], cmap='Reds', linewidth=0)
+        '''
+        from scipy.interpolate import griddata
+        X, Y = np.meshgrid(pointcloud['x'], pointcloud['z'])
+        Z = griddata((pointcloud['x'], pointcloud['z']), pointcloud['y'], (X, Y), method='linear')
+        ax.plot_surface(X,Z,Y, cmap=cm.jet)
+        '''
+        # Set viewpoint.
+        ax.azim = -90
+        ax.elev = 0
+
+        # Label axes.
+        ax.set_xlabel('x (mm)')
+        ax.set_ylabel('y (mm)')
+        ax.set_zlabel('z (mm)')
+
+        def axisEqual3D(ax):
+            extents = np.array([getattr(ax, 'get_{}lim'.format(dim))() for dim in 'xyz'])
+            sz = extents[:, 1] - extents[:, 0]
+            centers = np.mean(extents, axis=1)
+            maxsize = max(abs(sz))
+            r = maxsize/2
+            for ctr, dim in zip(centers, 'xyz'):
+                getattr(ax, 'set_{}lim'.format(dim))(ctr - r, ctr + r)
+
+        axisEqual3D(ax)
+        plt.show()
+
     def old_visualize2_pointclouds(self, pcs):
         pc1 = pcs[0]
         pc2 = pcs[1]
         pointcloud = {'x': [], 'y': [], 'z': []}
         a = np.random.permutation(len(pc1))
-        max_points = 5000
+        max_points = 500
         a =np.sort(a[0:min(max_points, len(pc1))])
         for i in a:
             pointcloud['x'].append(pc1[i][0])
@@ -99,12 +182,14 @@ class Location():
         std_y = np.std(pointcloud['y'])
         vmin = mean_y - 4*std_y
         vmax = mean_y + 4*std_y
+        
+        ax = plt.axes(projection='3d')
         ax.scatter3D(pointcloud['x'], pointcloud['y'], pointcloud['z'],
             c=pointcloud['y'], cmap='Blues', s=3, vmin = vmin, vmax=vmax)
         #surf = ax.plot_trisurf(pointcloud['x'], pointcloud['y'], pointcloud['z'], cmap='Blues', linewidth=0)
         pointcloud = {'x': [], 'y': [], 'z': []}
         a = np.random.permutation(len(pc2))
-        max_points = 5000
+        max_points = 500
         a = np.sort(a[0:min(max_points, len(pc2))])
         for i in a:
             pointcloud['x'].append(pc2[i][0])
@@ -144,7 +229,8 @@ class Location():
 
         axisEqual3D(ax)
         plt.show()
-
+        
+        
     def check_pointcloud_type(self, pointcloud):
         if isinstance(pointcloud, np.ndarray):
             pcd = open3d.PointCloud()
@@ -279,7 +365,7 @@ class Location():
             height_map = (height_map > 0.01)*height_map  # NOTE: We are multiplying the height by 10 for visualization porpuses!!!!!
             height_map = (height_map > a)*height_map
             #height_map = height_map+0.05
-            #height_map = cv2.resize(height_map, dsize=(size[1], size[0]), interpolation=cv2.INTER_LINEAR) #TODO: why? TODO WE NEED THIS?
+            height_map = cv2.resize(height_map, dsize=(size[1], size[0]), interpolation=cv2.INTER_LINEAR) #TODO: why? TODO WE NEED THIS?
             # cv2.imshow('a', height_map)
             # cv2.waitKey()
 
@@ -433,33 +519,24 @@ if __name__ == "__main__":
     
     
     
-    for i in range(3,4):
-        name_id = 'flashlight_l=70_h=20_dx=10_dy=10_rot={}_debug'.format(i) #'big_semicone_l=40_h=20_d=5_rot=0_more_empty' #'cilinder_thick_l=50_h=20_dx=10_dy=10_rot=0_test' #  #'cilinder_l=50_h=20_dx=5_dy=5_rot=0_test' # 'big_semicone_l=40_h=20_d=5_rot=0_empty'#
-        name_id = 'flashlight_l=100_h=20_dx=2_dy=10_rot={}_debug'.format(i) #'big_semicone_l=40_h=20_d=5_rot=0_more_empty' #'cilinder_thick_l=50_h=20_dx=10_dy=10_rot=0_test' #  #'cilinder_l=50_h=20_dx=5_dy=5_rot=0_test' # 'big_semicone_l=40_h=20_d=5_rot=0_empty'#
+    for i in range(0,1):
+        name_id = 'cilinder_thick_l=50_h=20_dx=10_dy=10_rot={}_test'.format(0)
         name = name_id +'.npy'
         loc = Location()
         
         x_off = 836
-        
         y_off = 376.2#376.8 #371.13 
-        
         z_off = 286.5 #291#293.65 #284.22
+        
         if 'semicone' in name: 
             x_off = 833.5
             y_off = 376.4#376.8 #371.13 
             z_off = 286 #291#293.65 #284.22
         #z_off = 284.22
         
-        
-        touch_list = range(0,30)#range(16, 32)#range(24,28) + range(48,52) #range(240) #[0,12,13,14,24,25,26] #range(12,2)#[5,6]#range(0,20)
-
-        touch_list_aux = copy.deepcopy(touch_list)
-        #touch_list = range(3, 7)
-        #touch_list += range(7, 13)
-        # touch_list = [0, 5, 23]
+        touch_list = [6]
         directory = '/media/mcube/data/shapes_data/object_exploration/' + name_id + '/'
         gs_id = 2
-        #touch_list = [0,1,4,5,8,9]  #7,8, 12,13,17,18]0,1,2,3,4,
 
         model_path = '/home/mcube/weights_server_last/weights_type=all_08-23-2018_num=2000_gs_id=2_in=rgb_out=height_epoch=100_NN=basic_aug=5.hdf5'
 
@@ -467,27 +544,51 @@ if __name__ == "__main__":
         keras.losses.custom_loss = custom_loss
         model = load_model(model_path)
         
-        for i in touch_list:
-            global_pointcloud = loc.get_global_pointcloud(gs_id=gs_id, directory=directory, touches=[i], 
+#         for i in touch_list:
+        global_pointcloud = loc.get_global_pointcloud(gs_id=gs_id, directory=directory, touches=touch_list, 
                 global_pointcloud = global_pointcloud, model_path=model_path, model=model, threshold = 0.05)
-
-            #loc.visualize_pointcloud(np.array(global_pointcloud))
-
-        global_pointcloud = np.array(global_pointcloud)
+    
+        global_pointcloud_1 = np.array(copy.deepcopy(global_pointcloud))
+        
+        
+#         touch_list = range(13,25)
+#         global_pointcloud = None
+#         global_pointcloud = loc.get_global_pointcloud(gs_id=gs_id, directory=directory, touches=touch_list, 
+#                 global_pointcloud = global_pointcloud, model_path=model_path, model=model, threshold = 0.05)
+#         global_pointcloud_2 = np.array(global_pointcloud)
+        
+#         touch_list = range(25,35)
+#         global_pointcloud = None
+#         global_pointcloud = loc.get_global_pointcloud(gs_id=gs_id, directory=directory, touches=touch_list, 
+#                 global_pointcloud = global_pointcloud, model_path=model_path, model=model, threshold = 0.05)
+#         global_pointcloud_3 = np.array(global_pointcloud)
+        
+#         loc.old_visualize3_pointclouds([list(global_pointcloud_1), list(global_pointcloud_2), list(global_pointcloud_3)])
+        
+        global_pointcloud_1[:,0] -= x_off
+        loc.old_visualize_pointcloud(global_pointcloud_1)
+        
+        
+        
+        
+        
+        
         #loc.old_visualize_pointcloud(global_pointcloud)
         #loc.visualize_pointcloud(global_pointcloud)
         #
+        '''
         rotation = int(directory[directory.find('rot=')+4])
         aux_global_pointcloud = copy.deepcopy(global_pointcloud)
         aux_global_pointcloud[:,1] = np.cos(rotation)*(global_pointcloud[:,1]-y_off) + np.sin(rotation)*(global_pointcloud[:,2]-z_off) + y_off
         aux_global_pointcloud[:,2] = np.cos(rotation)*(global_pointcloud[:,2]-z_off) - np.sin(rotation)*(global_pointcloud[:,1]-y_off) + z_off
         golab_pointcloud = aux_global_pointcloud
         np.save('/media/mcube/data/shapes_data/pointclouds/' + name, global_pointcloud)
-    
-        loc.visualize_pointcloud(global_pointcloud)
+        '''
+#         loc.visualize_pointcloud(global_pointcloud)
+#         loc.old_visualize_pointcloud(global_pointcloud)
         #
         
-    #'''
+    '''
     name_id = 'flashlight_l=100_h=20_dx=2_dy=10_rot=0_debug' #'big_semicone_l=40_h=20_d=5_rot=0_more_empty' #'cilinder_thick_l=50_h=20_dx=10_dy=10_rot=0_test' #  #'cilinder_l=50_h=20_dx=5_dy=5_rot=0_test' # 'big_semicone_l=40_h=20_d=5_rot=0_empty'#
     #name_id = 'cilinder_l=50_h=20_dx=10_dy=10_rot=0_debug'.format(0)
     name = name_id +'.npy'
@@ -531,6 +632,8 @@ if __name__ == "__main__":
     final_global_pointcloud[:,1] -= y_off
     final_global_pointcloud[:,2] -= z_off
     
+    loc.old_visualize_pointcloud(final_global_pointcloud)
+    
     for i in np.linspace(-np.pi, np.pi, 0):
         aux_global_pointcloud = copy.deepcopy(global_pointcloud)
         aux_global_pointcloud[:,1] = np.cos(i)*(global_pointcloud[:,1]-y_off) + np.sin(i)*(global_pointcloud[:,2]-z_off) # - y_off
@@ -551,7 +654,7 @@ if __name__ == "__main__":
     print np.mean(afinal_global_pointcloud, axis=0)
     loc.visualize_pointcloud(afinal_global_pointcloud, shape = name_id)
     #loc.visualize_pointcloud(afinal_global_pointcloud)
-    
+    '''
     
     '''
     global_pointcloud_0 = np.load('/media/mcube/data/shapes_data/pointclouds/flashlight_l=70_h=20_dx=10_dy=10_rot=0_debug_angle_0_rotated.npy')
