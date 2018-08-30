@@ -46,6 +46,13 @@ def quaternion_matrix(quaternion):
 def grb2wb(point, gripper_pos, quaternion):
 
     w2gr_mat = quaternion_matrix(quaternion)
+    
+#     print "********"
+#     for elem in w2gr_mat:
+#         print elem
+        
+#     a = raw_input("aa")
+#     print quaternion
     #print 'w2: ', w2gr_mat
     #print 'tfm: ',
     #w2gr_mat = tfm.quaternion_matrix(quaternion)
@@ -137,7 +144,7 @@ def pxb_2_wb_3d(point_3d, gs_id, gripper_state, fitting_params):
     p1 = (x, y - half_y, z)
     #p1 = (x*225/230.0, y*238/243.0 - half_y, z)
     p2 = (p1[0]*k1 + p1[1]*k2 + k3*p1[0]*p1[1],   p1[1]*l1 + p1[0]*l2 + l3*p1[1]*p1[0],   p1[2])
-    p3 = (normal*(Dx + dx + p2[2]), p2[1] + dy, Dz + dz + p2[0]-14)
+    p3 = (normal*(Dx + dx + p2[2]), p2[1] + dy, Dz + dz + p2[0] - 14)
 #     p3 = (normal*(Dx + dx + p2[2]*2), p2[1]*2 + dy+25, Dz + dz + p2[0]*2-14)
     
     #p3 = (normal*(Dx + dx + p2[2]), p2[1] + dy, Dz + dz + p2[0])

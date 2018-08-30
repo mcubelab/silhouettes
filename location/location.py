@@ -96,7 +96,7 @@ class Location():
         
         pointcloud = {'x': [], 'y': [], 'z': []}
         a = np.random.permutation(len(pc1))
-        max_points = 400
+        max_points = 100
         a = np.sort(a[0:min(max_points, len(pc1))])
         for i in a:
             pointcloud['x'].append(pc1[i][0])
@@ -114,7 +114,7 @@ class Location():
         #surf = ax.plot_trisurf(pointcloud['x'], pointcloud['y'], pointcloud['z'], cmap='Blues', linewidth=0)
         pointcloud = {'x': [], 'y': [], 'z': []}
         a = np.random.permutation(len(pc2))
-        max_points = 400
+        max_points = 100
         a = np.sort(a[0:min(max_points, len(pc2))])
         for i in a:
             pointcloud['x'].append(pc2[i][0])
@@ -130,7 +130,7 @@ class Location():
         
         pointcloud = {'x': [], 'y': [], 'z': []}
         a = np.random.permutation(len(pc3))
-        max_points = 400
+        max_points = 100
         a = np.sort(a[0:min(max_points, len(pc3))])
         for i in a:
             pointcloud['x'].append(pc3[i][0])
