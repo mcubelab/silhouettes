@@ -29,7 +29,7 @@ except:
 
 half_y = params_dict['input_shape_gs2'][1]/2.
 
-def __quaternion_matrix(quaternion):
+def quaternion_matrix(quaternion):
     q = np.array(quaternion, dtype=np.float64, copy=True)
     n = np.dot(q, q)
     _EPS = 1e-5
@@ -45,7 +45,7 @@ def __quaternion_matrix(quaternion):
 
 def grb2wb(point, gripper_pos, quaternion):
 
-    w2gr_mat = __quaternion_matrix(quaternion)
+    w2gr_mat = quaternion_matrix(quaternion)
     #print 'w2: ', w2gr_mat
     #print 'tfm: ',
     #w2gr_mat = tfm.quaternion_matrix(quaternion)
@@ -77,7 +77,7 @@ def grb2wb(point, gripper_pos, quaternion):
     return v[0:3] + 1000*gripper_pos
 
 def wb2grb(point, gripper_pos, quaternion):
-    w2gr_mat = __quaternion_matrix(quaternion)
+    w2gr_mat = quaternion_matrix(quaternion)
     #w2gr_mat = tfm.quaternion_matrix(quaternion)
 
     point = point - 1000*gripper_pos
@@ -137,12 +137,14 @@ def pxb_2_wb_3d(point_3d, gs_id, gripper_state, fitting_params):
     p1 = (x, y - half_y, z)
     #p1 = (x*225/230.0, y*238/243.0 - half_y, z)
     p2 = (p1[0]*k1 + p1[1]*k2 + k3*p1[0]*p1[1],   p1[1]*l1 + p1[0]*l2 + l3*p1[1]*p1[0],   p1[2])
-    p3 = (normal*(Dx + dx + p2[2]), p2[1] + dy, Dz + dz + p2[0])
+    p3 = (normal*(Dx + dx + p2[2]), p2[1] + dy, Dz + dz + p2[0]-14)
 #     p3 = (normal*(Dx + dx + p2[2]*2), p2[1]*2 + dy+25, Dz + dz + p2[0]*2-14)
     
     #p3 = (normal*(Dx + dx + p2[2]), p2[1] + dy, Dz + dz + p2[0])
     #p4 = (p2[1]*2 + dy,normal*(Dx + dx + p2[2]*2),  Dz + dz + p2[0]*2)
-    #p4 = p3
+    #p4 = p2
+    #import pdb; pdb.set_trace()
+    #print 'quat: ', quaternion
     p4 = grb2wb(point=p3, gripper_pos=pos, quaternion=quaternion)
     return p4
 # '''

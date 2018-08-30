@@ -195,7 +195,7 @@ def custom_loss(y_true, y_pred):
     return K.sum(K.square(y_true-y_pred))
 
 def raw_gs_to_depth_map(gs_id=2, test_image=None, ref=None, model_path=None, plot=False, save=False, path='', img_number='',
-                            output_type='grad', test_depth = None, model = None, input_type='rgb'):
+                            output_type='grad', test_depth = None, model = None, input_type='rgb', get_NN_input = False):
 
     preprocessing_time_start = time.time()
     if ref == None:
@@ -258,6 +258,8 @@ def raw_gs_to_depth_map(gs_id=2, test_image=None, ref=None, model_path=None, plo
     if test_depth is not None:
         loss = np.sum(np.square(depth_map - test_depth))  # TODO: assumption that this is the custom loss
         return depth_map, loss
+    if get_NN_input:
+        return depth_map, test_image
     return depth_map
 
 def grad_to_gs(model_path, gx, gy, gs_id=2):
