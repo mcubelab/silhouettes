@@ -94,24 +94,25 @@ def train(pretrain = False):
     input_type = 'rgb' #'_gray'
     output_type =  'grad' #'grad' #'height', 'angle'
     num_epochs = 100   #10, 50
-    dataset = 'all' #shape name
+    dataset = 'all' #shape name: ['sphere','semicone_2', 'semicone_1',  'hollowcone_3', 'semipyramid_3']
     
     
     
     # date = datetime.datetime.today().strftime('%m-%d-%Y') #''08-21-2018'
-    date = '08-23-2018'
-    gs_id = '2' # '1' , 'all'
+    date = '09-02-2018'
+    gs_id = '1' # '2' # '1' , 'all'
     NN_arch = 'basic'
     data_augment = 5
     
-    weights_filepath = "/home/ubuntu/weights/weights_type={}_{}_num={}_gs_id={}_in={}_out={}_epoch={}_NN={}_aug={}.hdf5".format(dataset, date,
+    weights_filepath = "/home/ubuntu/weights_{}/weights_type={}_{}_num={}_gs_id={}_in={}_out={}_epoch={}_NN={}_aug={}.hdf5".format(date,dataset, date,
                                     num_data,gs_id,input_type,output_type,num_epochs,NN_arch,data_augment)
     
     paths = []
     root = '/home/ubuntu/shapes_data/'
-    shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_2', 'semipyramid_3'] 
+    shapes = ['sphere','semicone_2', 'semicone_1',  'hollowcone_3', 'semipyramid_3'] 
+    #['sphere', 'semicone_1', 'semicone_2', 'hollowcone_2', 'semipyramid_3'] 
     #date2 = datetime.datetime.today().strftime('%m-%d-%Y') #''08-21-2018'
-    date2 = '08-23-2018'
+    date2 = '09-02-2018'
     for shape in shapes:
         if shape != dataset: #TODO: arreglar tema semipyramid less data
             if input_type == 'gray':

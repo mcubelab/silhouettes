@@ -274,7 +274,7 @@ if __name__ == "__main__":
     # NOTE: remember we assume GSx_0 is air picture
 
         ## Select GS Id!!!!!!!!
-    gs_id = 2
+    gs_id = 1
 
         ## Select shape!!!!!!!
     #shape = 'sphere'
@@ -285,13 +285,16 @@ if __name__ == "__main__":
     # shape = 'test1'
     shape = 'semipyramid'
 
-    gs_ids = [2,1]
+    gs_ids = [1,2]
     #shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_1', 'hollowcone_2', 'semipyramid_2'] #, 'stamp']
     
-    shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_3', 'hollowcone_2', 'semipyramid_3'] #, 'stamp']
-    pix_limit = [1650, 2200, 6500, 3500, 4300, 2000 ]
+    shapes = ['sphere','semicone_2', 'semicone_1',  'hollowcone_3', 'semipyramid_3']
+    pix_limit = [1650, 4400,1600, 1200, 2000 ]
     
-    dates = ['08-24-2018'] #datetime.datetime.today().strftime('%m-%d-%Y') #'
+    shapes = ['semipyramid_3']
+    pix_limit = [1200]
+    
+    dates = ['09-02-2018']# [datetime.datetime.today().strftime('%m-%d-%Y')]
     rotations = [0]    
 
     for gs_id in gs_ids:
@@ -320,7 +323,7 @@ if __name__ == "__main__":
                 else:
                     # # hollowcone 3
                     hollow_r_mm = 8/2
-                    hollow_R_mm = 16.5/2
+                    hollow_R_mm = 10/2
                     hollowcone_slope = 30
 
                 if shape == 'semicone_1':
@@ -416,7 +419,9 @@ if __name__ == "__main__":
                 n = len(files)
                 num_pixels = []
                 for i in range(n):
-                    print files[i]
+                    #if os.path.exists(save_path + 'image/img_'+str(index)+ '.png'): 
+                    #    index += augmented_data_copies+1
+                    #    continue
                     if (((gs_id == 1) and ('GS1' in files[i])) or ((gs_id == 2) and ('GS2' in files[i]))):
                         print 'Progress made: ' + str(100.*float(i)/float(n)) + ' %'
 
@@ -535,7 +540,7 @@ if __name__ == "__main__":
                                 #cv2.waitKey(0)
 
                                 radius = int(radius)
-
+    
                                 center_ok = center[0] > 100 or center[1] > 100  #Like it?
                                 if center_ok and radius > 30 and radius < max_rad and check_center(center, radius, col, row):
                                     cv2.circle(im_wp, center, radius, (0, 0, 255), 1)
@@ -544,7 +549,6 @@ if __name__ == "__main__":
                                     grad_x, grad_y = labeller.get_gradient_matrices(center, radius, shape=geometric_shape, shape_params=shape_params)
 
                                     if (grad_x is not None) and (grad_y is not None):
-
                                         ## Uncomment this to check gradients and heightmap
 
                                         #print "Max: " + str(np.amax(grad_x))
@@ -572,7 +576,7 @@ if __name__ == "__main__":
                                         depth_map = cv2.resize(depth_map, dsize=(100, 166), interpolation=cv2.INTER_LINEAR)
                                         # plot(depth_map)
                                         # '''
-
+                                        print 'hi'
                                         # We show/save the augmented data copies
                                         for iii in range(augmented_data_copies+1):
                                             if iii == 0:

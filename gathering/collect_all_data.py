@@ -10,13 +10,19 @@ import datetime
 import gripper
 if __name__ == "__main__":
     
-    shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_3', 'semipyramid_3', 'stamp']
+    shapes = ['sphere', 'semicone_2','semicone_1',  'hollowcone_3', 'semipyramid_3']
+    shapes = ['semipyramid_3']
+    
 
-    gs_ids = [2,1]
-    original_num_data = 500
-    original_num_test_data = 100
-    date = datetime.datetime.today().strftime('%m-%d-%Y') #'08-21-2018' #
+    gs_ids = [1,2]
+    original_num_data = 900
+    original_num_test_data = 300
+    date = '09-02-2018'#datetime.datetime.today().strftime('%m-%d-%Y') #'08-21-2018' #
     for gs_id in gs_ids:
+      print "gs_id: ", gs_id
+      start_again = False
+      while start_again != 'y':
+        start_again = raw_input('Have you remove the other finger? [y/n]')
       for shape in shapes:
         if ('semipyramid' in shape) or ('stamp' in shape):
             rotations = 180/8.0*np.arange(4)

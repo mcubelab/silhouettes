@@ -195,7 +195,6 @@ class Labeller():
         # print RR_mm
         # print R_mm
         # print r_mm
-
         if r_mm > R_mm or R_mm > RR_mm:
             return None, None
 
@@ -238,7 +237,6 @@ class Labeller():
         dz_dy_mat = mask_pp * dz_dy_mat
 
         h_px = np.amax(poisson_reconstruct(dz_dy_mat, dz_dx_mat))
-
         if h_px < 1e-5 or h_mm < 0.1:
             return None, None
         h_px2mm = h_mm/h_px

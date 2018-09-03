@@ -31,8 +31,8 @@ for weights_file in weights_files:
     model_path = weights_file
     model = load_model(model_path)
     ### Training
-    train_data = 10000
-    test_data = 5000
+    train_data = 500
+    test_data = 100
     thresholds = np.linspace(0, 1, num=101)
     def custom_loss(y_true, y_pred):
         return K.sum(K.square(y_true-y_pred))
@@ -167,6 +167,6 @@ for weights_file in weights_files:
     '''
     plt.legend()
     plt.show()
-
+    # loss =return K.sum(K.square(y_true-y_pred))
     import pdb; pdb.set_trace()
     '''

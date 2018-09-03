@@ -123,7 +123,7 @@ def pxb2grb(point, gs_id, gripper_state, fitting_params):
     return p3
 
 # '''
-def pxb_2_wb_3d(point_3d, gs_id, gripper_state, fitting_params):
+def pxb_2_wb_3d(point_3d, gs_id, gripper_state, fitting_params, two_outputs = False):
     x, y, z = point_3d
     if gs_id == 1:
         normal = 1
@@ -144,14 +144,13 @@ def pxb_2_wb_3d(point_3d, gs_id, gripper_state, fitting_params):
     p1 = (x, y - half_y, z)
     #p1 = (x*225/230.0, y*238/243.0 - half_y, z)
     p2 = (p1[0]*k1 + p1[1]*k2 + k3*p1[0]*p1[1],   p1[1]*l1 + p1[0]*l2 + l3*p1[1]*p1[0],   p1[2])
-    p3 = (normal*(Dx + dx + p2[2]), p2[1] + dy, Dz + dz + p2[0] - 14)
-#     p3 = (normal*(Dx + dx + p2[2]*2), p2[1]*2 + dy+25, Dz + dz + p2[0]*2-14)
-    
-    #p3 = (normal*(Dx + dx + p2[2]), p2[1] + dy, Dz + dz + p2[0])
+    p3 = (normal*(Dx + dx + p2[2]), p2[1] + dy, Dz + dz + p2[0])
     #p4 = (p2[1]*2 + dy,normal*(Dx + dx + p2[2]*2),  Dz + dz + p2[0]*2)
-    #p4 = p2
-    #import pdb; pdb.set_trace()
+    #p4 = p3
     #print 'quat: ', quaternion
+    #print 'pos: ', pos
+    
     p4 = grb2wb(point=p3, gripper_pos=pos, quaternion=quaternion)
+    if two_outputs: return p4, p3
     return p4
 # '''

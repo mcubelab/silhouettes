@@ -128,13 +128,13 @@ def posprocess_label(arr):
     f = np.vectorize(f, otypes=[np.float])
     return f(arr)
 
-def plot_depth_map(depth_map, show=True, save=False, path='', img_number = '', top_view=False):
+def plot_depth_map(depth_map, show=True, save=False, path='', img_number = '', top_view=False, palette=cm.BuPu):
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     X = np.arange(depth_map.shape[0], step=1)
     Y = np.arange(depth_map.shape[1], step=1)
     X, Y = np.meshgrid(X, Y)
-    surf = ax.plot_surface(X, Y, np.transpose(depth_map), rstride=1, cstride=1, cmap=cm.BuPu, linewidth=0, antialiased=False)
+    surf = ax.plot_surface(X, Y, np.transpose(depth_map), rstride=1, cstride=1, cmap=palette, linewidth=0, antialiased=False)
     ax.set_zlim(0, 5)
     ax.view_init(elev=45., azim=5)
     if top_view:
