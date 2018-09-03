@@ -90,10 +90,10 @@ def train(pretrain = False):
 
     
     #### PARAMS:
-    num_data = 2000  # 100, 200, 500, 1000, 2000, 5000 
+    total_data_fraction = 12/10.0
+    num_data =  total_data_fraction * 2000  # 100, 200, 500, 1000, 2000, 5000
     input_type = 'rgb' #'_gray'
     output_type =  'grad' #'grad' #'height', 'angle'
-    num_epochs = 100   #10, 50
     dataset = 'all' #shape name: ['sphere','semicone_2', 'semicone_1',  'hollowcone_3', 'semipyramid_3']
     
     
@@ -103,6 +103,7 @@ def train(pretrain = False):
     gs_id = '1' # '2' # '1' , 'all'
     NN_arch = 'basic'
     data_augment = 5
+    num_epochs = 100   #10, 50
     
     weights_filepath = "/home/ubuntu/weights_{}/weights_type={}_{}_num={}_gs_id={}_in={}_out={}_epoch={}_NN={}_aug={}.hdf5".format(date,dataset, date,
                                     num_data,gs_id,input_type,output_type,num_epochs,NN_arch,data_augment)
@@ -122,7 +123,7 @@ def train(pretrain = False):
     
     gs_id = 2 
     # Datasets
-    inputs_train, labels_train, inputs_val, labels_val = get_data_paths(paths=paths, gradient='x', val_fraction=0.2, max_data_points=num_data)
+    inputs_train, labels_train, inputs_val, labels_val = get_data_paths(paths=paths, gradient='x', val_fraction=1/6.0, max_data_points=num_data)
     print "Train size: " + str(len(inputs_train))
     print "Validation size: " + str(len(inputs_val))
 

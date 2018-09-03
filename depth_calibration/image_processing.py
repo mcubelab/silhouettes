@@ -289,10 +289,7 @@ if __name__ == "__main__":
     #shapes = ['sphere', 'semicone_1', 'semicone_2', 'hollowcone_1', 'hollowcone_2', 'semipyramid_2'] #, 'stamp']
     
     shapes = ['sphere','semicone_2', 'semicone_1',  'hollowcone_3', 'semipyramid_3']
-    pix_limit = [1650, 4400,1600, 1200, 2000 ]
-    
-    shapes = ['semipyramid_3']
-    pix_limit = [1200]
+    pix_limit = [1650, 4400,1600, 1200, 1200 ]
     
     dates = ['09-02-2018']# [datetime.datetime.today().strftime('%m-%d-%Y')]
     rotations = [0]    
