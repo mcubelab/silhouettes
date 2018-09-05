@@ -3,33 +3,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numpy.linalg import inv
 import math, os, sys, cv2, yaml
-try:
-    import tf.transformations as tfm
-except Exception as e:
-    pass
+# import tf.transformations as tfm
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-#SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
-#params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
-
-try:
-    params_dict = yaml.load(open('/home/mcube/silhouettes/' + 'resources/params.yaml'))
-except:
-    pass
-
-try:
-    params_dict = yaml.load(open('/home/ubuntu/silhouettes/' + 'resources/params.yaml'))
-except:
-    pass
-
-try:
-    params_dict = yaml.load(open('/home/oleguer/silhouettes/' + 'resources/params.yaml'))
-except:
-    pass
-
+SHAPES_ROOT = os.getcwd().split("/silhouettes/")[0] + "/silhouettes/"
+params_dict = yaml.load(open(SHAPES_ROOT + 'resources/params.yaml'))
 half_y = params_dict['input_shape_gs2'][1]/2.
 
-def quaternion_matrix(quaternion):
+def __quaternion_matrix(quaternion):
     q = np.array(quaternion, dtype=np.float64, copy=True)
     n = np.dot(q, q)
     _EPS = 1e-5
@@ -44,21 +25,12 @@ def quaternion_matrix(quaternion):
         [                0.0,                 0.0,                 0.0, 1.0]])
 
 def grb2wb(point, gripper_pos, quaternion):
-
-    w2gr_mat = quaternion_matrix(quaternion)
-    
-#     print "********"
-#     for elem in w2gr_mat:
-#         print elem
-        
-#     a = raw_input("aa")
-#     print quaternion
+    w2gr_mat = __quaternion_matrix(quaternion)
     #print 'w2: ', w2gr_mat
     #print 'tfm: ',
     #w2gr_mat = tfm.quaternion_matrix(quaternion)
     v = (point[0], point[1], point[2], 1.0)
     #print "v in gripper base: " + str(v)
-    #v = w2gr_mat.dot(v)
     v = w2gr_mat.dot(v)
     #v = np.linalg.inv(w2gr_mat).dot(v)
     #print 'first: ', v[0]
@@ -80,11 +52,10 @@ def grb2wb(point, gripper_pos, quaternion):
     # for i in range(3):
     #     gripper_pos[i] = gripper_pos[i]*1000
     # return v[0:3] + gripper_pos
-    
     return v[0:3] + 1000*gripper_pos
 
 def wb2grb(point, gripper_pos, quaternion):
-    w2gr_mat = quaternion_matrix(quaternion)
+    w2gr_mat = __quaternion_matrix(quaternion)
     #w2gr_mat = tfm.quaternion_matrix(quaternion)
 
     point = point - 1000*gripper_pos
@@ -93,7 +64,6 @@ def wb2grb(point, gripper_pos, quaternion):
     #v = w2gr_mat.dot(v)
     #v = np.linalg.inv(w2gr_mat).dot(v)
     v = np.transpose(w2gr_mat).dot(v)
-    #v = w2gr_mat.dot(v)
     #print "v in world base: " + str(v)
     #print "Gripper pos: " + str(gripper_pos*1000)
 
@@ -123,7 +93,7 @@ def pxb2grb(point, gs_id, gripper_state, fitting_params):
     return p3
 
 # '''
-def pxb_2_wb_3d(point_3d, gs_id, gripper_state, fitting_params, two_outputs = False):
+def pxb_2_wb_3d(point_3d, gs_id, gripper_state, fitting_params):
     x, y, z = point_3d
     if gs_id == 1:
         normal = 1
@@ -134,23 +104,56 @@ def pxb_2_wb_3d(point_3d, gs_id, gripper_state, fitting_params, two_outputs = Fa
     quaternion = gripper_state['quaternion']
     Dx = gripper_state['Dx'] # Obertura
     Dz = gripper_state['Dz']
-    
 
-    
     k1, k2, k3,  l1, l2, l3,  dx, dy, dz = fitting_params
-    #print 'half_y: ', half_y #243
-    #s1: [225,243,2] 
-    #[230, 238, 2]
+
     p1 = (x, y - half_y, z)
-    #p1 = (x*225/230.0, y*238/243.0 - half_y, z)
-    p2 = (p1[0]*k1 + p1[1]*k2 + k3*p1[0]*p1[1],   p1[1]*l1 + p1[0]*l2 + l3*p1[1]*p1[0],   p1[2])
+    p2 = (p1[0]*k1 + p1[1]*k2, p1[1]*l1 + p1[0]*l2, p1[2])
     p3 = (normal*(Dx + dx + p2[2]), p2[1] + dy, Dz + dz + p2[0])
-    #p4 = (p2[1]*2 + dy,normal*(Dx + dx + p2[2]*2),  Dz + dz + p2[0]*2)
-    p4 = p3
-    #print 'quat: ', quaternion
-    #print 'pos: ', pos
-    
     p4 = grb2wb(point=p3, gripper_pos=pos, quaternion=quaternion)
-    if two_outputs: return p4, p3
     return p4
 # '''
+
+def fast_pxb2wb_3d(depth_map, gs_id, gripper_state, fitting_params, threshold):
+    dim = depth_map.shape
+    print dim
+    x, y = np.meshgrid(range(dim[0]), range(dim[1]), indexing='ij')
+    z = depth_map
+
+    mask = (depth_map > threshold).astype(float)
+
+    non_zero = np.where(mask.flatten() > 0)
+    length = len(non_zero[0])
+    x = x.flatten()[non_zero]
+    y = y.flatten()[non_zero]
+    z = z.flatten()[non_zero]
+
+    mask = mask.astype(int)
+
+    if gs_id == 1:
+        normal = 1
+    else:
+        normal = -1
+
+    pos = gripper_state['pos']
+    quaternion = gripper_state['quaternion']
+    Dx = gripper_state['Dx'] # Obertura
+    Dz = gripper_state['Dz']
+
+    k1, k2, k3,  l1, l2, l3,  dx, dy, dz = fitting_params
+
+    p1 = (x, y - half_y, z)
+    p2 = (p1[0]*k1 + p1[1]*k2, p1[1]*l1 + p1[0]*l2, p1[2])
+    p3 = (normal*(Dx + dx + p2[2]), p2[1] + dy, Dz + dz + p2[0])
+
+    v = np.stack((p3[0], p3[1], p3[2], np.ones(p3[0].shape)), axis=0)
+    w2gr_mat = __quaternion_matrix(quaternion)
+
+    def f(a):
+        return w2gr_mat.dot(a)
+    v = np.apply_along_axis(f, 0, v)
+    v = [v[0] + 1000*pos[0], v[1] + 1000*pos[1], v[2] + 1000*pos[2], v[3]]
+    v = np.swapaxes(v[:-1], 0, 1)
+
+    v = np.reshape(v, (length, 3))
+    return v
