@@ -29,7 +29,7 @@ try:
 except Exception as e:
     print "Not importing keras"
 
-from world_positioning import pxb_2_wb_3d, quaternion_matrix
+from world_positioning import pxb_2_wb_3d, quaternion_matrix, fast_pxb2wb_3d
 from depth_calibration.depth_helper import *
 import scipy
 import open3d
@@ -403,60 +403,9 @@ class Location():
         print 'gripper: ', gripper_state['Dx']
         gripper_state['Dz'] = 372.3#365#139.8 + 72.5 + 160  # Base + wsg + finger
         print gripper_state
-        pointcloud = []
-        pointcloud_p3 = []
-        pixel_list = []
-        for i in range(height_map.shape[0]):
-            for j in range(height_map.shape[1]):
-                #print 'shape: ', height_map.shape[1]
-                if (height_map[i][j] >= threshold) and save_local_pointcloud is None: # TODO: HACK MARIA
-                    world_point = pxb_2_wb_3d(
-                        point_3d=(i, j, height_map[i][j]),
-                        gs_id=gs_id,
-                        gripper_state = gripper_state,
-                        fitting_params = params_gs)
-                    a = np.asarray(world_point)
-                    pointcloud.append(a)
-                    pixel_list.append([i,j])
-                if save_local_pointcloud is not None:
-                    p4,p3 = pxb_2_wb_3d(
-                            point_3d=(i, j, height_map[i][j]),
-                            gs_id=gs_id,
-                            gripper_state = gripper_state,
-                            fitting_params = params_gs,
-                            two_outputs = True) #We save 2 parameters
-                    a = np.asarray(p4)
-                    b = np.asarray(p3)
-                    pointcloud.append(a)
-                    pointcloud_p3.append(b)
-                    pixel_list.append([i,j])
-        if with_convex_hull:
-            ## Comput convex hull and add those points:
-            hull = scipy.spatial.ConvexHull(pixel_list)
-            pixel_list = np.array(pixel_list)
-            
-            tupVerts=np.array([pixel_list[hull.vertices,0], pixel_list[hull.vertices,1]])
-            tupVerts = np.concatenate([tupVerts, tupVerts[:,0:1]], axis=1)
-            
-            pix_x, pix_y = np.meshgrid(np.arange(height_map.shape[1]), np.arange(height_map.shape[0])) # make a canvas with coordinates
-            pix_x, pix_y = pix_x.flatten(), pix_y.flatten()
-            points = np.vstack((pix_y,pix_x)).T 
-
-            p = Path(tupVerts.T)
-            grid = p.contains_points(points)
-            mask = grid.reshape(height_map.shape[0],height_map.shape[1])
-            for i in range(height_map.shape[0]):
-                for j in range(height_map.shape[1]):
-                    if mask[i][j] and height_map[i][j] < threshold:
-                        world_point = pxb_2_wb_3d(
-                            point_3d=(i, j, -2),
-                            gs_id=gs_id,
-                            gripper_state = gripper_state,
-                            fitting_params = params_gs
-                        )
-                        a = np.asarray(world_point)
-                        pointcloud.append(a)
-
+        if save_local_pointcloud: pointcloud, pointcloud_p3 = fast_pxb2wb_3d(height_map, gs_id, gripper_state, params_gs, threshold = 0, also_p3 = True)
+        else: pointcloud = fast_pxb2wb_3d(height_map, gs_id, gripper_state, params_gs, threshold)
+        
         print 'Mean pointcloud: ', np.mean(np.array(pointcloud), axis = 0)
         print 'Gripper opening: ', gripper_state['Dx']
         
@@ -478,8 +427,7 @@ class Location():
     def simple_pointcloud_merge(self, pointcloud1, pointcloud2):
         print '******'
         print len(pointcloud1)
-        print len(pointcloud2)
-        merged = pointcloud1 + pointcloud2
+        merged = np.concatenate([pointcloud1, pointcloud2], axis=0)
         print len(merged)
         return merged
 
@@ -856,9 +804,9 @@ if __name__ == "__main__":
     it = 21
     it_2 = 4
     path_shape = '/media/mcube/data/shapes_data/processed_pointclouds/'
-    #path_shape = None
-    global_pointcloud = add_point_clouds([name_id], rotations = range(1), is_save = False, is_visualize = True,
-        model_path = model_path, gs_id=gs_id, touch_list=range(3), is_half = False, threshold = 0.1, 
+    path_shape = None
+    global_pointcloud = add_point_clouds([name_id], rotations = range(16), is_save = False, is_visualize = True,
+        model_path = model_path, gs_id=gs_id, touch_list=range(220), is_half = False, threshold = 0.1, 
         save_local_pointcloud = path_shape, model_2 = model_2)
     loc.old_visualize_pointcloud(global_pointcloud)
     
@@ -894,7 +842,7 @@ if __name__ == "__main__":
     ## Get pointcloud from different rotations
     name_id = 'flashlight_l=70_h=20_dx=10_dy=10_rot={}_debug'
     
-    global_pointcloud = add_point_clouds([name_id], rotations = range(9), is_save = True, is_visualize = False,
+    global_pointcloud = add_point_clouds([name_id], rotations = range(16), is_save = True, is_visualize = False,
         model_path = model_path, gs_id=gs_id, touch_list=touch_list, is_half = True, threshold = 0.15)
     quaternion = np.array([0.122787803968973,  -0.696364240320019,   0.696364240320019, -0.122787803968973])
     rotate_pointcloud_gripper(global_pointcloud, quaternion)
@@ -992,4 +940,30 @@ if __name__ == "__main__":
         #z_off = 295 #291#293.65 #284.22
     ##z_off = 284.22
     
+    #if with_convex_hull:
+            ### Comput convex hull and add those points:
+            #hull = scipy.spatial.ConvexHull(pixel_list)
+            #pixel_list = np.array(pixel_list)
+            
+            #tupVerts=np.array([pixel_list[hull.vertices,0], pixel_list[hull.vertices,1]])
+            #tupVerts = np.concatenate([tupVerts, tupVerts[:,0:1]], axis=1)
+            
+            #pix_x, pix_y = np.meshgrid(np.arange(height_map.shape[1]), np.arange(height_map.shape[0])) # make a canvas with coordinates
+            #pix_x, pix_y = pix_x.flatten(), pix_y.flatten()
+            #points = np.vstack((pix_y,pix_x)).T 
+
+            #p = Path(tupVerts.T)
+            #grid = p.contains_points(points)
+            #mask = grid.reshape(height_map.shape[0],height_map.shape[1])
+            #for i in range(height_map.shape[0]):
+                #for j in range(height_map.shape[1]):
+                    #if mask[i][j] and height_map[i][j] < threshold:
+                        #world_point = pxb_2_wb_3d(
+                            #point_3d=(i, j, -2),
+                            #gs_id=gs_id,
+                            #gripper_state = gripper_state,
+                            #fitting_params = params_gs
+                        #)
+                        #a = np.asarray(world_point)
+                        #pointcloud.append(a)
 #'''

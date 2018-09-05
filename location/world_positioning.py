@@ -2,7 +2,7 @@ from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.linalg import inv
-import math, os, sys, cv2, yaml
+import math, os, sys, cv2, yaml, copy
 try:
     import tf.transformations as tfm
 except Exception as e:
@@ -154,3 +154,46 @@ def pxb_2_wb_3d(point_3d, gs_id, gripper_state, fitting_params, two_outputs = Fa
     if two_outputs: return p4, p3
     return p4
 # '''
+
+def fast_pxb2wb_3d(depth_map, gs_id, gripper_state, fitting_params, threshold, also_p3 = False):
+    dim = depth_map.shape
+    x, y = np.meshgrid(range(dim[0]), range(dim[1]), indexing='ij')
+    z = depth_map
+
+    mask = (depth_map > threshold).astype(float)
+
+    non_zero = np.where(mask.flatten() > 0)
+    length = len(non_zero[0])
+    x = x.flatten()[non_zero]
+    y = y.flatten()[non_zero]
+    z = z.flatten()[non_zero]
+
+
+    if gs_id == 1:
+        normal = 1
+    else:
+        normal = -1
+
+    pos = gripper_state['pos']
+    quaternion = gripper_state['quaternion']
+    Dx = gripper_state['Dx'] # Obertura
+    Dz = gripper_state['Dz']
+
+    k1, k2, k3,  l1, l2, l3,  dx, dy, dz = fitting_params
+
+    p1 = (x, y - half_y, z)
+    p2 = (p1[0]*k1 + p1[1]*k2, p1[1]*l1 + p1[0]*l2, p1[2])
+    p3 = (normal*(Dx + dx + p2[2]), p2[1] + dy, Dz + dz + p2[0])
+
+    v = np.stack((p3[0], p3[1], p3[2], np.ones(p3[0].shape)), axis=0)
+    w2gr_mat = quaternion_matrix(quaternion)
+    w = copy.deepcopy(v)
+    def f(a):
+        return w2gr_mat.dot(a)
+    v = np.apply_along_axis(f, 0, v)
+    v = [v[0] + 1000*pos[0], v[1] + 1000*pos[1], v[2] + 1000*pos[2], v[3]]
+    v = np.swapaxes(v[:-1], 0, 1)
+
+    v = np.reshape(v, (length, 3))
+    if also_p3: return v, w
+    return v
