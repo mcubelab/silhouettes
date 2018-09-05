@@ -14,7 +14,7 @@ if __name__ == "__main__":
     shapes = ['semipyramid_3']
     
 
-    gs_ids = [1,2]
+    gs_ids = [1]
     original_num_data = 900
     original_num_test_data = 300
     date = '09-02-2018'#datetime.datetime.today().strftime('%m-%d-%Y') #'08-21-2018' #

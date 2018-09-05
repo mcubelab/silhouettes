@@ -146,6 +146,7 @@ class ControlRobot():
 
     def palpate(self, speed=200, force_list=[1, 10, 20, 40], save=False, path='', save_only_picture=False, i=0):
         # 0. We create the directory
+        if os.path.exists(path): return
         if save is True and not os.path.exists(path): # If the directory does not exist, we create it
             os.makedirs(path)
 
@@ -162,7 +163,6 @@ class ControlRobot():
             print "Applying: " + str(force)
             time.sleep(0.5)
             dc.get_data(get_cart=False, get_gs1=(1 in self.gs_id), get_gs2=(2 in self.gs_id), get_wsg=True, save=save, directory=path, iteration=i)
-            time.sleep(0.5)
             self.open_gripper()
             i += 1
 
@@ -229,7 +229,7 @@ class ControlRobot():
                 it_count += 1
             
             self.move_cart_mm(movement[0], movement[1], movement[2])
-            rospy.sleep(1)
+            rospy.sleep(0.5)
             
             print 'movement: ', movement
             if original_x is not None:

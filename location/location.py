@@ -343,7 +343,8 @@ class Location():
 
         return cart, gs1_list, gs2_list, wsg_list, force_list, gs1_back, gs2_back
 
-    def get_local_pointcloud(self, gs_id, directory='', num=-1, new_cart=None, model_path=None, model=None, threshold=0.1, swap = None, with_convex_hull = False):
+    def get_local_pointcloud(self, gs_id, directory='', num=-1, new_cart=None, model_path=None, model=None, 
+            threshold=0.1, swap = None, with_convex_hull = False, save_local_pointcloud = None):
         # 1. We convert the raw image to height_map data
         #import pdb; pdb.set_trace()
         print swap
@@ -396,26 +397,38 @@ class Location():
         # 2. We convert height_map data into world position
         gripper_state = {}
         gripper_state['pos'] =  cart[0:3]
-        print cart[0:3]
+        print 'pos: ', cart
         gripper_state['quaternion'] = cart[-4:]
         gripper_state['Dx'] = wsg_list[0]['width']/2.0
         print 'gripper: ', gripper_state['Dx']
         gripper_state['Dz'] = 372.3#365#139.8 + 72.5 + 160  # Base + wsg + finger
         print gripper_state
         pointcloud = []
+        pointcloud_p3 = []
         pixel_list = []
         for i in range(height_map.shape[0]):
             for j in range(height_map.shape[1]):
                 #print 'shape: ', height_map.shape[1]
-                if(height_map[i][j] >= threshold) : # TODO: HACK MARIA
+                if (height_map[i][j] >= threshold) and save_local_pointcloud is None: # TODO: HACK MARIA
                     world_point = pxb_2_wb_3d(
                         point_3d=(i, j, height_map[i][j]),
                         gs_id=gs_id,
                         gripper_state = gripper_state,
-                        fitting_params = params_gs
-                    )
+                        fitting_params = params_gs)
                     a = np.asarray(world_point)
                     pointcloud.append(a)
+                    pixel_list.append([i,j])
+                if save_local_pointcloud is not None:
+                    p4,p3 = pxb_2_wb_3d(
+                            point_3d=(i, j, height_map[i][j]),
+                            gs_id=gs_id,
+                            gripper_state = gripper_state,
+                            fitting_params = params_gs,
+                            two_outputs = True) #We save 2 parameters
+                    a = np.asarray(p4)
+                    b = np.asarray(p4)
+                    pointcloud.append(a)
+                    pointcloud_p3.append(b)
                     pixel_list.append([i,j])
         if with_convex_hull:
             ## Comput convex hull and add those points:
@@ -443,31 +456,19 @@ class Location():
                         )
                         a = np.asarray(world_point)
                         pointcloud.append(a)
-        '''
-        import pdb; pdb.set_trace()
-        n_points = len(xy_pointcloud); c = np.zeros(n_points); A = np.r_[np.array(xy_pointcloud).T,np.ones((1,n_points))]
-        hull = scipy.spatial.ConvexHull(np.array(xy_pointcloud))
-        
-        
-        poly = Ploygon(hull.vertices)
-        
-        for i in range(height_map.shape[0]):
-            for j in range(height_map.shape[1]):
-                #print 'shape: ', height_map.shape[1]
-                if in_hull(c, A, np.array([i,j])):
-                    world_point = pxb_2_wb_3d(
-                        point_3d=(i, j, 0),
-                        gs_id=gs_id,
-                        gripper_state = gripper_state,
-                        fitting_params = params_gs
-                    )
-                    a = np.asarray(world_point)
-                    pointcloud.append(a)
-                    '''
+
         print 'Mean pointcloud: ', np.mean(np.array(pointcloud), axis = 0)
         print 'Gripper opening: ', gripper_state['Dx']
 
         print "Time used by forloops: " + str(time.time() - forloops_time_start)
+        if save_local_pointcloud is not None:
+            if not os.path.exists(save_local_pointcloud): os.makedirs(save_local_pointcloud)
+            data = {}
+            #data['p4'] = np.array(pointcloud); data['p3'] = np.array(pointcloud_p3); data['gripper'] = gripper_state['Dx'];
+            #data['cart'] = cart; data['height'] = np.array(height_map); 
+            data['directory'] = directory; data['num'] =  num; #data['vector'] = np.array(self.get_vector_image(test_image))
+            #np.save(save_local_pointcloud + '/data_{}.npy'.format(num), data)
+            return pointcloud
         return pointcloud
 
     def simple_pointcloud_merge(self, pointcloud1, pointcloud2):
@@ -554,7 +555,8 @@ class Location():
             new_pc.append(new_elem)
         return new_pc
 
-    def get_global_pointcloud(self, gs_id, directory, touches, global_pointcloud, model_path=None, model=None, threshold = 0.1, swap =[]):
+    def get_global_pointcloud(self, gs_id, directory, touches, global_pointcloud, model_path=None, model=None,
+        threshold = 0.1, swap =[], save_local_pointcloud = None):
         for it,i in enumerate(touches):
             exp = str(i)
             print "Processing img " + exp + "..."
@@ -562,7 +564,7 @@ class Location():
                 swap_it = None
                 if it < len(swap): swap_it = swap[it]
                 local_pointcloud = self.get_local_pointcloud(gs_id=gs_id, directory=directory, num=i, model_path=model_path, 
-                                model=model, threshold = threshold, swap =swap_it)
+                                model=model, threshold = threshold, swap =swap_it, save_local_pointcloud = save_local_pointcloud)
 
                 if global_pointcloud is None:
                     global_pointcloud = local_pointcloud
@@ -575,24 +577,25 @@ class Location():
                 print e
         return global_pointcloud
 
+    def get_vector_image(self, img, model = None):
+        if model is None: model = ResNet50(weights='imagenet', include_top=False)
+        x = image.img_to_array(img)
+        x = np.expand_dims(x, axis=0)
+        x = preprocess_input(x)
+        return model.predict(x).flatten()
+        
+        
     def get_distance_images(self, img1, img2, model = None):
 
         if model is None: model = ResNet50(weights='imagenet', include_top=False)
-        x = image.img_to_array(img1)
-        x = np.expand_dims(x, axis=0)
-        x = preprocess_input(x)
 
-        x2 = image.img_to_array(img2)
-        x2 = np.expand_dims(x2, axis=0)
-        x2 = preprocess_input(x2)
-
-        features = model.predict(x).flatten()
-        features2 = model.predict(x2).flatten()
+        features = self.get_vector_image(img1, model)
+        features2 = self.get_vector_image(img2, model)
         return scipy.spatial.distance.cosine(features, features2)
 
 
 def create_point_cloud(name_id = '', gs_id = 2, touch_list = range(300), model_path = None, threshold = 0.1, 
-            is_save = False, is_visualize = True, is_half = False, global_pointcloud = None, swap =[]):
+            is_save = False, is_visualize = True, is_half = False, global_pointcloud = None, swap =[], save_local_pointcloud = None):
     
     loc = Location()
     directory = '/media/mcube/data/shapes_data/object_exploration/' + name_id + '/'
@@ -602,7 +605,8 @@ def create_point_cloud(name_id = '', gs_id = 2, touch_list = range(300), model_p
     model = load_model(model_path)
 
     global_pointcloud = loc.get_global_pointcloud(gs_id=gs_id, directory=directory, touches=touch_list, 
-                global_pointcloud = global_pointcloud, model_path=model_path, model=model, threshold = threshold, swap = swap)
+                global_pointcloud = global_pointcloud, model_path=model_path, model=model, threshold = threshold, swap = swap,
+                save_local_pointcloud = save_local_pointcloud)
     global_pointcloud = np.array(global_pointcloud)
 
     # Save and visualize
@@ -615,7 +619,7 @@ def create_point_cloud(name_id = '', gs_id = 2, touch_list = range(300), model_p
     
 
 def add_point_clouds(pc_ids, rotations = [], is_save = False, is_visualize = True, final_global_pointcloud = None, 
-                        gs_id = 2, touch_list = range(300), model_path = '', is_half = False, threshold = 0.1):
+                        gs_id = 2, touch_list = range(300), model_path = '', is_half = False, threshold = 0.1, save_local_pointcloud = None):
         
     directory = '/media/mcube/data/shapes_data/pointclouds/'
     if len(pc_ids) == 1:
@@ -626,10 +630,16 @@ def add_point_clouds(pc_ids, rotations = [], is_save = False, is_visualize = Tru
         
     for i, pc_id in enumerate(pc_ids):
         print pc_id
+        if save_local_pointcloud: 
+            aux_save_local_pointcloud = save_local_pointcloud + pc_id + '/'
+            if not os.path.exists(aux_save_local_pointcloud): os.makedirs(aux_save_local_pointcloud)
+            np.save(aux_save_local_pointcloud + 'rotation.npy', rotations[i])
+        else: aux_save_local_pointcloud = save_local_pointcloud 
         if not os.path.isfile(directory + pc_id+'.npy'):
-            create_point_cloud(name_id = pc_id, gs_id = gs_id, touch_list = touch_list, model_path = model_path, 
-            is_save = True, is_visualize = False, is_half = is_half, threshold = threshold)
-        global_pointcloud = np.load(directory + pc_id+'.npy')
+            global_pointcloud = create_point_cloud(name_id = pc_id, gs_id = gs_id, touch_list = touch_list, model_path = model_path, 
+            is_save = is_save, is_visualize = False, is_half = is_half, threshold = threshold, save_local_pointcloud = aux_save_local_pointcloud)
+        else:
+            global_pointcloud = np.load(directory + pc_id+'.npy')
         print global_pointcloud.shape
         # Rotate
         if is_half: rotation = rotations[i]*np.pi/4.0
@@ -807,12 +817,13 @@ if __name__ == "__main__":
     name_id = 'cilinder_l=50_h=20_dx=10_dy=10_rot=0_debug'#'flashlight_l=70_h=20_dx=10_dy=10_rot=0_debug'
     name_id = 'mentos_l=80_h=20_dx=10_dy=10_rot={}_debug'#'flashlight_l=70_h=20_dx=10_dy=10_rot=0_debug'
     gs_id = 1
-    model_path = '/home/mcube/weights_server_last/weights_type=all_08-23-2018_num=2000_gs_id=2_in=rgb_out=height_epoch=100_NN=basic_aug=5.hdf5'
+    model_path = '/home/mcube/weights_last/weights_type=all_08-23-2018_num=2000_gs_id=2_in=rgb_out=height_epoch=100_NN=basic_aug=5.hdf5'
+    model_path = '/home/mcube/weights_09-02-2018_last/weights_type=all_09-02-2018_num=2400.0_gs_id=1_in=rgb_out=height_epoch=100_NN=basic_aug=5.hdf5'
     directory = '/media/mcube/data/shapes_data/pointclouds/'
     name_id = 'empty_l=60_h=30_dx=10_dy=20_rot=2_debug'
-    x_off = 832#837.2
-    y_off = 372#369.13# .13#376.2#376.8 #371.13 
-    z_off = 284.45#286.5 #291#293.65 #284.22
+    x_off = 839#837.2
+    y_off = 372.13#369.13# .13#376.2#376.8 #371.13 
+    z_off = 286.5#284.45#286.5 #291#293.65 #284.22
     if gs_id == 2:
         y_off = 372.13
         z_off = 278.5
@@ -829,21 +840,22 @@ if __name__ == "__main__":
     ## Do stitching 
     
     name_id = 'double_cilinder_l=100_h=20_dx=2_dy=10_rot=1_debug' #'cilinder_l=50_h=20_dx=10_dy=10_rot=0_debug'
-    name_id = 'flashlight_l=150_h=20_dx=30_dy=10_rot={}_debug' #'cilinder_l=50_h=20_dx=10_dy=10_rot=0_debug'
-    
+    name_id = 'rectangle_l=100_h=50_dx=15_dy=15_rot={}_debuging' #'cilinder_l=50_h=20_dx=10_dy=10_rot=0_debug'
+    name_id = 'flashlight_l=80_h=20_dx=10_dy=10_rot={}_09-03-2018'
+    #name_id = 'big_semicone_l=160_h=50_dx=15_dy=20_rot=0_debuging' #'cilinder_l=50_h=20_dx=10_dy=10_rot=0_debug'
+    #name_id = 'cilinder_l=100_h=50_dx=15_dy=20_rot=0_debuging' #'cilinder_l=50_h=20_dx=10_dy=10_rot=0_debug'
     it = 21
     it_2 = 4
-    
-    global_pointcloud = add_point_clouds([name_id], rotations = range(15), is_save = True, is_visualize = True,
-        model_path = model_path, gs_id=gs_id, touch_list=range(60), is_half = False, threshold = 0.15)
+    path_shape = '/media/mcube/data/shapes_data/processed_pointclouds/'
+    global_pointcloud = add_point_clouds([name_id], rotations = [0,1], is_save = False, is_visualize = True,
+        model_path = model_path, gs_id=gs_id, touch_list=range(10), is_half = False, threshold = 0.1, save_local_pointcloud = path_shape)
     loc.old_visualize_pointcloud(global_pointcloud)
-    import pdb; pdb.set_trace()
+    
+    
+    global_pointcloud = compare_pointcloud_ply(global_pointcloud, shape=name_id)
     assert(False)
-    global_pointcloud_1 = create_point_cloud (name_id = name_id, gs_id = gs_id, touch_list = range(200), model_path = model_path,
-                is_save = False, is_visualize = True, is_half = False, threshold = 0.1)
-    rotations = np.linspace(-180,180,11)*np.pi/180
-    global_pointcloud = rotate_pointcloud(name_id, rotations = rotations, final_global_pointcloud = global_pointcloud_1, is_save = False, is_visualize = True,
-        model_path = model_path, gs_id=gs_id, touch_list=touch_list, is_half = True, threshold = 0.15)
+
+
     #import pdb;pdb.set_trace()
     #compare_pointcloud_ply(global_pointcloud, shape = name_id, is_visualize = True)
     loc.old_visualize_pointcloud(global_pointcloud_1)

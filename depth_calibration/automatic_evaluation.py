@@ -9,23 +9,23 @@ import os.path
 import glob
 
 
-weights_path = '/home/mcube/weights_server_last/'
+weights_path = '/home/mcube/weights_09-02-2018_last/'
 weights_files = glob.glob(weights_path + '*.hdf5')
 weights_files.sort(key=os.path.getmtime)
 for weights_file in weights_files:
     print weights_file
     #weights_file = '/home/mcube/weights_server_3h/weights_type=all_08-23-2018_num=2000_gs_id=2_in={}_out={}_epoch=100_NN=basic_aug=5.hdf5'.format(input_type,output_type)
-    gs_id = 2
+    gs_id = 1
     dim_out = [225,243]
     shapes = ['sphere', 'semicone_1', 'semicone_2','hollowcone_2', 'semipyramid_3']
-    shapes = ['sphere', 'semicone_1', 'semicone_2','hollowcone_2']
+    shapes = ['sphere', 'semicone_1', 'semicone_2','hollowcone_3','semipyramid_3']
     if 'grad' in weights_file: output_type = 'grad'
     elif 'angle' in weights_file: output_type = 'angle'
     else: output_type = 'height'
     if 'gray' in weights_file: input_type = 'gray'
     else: input_type = 'rgb'
-    path_train = '/media/mcube/data/shapes_data/processed_08-23-2018/{}_08-23-2018_gs_id=2_rot=0/' #.format(gs_id)
-    path_test = '/media/mcube/data/shapes_data/processed_08-23-2018/{}_08-23-2018_test_gs_id=2_rot=0/'#.format(gs_id)
+    path_train = '/media/mcube/data/shapes_data/processed_09-02-2018/{}_09-02-2018_gs_id=1_rot=0/' #.format(gs_id)
+    path_test = '/media/mcube/data/shapes_data/processed_09-02-2018/{}_09-02-2018_test_gs_id=1_rot=0/'#.format(gs_id)
 
     keras.losses.custom_loss = custom_loss
     model_path = weights_file
@@ -38,7 +38,7 @@ for weights_file in weights_files:
         return K.sum(K.square(y_true-y_pred))
 
     ## First evaluate test imatges:
-    date = '08-17-2018'
+    date = '09-02-2018'
     test_path = '/media/mcube/data/shapes_data/raw/test_{}_gs_id={}/'.format(date,gs_id)
     path_test_images = glob.glob(test_path + '*.png')
     path_test_images.sort(key=os.path.getmtime)
@@ -80,10 +80,10 @@ for weights_file in weights_files:
             losses = []
             if i:
                 path = path_test.format(shape)
-                pictures_range = np.arange(1,test_data,5)
+                pictures_range = np.arange(1,test_data*5,5)
             else:
                 path = path_train.format(shape)
-                pictures_range = np.arange(1,train_data,5)
+                pictures_range = np.arange(1,train_data*5,5)
             for img_number in pictures_range:
                 #import pdb; pdb.set_trace()
                 print 'number: ', img_number
@@ -147,7 +147,7 @@ for weights_file in weights_files:
             plt.show()
             import pdb; pdb.set_trace()
             '''
-            if i:
+            if i:   ## TODO BIT ERROR
                 losses_train.append(losses)
                 mean_losses_train.append(np.mean(losses))
                 std_losses_train.append(np.std(losses))
