@@ -344,7 +344,7 @@ class Location():
         return cart, gs1_list, gs2_list, wsg_list, force_list, gs1_back, gs2_back
 
     def get_local_pointcloud(self, gs_id, directory='', num=-1, new_cart=None, model_path=None, model=None, 
-            threshold=0.1, swap = None, with_convex_hull = False, save_local_pointcloud = None):
+            threshold=0.1, swap = None, with_convex_hull = False, save_local_pointcloud = None, model_2 = None ):
         # 1. We convert the raw image to height_map data
         #import pdb; pdb.set_trace()
         print swap
@@ -426,7 +426,7 @@ class Location():
                             fitting_params = params_gs,
                             two_outputs = True) #We save 2 parameters
                     a = np.asarray(p4)
-                    b = np.asarray(p4)
+                    b = np.asarray(p3)
                     pointcloud.append(a)
                     pointcloud_p3.append(b)
                     pixel_list.append([i,j])
@@ -459,15 +459,19 @@ class Location():
 
         print 'Mean pointcloud: ', np.mean(np.array(pointcloud), axis = 0)
         print 'Gripper opening: ', gripper_state['Dx']
-
+        
         print "Time used by forloops: " + str(time.time() - forloops_time_start)
+        
         if save_local_pointcloud is not None:
+            tic = time.time()
             if not os.path.exists(save_local_pointcloud): os.makedirs(save_local_pointcloud)
             data = {}
-            #data['p4'] = np.array(pointcloud); data['p3'] = np.array(pointcloud_p3); data['gripper'] = gripper_state['Dx'];
-            #data['cart'] = cart; data['height'] = np.array(height_map); 
-            data['directory'] = directory; data['num'] =  num; #data['vector'] = np.array(self.get_vector_image(test_image))
-            #np.save(save_local_pointcloud + '/data_{}.npy'.format(num), data)
+            data['p4'] = np.array(pointcloud); data['p3'] = np.array(pointcloud_p3); data['gripper'] = gripper_state['Dx'];
+            data['cart'] = cart; data['height'] = np.array(height_map);  data['image'] = test_image
+            data['directory'] = directory; data['num'] =  num; 
+            data['vector'] = np.array(self.get_vector_image(test_image, model = model_2))
+            np.save(save_local_pointcloud + '/data_{}.npy'.format(num), data)
+            print 'Time saving: ', time.time() - tic
             return pointcloud
         return pointcloud
 
@@ -494,8 +498,8 @@ class Location():
             draw_registration_result(source, target, trans_init)
 
         print("Initial alignment")
-        evaluation = open3d.evaluate_registration(source, target, threshold, trans_init)
-        print(evaluation)
+        init_evaluation = open3d.evaluate_registration(source, target, threshold, trans_init)
+        print(init_evaluation)
         #import pdb; pdb.set_trace()
         print("Apply point-to-point ICP")
         reg_p2p = open3d.registration_icp(source, target, threshold, trans_init,
@@ -510,7 +514,8 @@ class Location():
             draw_registration_result(source, target, reg_p2p.transformation)
         source.transform(reg_p2p.transformation)
         if with_transformation:
-            return np.concatenate([np.array(source.points), np.array(target.points)], axis=0), reg_p2p.transformation
+            #evaluation = open3d.evaluate_registration(source, target, threshold, trans_init)
+            return np.concatenate([np.array(source.points), np.array(target.points)], axis=0), np.array(source.points), reg_p2p, init_evaluation
         return np.concatenate([np.array(source.points), np.array(target.points)], axis=0)
         
     def stitch_pointclouds(self, fixed, moved):
@@ -556,7 +561,7 @@ class Location():
         return new_pc
 
     def get_global_pointcloud(self, gs_id, directory, touches, global_pointcloud, model_path=None, model=None,
-        threshold = 0.1, swap =[], save_local_pointcloud = None):
+        threshold = 0.1, swap =[], save_local_pointcloud = None, model_2 = None):
         for it,i in enumerate(touches):
             exp = str(i)
             print "Processing img " + exp + "..."
@@ -564,7 +569,8 @@ class Location():
                 swap_it = None
                 if it < len(swap): swap_it = swap[it]
                 local_pointcloud = self.get_local_pointcloud(gs_id=gs_id, directory=directory, num=i, model_path=model_path, 
-                                model=model, threshold = threshold, swap =swap_it, save_local_pointcloud = save_local_pointcloud)
+                                model=model, threshold = threshold, swap =swap_it, 
+                                save_local_pointcloud = save_local_pointcloud, model_2 = model_2)
 
                 if global_pointcloud is None:
                     global_pointcloud = local_pointcloud
@@ -595,7 +601,8 @@ class Location():
 
 
 def create_point_cloud(name_id = '', gs_id = 2, touch_list = range(300), model_path = None, threshold = 0.1, 
-            is_save = False, is_visualize = True, is_half = False, global_pointcloud = None, swap =[], save_local_pointcloud = None):
+            is_save = False, is_visualize = True, is_half = False, global_pointcloud = None, swap =[], 
+            save_local_pointcloud = None, model_2 = None):
     
     loc = Location()
     directory = '/media/mcube/data/shapes_data/object_exploration/' + name_id + '/'
@@ -606,7 +613,7 @@ def create_point_cloud(name_id = '', gs_id = 2, touch_list = range(300), model_p
 
     global_pointcloud = loc.get_global_pointcloud(gs_id=gs_id, directory=directory, touches=touch_list, 
                 global_pointcloud = global_pointcloud, model_path=model_path, model=model, threshold = threshold, swap = swap,
-                save_local_pointcloud = save_local_pointcloud)
+                save_local_pointcloud = save_local_pointcloud, model_2 = model_2)
     global_pointcloud = np.array(global_pointcloud)
 
     # Save and visualize
@@ -619,7 +626,8 @@ def create_point_cloud(name_id = '', gs_id = 2, touch_list = range(300), model_p
     
 
 def add_point_clouds(pc_ids, rotations = [], is_save = False, is_visualize = True, final_global_pointcloud = None, 
-                        gs_id = 2, touch_list = range(300), model_path = '', is_half = False, threshold = 0.1, save_local_pointcloud = None):
+                        gs_id = 2, touch_list = range(300), model_path = '', is_half = False, threshold = 0.1,
+                         save_local_pointcloud = None, model_2 = None):
         
     directory = '/media/mcube/data/shapes_data/pointclouds/'
     if len(pc_ids) == 1:
@@ -637,7 +645,8 @@ def add_point_clouds(pc_ids, rotations = [], is_save = False, is_visualize = Tru
         else: aux_save_local_pointcloud = save_local_pointcloud 
         if not os.path.isfile(directory + pc_id+'.npy'):
             global_pointcloud = create_point_cloud(name_id = pc_id, gs_id = gs_id, touch_list = touch_list, model_path = model_path, 
-            is_save = is_save, is_visualize = False, is_half = is_half, threshold = threshold, save_local_pointcloud = aux_save_local_pointcloud)
+            is_save = is_save, is_visualize = False, is_half = is_half, threshold = threshold, 
+            save_local_pointcloud = aux_save_local_pointcloud, model_2 = model_2)
         else:
             global_pointcloud = np.load(directory + pc_id+'.npy')
         print global_pointcloud.shape
@@ -827,7 +836,7 @@ if __name__ == "__main__":
     if gs_id == 2:
         y_off = 372.13
         z_off = 278.5
-    
+    model_2 = ResNet50(weights='imagenet', include_top=False)
     #838.6, 372.13 , 657.
     touch_list = range(10,12) + range(26,28) #+ range(43,45)
     touch_list = range(200) #+ range(26,27) #+ range(43,45)
@@ -847,8 +856,10 @@ if __name__ == "__main__":
     it = 21
     it_2 = 4
     path_shape = '/media/mcube/data/shapes_data/processed_pointclouds/'
-    global_pointcloud = add_point_clouds([name_id], rotations = [0,1], is_save = False, is_visualize = True,
-        model_path = model_path, gs_id=gs_id, touch_list=range(10), is_half = False, threshold = 0.1, save_local_pointcloud = path_shape)
+    #path_shape = None
+    global_pointcloud = add_point_clouds([name_id], rotations = range(1), is_save = False, is_visualize = True,
+        model_path = model_path, gs_id=gs_id, touch_list=range(3), is_half = False, threshold = 0.1, 
+        save_local_pointcloud = path_shape, model_2 = model_2)
     loc.old_visualize_pointcloud(global_pointcloud)
     
     
@@ -883,7 +894,7 @@ if __name__ == "__main__":
     ## Get pointcloud from different rotations
     name_id = 'flashlight_l=70_h=20_dx=10_dy=10_rot={}_debug'
     
-    global_pointcloud = add_point_clouds([name_id], rotations = range(8), is_save = True, is_visualize = False,
+    global_pointcloud = add_point_clouds([name_id], rotations = range(9), is_save = True, is_visualize = False,
         model_path = model_path, gs_id=gs_id, touch_list=touch_list, is_half = True, threshold = 0.15)
     quaternion = np.array([0.122787803968973,  -0.696364240320019,   0.696364240320019, -0.122787803968973])
     rotate_pointcloud_gripper(global_pointcloud, quaternion)

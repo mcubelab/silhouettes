@@ -41,7 +41,7 @@ if __name__ == "__main__":
     # Enter object main dimensions in [mm]
     length = 80
     height = 20
-    starting_angle = 2
+    starting_angle = 13
     # Enter minimum step distance (d) in [mm]
     dx = 10
     dz = 10
