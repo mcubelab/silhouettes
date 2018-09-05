@@ -116,7 +116,6 @@ def pxb_2_wb_3d(point_3d, gs_id, gripper_state, fitting_params):
 
 def fast_pxb2wb_3d(depth_map, gs_id, gripper_state, fitting_params, threshold):
     dim = depth_map.shape
-    print dim
     x, y = np.meshgrid(range(dim[0]), range(dim[1]), indexing='ij')
     z = depth_map
 
@@ -128,7 +127,6 @@ def fast_pxb2wb_3d(depth_map, gs_id, gripper_state, fitting_params, threshold):
     y = y.flatten()[non_zero]
     z = z.flatten()[non_zero]
 
-    mask = mask.astype(int)
 
     if gs_id == 1:
         normal = 1
