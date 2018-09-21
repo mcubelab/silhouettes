@@ -160,7 +160,7 @@ def fast_pxb2wb_3d(depth_map, gs_id, gripper_state, fitting_params, threshold, a
     x, y = np.meshgrid(range(dim[0]), range(dim[1]), indexing='ij')
     z = depth_map
 
-    mask = (depth_map > threshold).astype(float)
+    mask = (depth_map >= threshold).astype(float)
 
     non_zero = np.where(mask.flatten() > 0)
     length = len(non_zero[0])
@@ -187,7 +187,8 @@ def fast_pxb2wb_3d(depth_map, gs_id, gripper_state, fitting_params, threshold, a
 
     v = np.stack((p3[0], p3[1], p3[2], np.ones(p3[0].shape)), axis=0)
     w2gr_mat = quaternion_matrix(quaternion)
-    w = copy.deepcopy(v)
+    w = np.stack((p3[0], p3[1], p3[2], np.ones(p3[0].shape)), axis=0)
+    w = w.transpose()
     def f(a):
         return w2gr_mat.dot(a)
     v = np.apply_along_axis(f, 0, v)
@@ -196,4 +197,22 @@ def fast_pxb2wb_3d(depth_map, gs_id, gripper_state, fitting_params, threshold, a
 
     v = np.reshape(v, (length, 3))
     if also_p3: return v, w
+    return v
+    
+def gr2w(v, pos, quaternion):
+    w2gr_mat = quaternion_matrix(quaternion)
+    length = v.shape[0] #HACK TODO
+    v= v.transpose()
+    '''
+    def f(a):
+        return w2gr_mat.dot(a)
+    
+    import pdb; pdb.set_trace()
+    v = np.apply_along_axis(f, 0, v)
+    '''
+    v = np.dot(w2gr_mat,v)
+    v = [v[0] + 1000*pos[0], v[1] + 1000*pos[1], v[2] + 1000*pos[2], v[3]]
+    v = np.swapaxes(v[:-1], 0, 1)
+
+    v = np.reshape(v, (length, 3))
     return v

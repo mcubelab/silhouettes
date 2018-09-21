@@ -15,8 +15,8 @@ if __name__ == "__main__":
     
 
     gs_ids = [1]
-    original_num_data = 900
-    original_num_test_data = 300
+    original_num_data = 100
+    original_num_test_data = 10
     date = '09-02-2018'#datetime.datetime.today().strftime('%m-%d-%Y') #'08-21-2018' #
     for gs_id in gs_ids:
       print "gs_id: ", gs_id
@@ -24,6 +24,7 @@ if __name__ == "__main__":
       while start_again != 'y':
         start_again = raw_input('Have you remove the other finger? [y/n]')
       for shape in shapes:
+        continue
         if ('semipyramid' in shape) or ('stamp' in shape):
             rotations = 180/8.0*np.arange(4)
             num_data = original_num_data/4
@@ -64,7 +65,7 @@ if __name__ == "__main__":
               gripper.open(speed=200)
       now_test = False
       print 'All the automatic data is collected. Now collect the test images (keys, bolts, also all shapes again). '
-      dc = DataCollector(only_one_shot=True, save_path='/media/mcube/data/shapes_data/raw/test_{}_gs_id={}/'.format(date,gs_id))
+      dc = DataCollector(only_one_shot=True, save_path='/media/mcube/data/shapes_data/raw/test_2_{}_gs_id={}/'.format(date,gs_id))
       ite = 0
       while now_test != 'y':              
         dc.it = ite

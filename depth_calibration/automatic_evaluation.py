@@ -9,7 +9,7 @@ import os.path
 import glob
 
 
-weights_path = '/home/mcube/weights_09-02-2018_last/'
+weights_path = '/home/mcube/test_data/' # #weights_09-02-2018_last_2/'
 weights_files = glob.glob(weights_path + '*.hdf5')
 weights_files.sort(key=os.path.getmtime)
 for weights_file in weights_files:
@@ -47,7 +47,7 @@ for weights_file in weights_files:
     if len(glob.glob(directory_save_test+'*.npy')) > 3: continue  #Case where test, train and height have been saved
     if not os.path.exists(directory_save_test): os.makedirs(directory_save_test)
     max_heights = []
-    if len(path_test_images) != len(glob.glob(directory_save_test+'*.png')):
+    if 1: #len(path_test_images) != len(glob.glob(directory_save_test+'*.png')):
         for img_number, path in enumerate(path_test_images):
             test_image = cv2.imread(path)
             depth_map = raw_gs_to_depth_map(
@@ -61,7 +61,11 @@ for weights_file in weights_files:
                 model=model,
                 input_type=input_type)
             max_heights.append(np.amax(depth_map))
+            np.save(directory_save_test + 'gsimg_{}.npy'.format(img_number), test_image)
+            np.save(directory_save_test + 'height_{}.npy'.format(img_number), depth_map)
             plt.close()
+            print directory_save_test + '/height_{}.npy'.format(img_number)
+            assert(False)
         np.save(directory_save_test + 'max_heights.npy', max_heights)
         print max_heights
         #raw_input('Go to: ' + directory_save_test + ' to see the images. OK?')
@@ -84,12 +88,15 @@ for weights_file in weights_files:
             else:
                 path = path_train.format(shape)
                 pictures_range = np.arange(1,train_data*5,5)
+            ## Get all sizes patches:
+            
             for img_number in pictures_range:
                 #import pdb; pdb.set_trace()
                 print 'number: ', img_number
                 print 'path: ', path
                 img_path = path + 'image_raw/img_{}.png'.format(img_number)
                 img_path_processed = path + 'image/img_{}.png'.format(img_number)
+                size_patch = float(glob.glob(path + 'image_circled/img_{} *.png'.format(img_number))[0][:-4].split()[-1])
                 if not os.path.exists(img_path):
                     print 'NOT HERE: ', img_path
                     continue
@@ -131,9 +138,10 @@ for weights_file in weights_files:
                     loss_threshold.append(np.sum(np.square(test_depth-aux_depth_map))) #TODO: assumed to be custom loss
                 if i:
                     loss_thresholds_test.append(loss_threshold)
+                    size_patch_test.append(size_patch)
                 else:
                     loss_thresholds_train.append(loss_threshold)
-    
+                    size_patch_train.append(size_patch)
                 '''
                 if 'sphere' not in shape:
                     plt.show()
@@ -162,6 +170,8 @@ for weights_file in weights_files:
     np.save(directory_save_test + 'losses_test.npy', losses_test)
     np.save(directory_save_test + 'loss_thresholds_train.npy', loss_thresholds_train)
     np.save(directory_save_test + 'loss_thresholds_test.npy', loss_thresholds_test)
+    np.save(directory_save_test + 'contact_patches_train.npy', size_patch_train)
+    np.save(directory_save_test + 'contact_patches_test.npy', size_patch_test)
     print 'losses_train: ', mean_losses_train
     print 'losses_test: ', mean_losses_test
     '''

@@ -121,3 +121,4 @@ gathering/core
 pos_calibration/core
 location/core
 location/c++/core
+*.npy

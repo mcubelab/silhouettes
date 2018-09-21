@@ -403,13 +403,9 @@ class Location():
         print 'gripper: ', gripper_state['Dx']
         gripper_state['Dz'] = 372.3#365#139.8 + 72.5 + 160  # Base + wsg + finger
         print gripper_state
+        
         if save_local_pointcloud: pointcloud, pointcloud_p3 = fast_pxb2wb_3d(height_map, gs_id, gripper_state, params_gs, threshold = 0, also_p3 = True)
         else: pointcloud = fast_pxb2wb_3d(height_map, gs_id, gripper_state, params_gs, threshold)
-        
-        print 'Mean pointcloud: ', np.mean(np.array(pointcloud), axis = 0)
-        print 'Gripper opening: ', gripper_state['Dx']
-        
-        print "Time used by forloops: " + str(time.time() - forloops_time_start)
         
         if save_local_pointcloud is not None:
             tic = time.time()
@@ -422,6 +418,13 @@ class Location():
             np.save(save_local_pointcloud + '/data_{}.npy'.format(num), data)
             print 'Time saving: ', time.time() - tic
             return pointcloud
+        
+        print 'Mean pointcloud: ', np.mean(np.array(pointcloud), axis = 0)
+        print 'Gripper opening: ', gripper_state['Dx']
+        
+        print "Time used by forloops: " + str(time.time() - forloops_time_start)
+        
+        
         return pointcloud
 
     def simple_pointcloud_merge(self, pointcloud1, pointcloud2):
@@ -440,30 +443,30 @@ class Location():
     def stitch_pointclouds_open3D(self, source, target, threshold = 1, trans_init = np.eye(4), max_iteration = 2000, with_plot = True, with_transformation = False):
         source = self.check_pointcloud_type(source)
         target = self.check_pointcloud_type(target)
-        target.paint_uniform_color([0.1, 0.1, 0.7])
         
         if with_plot:
+            target.paint_uniform_color([0.1, 0.1, 0.7])
             draw_registration_result(source, target, trans_init)
 
-        print("Initial alignment")
+        #print("Initial alignment")
         init_evaluation = open3d.evaluate_registration(source, target, threshold, trans_init)
-        print(init_evaluation)
-        #import pdb; pdb.set_trace()
+        #print(init_evaluation)
+        
         print("Apply point-to-point ICP")
-        reg_p2p = open3d.registration_icp(source, target, threshold, trans_init,
+        reg_p2p = open3d.registration_icp(target, source, threshold, trans_init,
                 open3d.TransformationEstimationPointToPoint(),
                 open3d.ICPConvergenceCriteria(max_iteration = max_iteration))
-        print(reg_p2p)
-        #import pdb; pdb.set_trace()
-        print("Transformation is:")
-        print(reg_p2p.transformation)
-        print("")
+        #print(reg_p2p)
+        
+        #print("Transformation is:")
+        #print(reg_p2p.transformation)
+        #print("")
         if with_plot:
-            draw_registration_result(source, target, reg_p2p.transformation)
-        source.transform(reg_p2p.transformation)
+            draw_registration_result(target, source, reg_p2p.transformation)
+        target.transform(reg_p2p.transformation)
         if with_transformation:
             #evaluation = open3d.evaluate_registration(source, target, threshold, trans_init)
-            return np.concatenate([np.array(source.points), np.array(target.points)], axis=0), np.array(source.points), reg_p2p, init_evaluation
+            return np.concatenate([np.array(source.points), np.array(target.points)], axis=0), np.array(target.points), reg_p2p, init_evaluation
         return np.concatenate([np.array(source.points), np.array(target.points)], axis=0)
         
     def stitch_pointclouds(self, fixed, moved):
@@ -664,14 +667,16 @@ def compute_stitch_error(full_pointcloud, initial_pointcloud, local_pointcloud, 
     return initial_evaluation, final_evaluation
     
 def compare_pointcloud_ply(global_pointcloud, shape, is_visualize = True):
+    '''
     if 'semicone' in shape: 
         x_off = 830
     elif 'double' in shape: 
         x_off = 841
         if gs_id == 1:
             x_off = 838.5
-    else: 
-        x_off = 837.2
+    else:
+    '''
+    x_off = 837.2
     
     afinal_global_pointcloud = copy.deepcopy(global_pointcloud)
     if 'line' in shape:
@@ -796,23 +801,31 @@ if __name__ == "__main__":
     
     ## Do stitching 
     
-    name_id = 'double_cilinder_l=100_h=20_dx=2_dy=10_rot=1_debug' #'cilinder_l=50_h=20_dx=10_dy=10_rot=0_debug'
-    name_id = 'rectangle_l=100_h=50_dx=15_dy=15_rot={}_debuging' #'cilinder_l=50_h=20_dx=10_dy=10_rot=0_debug'
+    #name_id = 'double_cilinder_l=100_h=20_dx=2_dy=10_rot=1_debug' #'cilinder_l=50_h=20_dx=10_dy=10_rot=0_debug'
+    #name_id = 'big_semicone_l=80_h=30_dx=10_dy=10_rot=0_09-03-2018' #'cilinder_l=50_h=20_dx=10_dy=10_rot=0_debug'
+    name_id = 'rectangle_l=80_h=30_dx=10_dy=10_rot={}_09-03-2018' #'cilinder_l=50_h=20_dx=10_dy=10_rot=0_debug'
+    name_id = 'semipyramid_l=80_h=30_dx=10_dy=10_rot={}_09-03-2018' #'cilinder_l=50_h=20_dx=10_dy=10_rot=0_debug'
+    #name_id = 'tape_l=80_h=20_dx=5_dy=20_rot={}_09-06-2018' #'cilinder_l=50_h=20_dx=10_dy=10_rot=0_debug'
     name_id = 'flashlight_l=80_h=20_dx=10_dy=10_rot={}_09-03-2018'
-    #name_id = 'big_semicone_l=160_h=50_dx=15_dy=20_rot=0_debuging' #'cilinder_l=50_h=20_dx=10_dy=10_rot=0_debug'
-    #name_id = 'cilinder_l=100_h=50_dx=15_dy=20_rot=0_debuging' #'cilinder_l=50_h=20_dx=10_dy=10_rot=0_debug'
+    #name_id = 'mentos_l=80_h=20_dx=10_dy=10_rot={}_09-03-2018'
+    #name_id = 'brush_l=80_h=20_dx=10_dy=10_rot={}_09-03-2018'
+    name_id = 'test_grasps_location'
+    name_id = 'flashlight_track'
     it = 21
     it_2 = 4
     path_shape = '/media/mcube/data/shapes_data/processed_pointclouds/'
-    path_shape = None
-    global_pointcloud = add_point_clouds([name_id], rotations = range(16), is_save = False, is_visualize = True,
-        model_path = model_path, gs_id=gs_id, touch_list=range(220), is_half = False, threshold = 0.1, 
-        save_local_pointcloud = path_shape, model_2 = model_2)
-    loc.old_visualize_pointcloud(global_pointcloud)
+    #path_shape = None
+    global_pointcloud = add_point_clouds([name_id], rotations = range(1) , is_save = False, is_visualize = True, model_path = model_path,    
+             gs_id=gs_id, touch_list=range(600,1200), is_half = False, threshold = 0.1, save_local_pointcloud = path_shape, model_2 = model_2)
+    loc.visualize_pointcloud(global_pointcloud)
+    #rotations = np.linspace(-180,180,21)*np.pi/180
+    #global_pointcloud = rotate_pointcloud(name_id, final_global_pointcloud = global_pointcloud, rotations = rotations, is_save = True, is_visualize = True, model_path = model_path, gs_id=gs_id, touch_list=range(100), is_half = True)
     
+    #compare_pointcloud_ply(global_pointcloud, shape=name_id)
+    np.save(name_id.format(0) + '_large', global_pointcloud)
     
-    global_pointcloud = compare_pointcloud_ply(global_pointcloud, shape=name_id)
-    assert(False)
+    import pdb; pdb.set_trace()
+    #assert(False)
 
 
     #import pdb;pdb.set_trace()
@@ -833,10 +846,10 @@ if __name__ == "__main__":
     
     
     ## Rotate same pointcloud 
-    rotations = np.linspace(-180,180,11)*np.pi/180
-    global_pointcloud = rotate_pointcloud(name_id, rotations = rotations, is_save = True, is_visualize = False,
-        model_path = model_path, gs_id=gs_id, touch_list=touch_list, is_half = True, threshold = 0.15)
-    global_pointcloud = compare_pointcloud_ply(global_pointcloud, shape=name_id)
+    rotations = np.linspace(-180,180,21)*np.pi/180
+    global_pointcloud = rotate_pointcloud(name_id, final_global_pointcloud = global_pointcloud, rotations = rotations, is_save = True, is_visualize = False, model_path = model_path, gs_id=gs_id, touch_list=range(100), is_half = True)
+    
+    compare_pointcloud_ply(global_pointcloud, shape=name_id)
     
     
     ## Get pointcloud from different rotations

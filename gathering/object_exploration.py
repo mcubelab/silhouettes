@@ -38,24 +38,25 @@ if __name__ == "__main__":
     
     only_show = False
     only_borders = False
+    grasp_test = True
     # Enter object main dimensions in [mm]
-    length = 80
+    length = 1000
     height = 20
-    starting_angle = 13
+    starting_angle = 14
     # Enter minimum step distance (d) in [mm]
-    dx = 10
-    dz = 10
+    dx = 5
+    dz = 20
 
     cr = ControlRobot(gs_ids=[1], force_list=[5])
     gripper_rotations = ["0", "+20", "-20"]
-    #gripper_rotations = ["0"] #, "+20", "-20"]
+    if grasp_test: gripper_rotations = ["0"] #, "+20", "-20"]
     #for gripper_rotation in gripper_rotations:
 
     
     # Experiment name
-    shape = 'flashlight'#'big_semicone'
+    shape = 'test_grasps_location'#'big_semicone'
     experiment_folder = "/media/mcube/data/shapes_data/object_exploration/"
-    experiment_name = experiment_folder + shape + "_l={}_h={}_dx={}_dy={}_rot={}_09-03-2018".format(length, height,dx,dz, starting_angle)    
+    experiment_name = experiment_folder + shape + "_l={}_h={}_dx={}_dy={}_rot={}_09-09-2018".format(length, height,dx,dz, starting_angle)    
     
     initial_z = 10
     initial_x = 20
@@ -64,6 +65,26 @@ if __name__ == "__main__":
         height = 20   #25
         initial_z = 10
         initial_x = 40
+    if 'tape' in shape:
+        length = 70  #60
+        height = 60   #25
+        initial_z = 30
+        initial_x = 16
+    if 'scissors' in shape:
+        length = 110  #60
+        height = 70   #25
+        initial_z = 30
+        initial_x = 12
+    if 'brush' in shape:
+        length = 140  #60
+        height = 20   #25
+        initial_z = 10
+        initial_x = 12
+    if 'mentos' in shape:
+        length = 70  #60
+        height = 20   #25
+        initial_z = 10
+        initial_x = 15
     
 
     # Keep track touches
@@ -71,7 +92,7 @@ if __name__ == "__main__":
     # IMPORTANT NOTE: Make sure you start at a save position ()
     gripper_save_turning_pos = 833.6, 375., 862., 0., np.sqrt(0.5), -np.sqrt(0.5), 0.
     gripper_turned_pos = 833.6, 375., 862., 0., -0.716, -0.69, 0.
-    cr.move_cart_mm(0, 0, 200)
+    if not grasp_test: cr.move_cart_mm(0, 0, 200)
     rospy.sleep(2)
     for gripper_rotation in gripper_rotations:
         if gripper_rotation == "0":
@@ -84,6 +105,8 @@ if __name__ == "__main__":
             start_pos = 965.1, 372.13, 631.5, 0.122787803968973,  0.696364240320019,   -0.696364240320019,  -0.122787803968973 #  0.11982, 0.69448, -0.70019, -0.11514  
             restart_pos = 965.1, 372.13, 631.5, 0.122787803968973,  -0.696364240320019,   -0.696364240320019,  0.122787803968973 # 0.1289, -0.71015, -0.67992, 0.1295 
         
+        
+        # start_pos = 994, -400, 600, 0., np.sqrt(0.5), -np.sqrt(0.5), 0.
         gripper.open()
         # We perform the movement
         print 'RELOCATING...'
@@ -92,13 +115,14 @@ if __name__ == "__main__":
         #cr.set_cart_mm(cart)
         #cart = gripper_save_turning_pos
         #cr.set_cart_mm(cart)
-        cart = start_pos
-        cr.set_cart_mm(cart)
-        rospy.sleep(2)
-        cr.move_cart_mm(initial_x,0,initial_z)
-        rospy.sleep(2)
+        if not grasp_test:
+            cart = start_pos
+            cr.set_cart_mm(cart)
+            rospy.sleep(2)
+            cr.move_cart_mm(initial_x,0,initial_z)
+            rospy.sleep(2)
         
-        #import pdb; pdb.set_trace()
+        import pdb; pdb.set_trace()
         print 'TOUCH MOTION 1'
         num_rep_x = int(float(length)/float(dx))
         num_rep_y = int(float(height)/float(dz))
@@ -106,7 +130,8 @@ if __name__ == "__main__":
         for i in range(num_rep_y):
             sgn = 2*(i%2) - 1
             for j in range(num_rep_x):
-                movement_list += [[sgn*dx, 0, 0]]
+                if not grasp_test:movement_list += [[sgn*dx, 0, 0]]
+                else:movement_list += [[0, 0, 0]]
                 if only_show and not only_borders:
                     cr.move_cart_mm(sgn*dx, 0, 0)
                     rospy.sleep(0.1)
@@ -128,11 +153,12 @@ if __name__ == "__main__":
         cr.move_cart_mm(0,0,200)
         rospy.sleep(2)
 
+if grasp_test: assert(False)
+
 cart = gripper_save_turning_pos
 cr.set_cart_mm(cart)
 cart = gripper_turned_pos
 cr.set_cart_mm(cart)
-cart = restart_pos
 ################ CHANGE ORI
 for gripper_rotation in gripper_rotations:
         if gripper_rotation == "0":
@@ -147,7 +173,7 @@ for gripper_rotation in gripper_rotations:
 
         # We perform the movement
         print 'RELOCATING...'
-
+        cart = restart_pos
         cr.set_cart_mm(cart)
         rospy.sleep(2)
         cr.move_cart_mm(initial_x-10,0,initial_z)

@@ -9,7 +9,7 @@ import os.path
 import glob, pdb
 
 
-weights_path = '/home/mcube/weights_09-02-2018_last/'
+weights_path = '/home/mcube/weights_09-02-2018_last_true/'
 weights_files = glob.glob(weights_path + '*.hdf5')
 weights_files.sort(key=os.path.getmtime)
 #weights_files.sort()
@@ -20,20 +20,21 @@ heights = []
 for it, weights_file in enumerate(weights_files):
     
     print weights_file
+    
     if 'heigth' in weights_file: continue
     if '10_' in weights_file: continue
     if '50_' in weights_file: continue
     if '500' in weights_file: continue
     if '1000_' in weights_file: continue
-    #if '2400' not in weights_file: continue
+    if '2400' not in weights_file: continue
     #if 'rgb' in weights_file: continue
     if 'gray' in weights_file: continue
     if 'grad' in weights_file: continue
     if 'angle' in weights_file: continue
     #if 'height' in weights_file: continue
-    #if 'all' in weights_file: continue
-    if 'all' not in weights_file: continue
-    #'''
+    if 'all' in weights_file: continue
+    #if 'all' not in weights_file: continue
+    
     size_output = 225*243.0
     size_output = 3000
     train_data = 500.0
@@ -43,21 +44,30 @@ for it, weights_file in enumerate(weights_files):
     it_count += 1
     directory_save_test = weights_file[:-5] + '/'
     losses_train = np.load(directory_save_test + 'losses_test.npy')  #TODO BIGG error test<-->train
+    patches_train = np.load(directory_save_test + 'contact_patches_train.npy')  #TODO BIGG error test<-->train
     #pdb.set_trace()
     total_loss = 0
     std_total_loss = 0
     num_shapes = 5
     for i in range(num_shapes):
-        total_loss += np.mean(np.sqrt(losses_train[i]/train_data/size_output))/num_shapes
-        std_total_loss += np.std(np.sqrt(losses_train[i]/train_data/size_output))/num_shapes
+        size_output = patches_train[(train_data*i + np.arange(train_data)).astype(int)]
+        
+        total_loss += np.mean(np.sqrt(losses_train[i]/size_output))/num_shapes
+        std_total_loss += np.std(np.sqrt(losses_train[i]/size_output))/num_shapes
     train_loss.append(total_loss)
     std_train_loss.append(std_total_loss)
     losses_test = np.load(directory_save_test + 'losses_train.npy')
+    patches_test = np.load(directory_save_test + 'contact_patches_test.npy')  #TODO BIGG error test<-->train
     total_loss = 0
     std_total_loss = 0
     for i in range(num_shapes):
-        total_loss += np.mean(np.sqrt(losses_test[i]/test_data/size_output))/num_shapes
-        std_total_loss += np.std(np.sqrt(losses_test[i]/test_data/size_output))/num_shapes
+        size_output = patches_test[(test_data*i + np.arange(test_data)).astype(int)]
+        #total_loss += np.mean(np.sqrt(losses_test[i]/size_output))/num_shapes
+        #std_total_loss += np.std(np.sqrt(losses_test[i]/size_output))/num_shapes
+        new_loss = np.mean(np.sqrt(losses_test[i]/size_output))
+        if total_loss < new_loss:
+            total_loss = copy.deepcopy(new_loss)
+            std_total_loss = np.std(np.sqrt(losses_test[i]/size_output))
     test_loss.append(total_loss)
     std_test_loss.append(std_total_loss)
     #max_heights = np.load(directory_save_test + 'max_heights.npy')

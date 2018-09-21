@@ -15,11 +15,11 @@ import time
 
 
 class DataCollector():
-    def __init__(self, only_one_shot=False, save_path='data_collected/', automatic=False, save_only_picture=False):
+    def __init__(self, only_one_shot=False, save_path='data_collected/', automatic=False, save_only_picture=False, listener = None):
         self.bridge = CvBridge()
         self.automatic = automatic
         self.save_only_picture = save_only_picture
-
+        self.listener = listener
         # Only one shot variables
         self.only_one_shot = only_one_shot
         self.it = 0 # ID to save only_one_shot
@@ -125,8 +125,8 @@ class DataCollector():
 
         self.data_recorded = {}
         self.subscribers = {}
-
-        rospy.init_node('listener', anonymous=True) # Maybe we should only initialize one general node
+        if self.listener is None:
+            rospy.init_node('listener', anonymous=True) # Maybe we should only initialize one general node
 
         for key in self.topic_dict:
             print key

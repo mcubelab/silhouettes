@@ -88,11 +88,12 @@ def contact_detection(im,im_ref,low_bar,high_bar):
 
 
 class ControlRobot():
-    def __init__(self, gs_ids=[2], force_list=[1, 10, 20, 40]):
+    def __init__(self, gs_ids=[2], force_list=[1, 10, 20, 40], listener = None):
         self.gs_id = gs_ids
         self.force_list = force_list
-
-        rospy.init_node('listener', anonymous=True) # Maybe we should only initialize one general node
+        self.listener = listener
+        if listener is None:
+            rospy.init_node('listener', anonymous=True) # Maybe we should only initialize one general node
 
 
     def move_cart_mm(self, dx=0, dy=0, dz=0):
@@ -151,7 +152,7 @@ class ControlRobot():
             os.makedirs(path)
 
         # 1. We get and save the cartesian coord.
-        dc = DataCollector(only_one_shot=False, automatic=True, save_only_picture=save_only_picture)
+        dc = DataCollector(only_one_shot=False, automatic=True, save_only_picture=save_only_picture, listener = self.listener)
         cart = dc.getCart()
         print cart
         if save and not save_only_picture:
@@ -163,6 +164,7 @@ class ControlRobot():
             print "Applying: " + str(force)
             time.sleep(0.5)
             dc.get_data(get_cart=False, get_gs1=(1 in self.gs_id), get_gs2=(2 in self.gs_id), get_wsg=True, save=save, directory=path, iteration=i)
+            raw_input('Open gripper?')
             self.open_gripper()
             i += 1
 
@@ -199,7 +201,7 @@ class ControlRobot():
         original_y = None, pix_threshold = 1000):
         if last_touch == 0:
             # 1. We save the background image:
-            dc = DataCollector(only_one_shot=False, automatic=True, save_only_picture=save_only_picture)
+            dc = DataCollector(only_one_shot=False, automatic=True, save_only_picture=save_only_picture, listener = self.listener)
             dc.get_data(get_cart=False, get_gs1=(1 in self.gs_id), get_gs2=(2 in self.gs_id), get_wsg=False, save=True, directory=experiment_name+'/air', iteration=-1)
             print "Air data gathered"
 
@@ -223,6 +225,7 @@ class ControlRobot():
             is_good = False
             it_count = 0
             while not is_good and it_count < 5:
+                raw_input('Ready?')
                 self.palpate(speed=200, force_list=self.force_list, save=True, path=path, save_only_picture=save_only_picture, i=j)
                 is_good = self.check_patch_enough(path_img = path + '/GS{}_{}'.format(self.gs_id[0],j)+ '.png', path_ref = experiment_name+'/air/', pix_threshold = pix_threshold)
                 if not is_good: print 'Not enough pixels in the mask'
@@ -244,6 +247,7 @@ class ControlRobot():
         is_good = False
         it_count = 0
         while not is_good and it_count < 5:
+            raw_input('Ready?')
             self.palpate(speed=200, force_list=self.force_list, save=True, path=path, save_only_picture=save_only_picture, i=j)
             is_good = self.check_patch_enough(path_img = path  + '/GS{}_{}'.format(self.gs_id[0],j) + '.png', path_ref = experiment_name+'/air/', pix_threshold = pix_threshold)
             if not is_good: print 'Not enough pixels in the mask'
